@@ -1,0 +1,336 @@
+---
+layout: layouts/game.njk
+title: 2048
+description: Slide and merge numbered tiles to reach the 2048 tile.
+category: puzzle
+icon: "🔢"
+---
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 340px;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #board {
+    width: 340px;
+    height: 340px;
+    background: #0f172a;
+    border-radius: 8px;
+    border: 2px solid #1e293b;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px;
+    position: relative;
+  }
+  .tile {
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 1.5rem;
+    transition: all 0.1s ease;
+    background: #1e293b;
+    color: #94a3b8;
+  }
+  .tile[data-v="2"] {
+    background: #1e3a2f;
+    color: #4ade80;
+    font-size: 1.6rem;
+  }
+  .tile[data-v="4"] {
+    background: #1e3a4f;
+    color: #60a5fa;
+    font-size: 1.6rem;
+  }
+  .tile[data-v="8"] {
+    background: #312e81;
+    color: #a78bfa;
+    font-size: 1.6rem;
+  }
+  .tile[data-v="16"] {
+    background: #4c1d95;
+    color: #c4b5fd;
+    font-size: 1.4rem;
+  }
+  .tile[data-v="32"] {
+    background: #7c2d12;
+    color: #fdba74;
+    font-size: 1.4rem;
+  }
+  .tile[data-v="64"] {
+    background: #92400e;
+    color: #fcd34d;
+    font-size: 1.4rem;
+  }
+  .tile[data-v="128"] {
+    background: #78350f;
+    color: #fef08a;
+    font-size: 1.2rem;
+  }
+  .tile[data-v="256"] {
+    background: #854d0e;
+    color: #fef9c3;
+    font-size: 1.2rem;
+  }
+  .tile[data-v="512"] {
+    background: #713f12;
+    color: #fff;
+    font-size: 1.2rem;
+  }
+  .tile[data-v="1024"] {
+    background: #451a03;
+    color: #fff;
+    font-size: 1rem;
+  }
+  .tile[data-v="2048"] {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+    font-size: 1rem;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.9);
+    border-radius: 6px;
+    gap: 1rem;
+  }
+  #overlay h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .controls-hint {
+    font-size: 0.75rem;
+    color: #64748b;
+  }
+  .new-btn {
+    padding: 0.4rem 1rem;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .new-btn:hover {
+    background: #475569;
+  }
+</style>
+<div id="game-wrapper">
+  <div id="header">
+    <div class="stat">
+      <div class="stat-label">Score</div>
+      <div class="stat-value" id="score">0</div>
+    </div>
+    <div style="text-align: center"><div style="font-size: 1.5rem; font-weight: bold; color: white">2048</div></div>
+    <div class="stat">
+      <div class="stat-label">Best</div>
+      <div class="stat-value" id="best">0</div>
+    </div>
+  </div>
+  <div id="board">
+    <div id="overlay">
+      <h2 id="overlay-title">2048</h2>
+      <p id="overlay-msg" style="color: #94a3b8; font-size: 0.85rem">Reach the 2048 tile!</p>
+      <button class="play-btn" id="overlay-btn" onclick="newGame()">Start Game</button>
+    </div>
+  </div>
+  <button class="new-btn" onclick="newGame()">New Game</button>
+  <p class="controls-hint">Arrow keys or swipe to merge tiles</p>
+</div>
+<script>
+  let grid,
+    score,
+    best = 0,
+    gameWon = false;
+
+  function newGrid() {
+    return Array.from({ length: 4 }, () => Array(4).fill(0));
+  }
+
+  function addRandom(g) {
+    const empty = [];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (!g[r][c]) empty.push([r, c]);
+    if (!empty.length) return;
+    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+    g[r][c] = Math.random() < 0.9 ? 2 : 4;
+  }
+
+  function newGame() {
+    grid = newGrid();
+    score = 0;
+    gameWon = false;
+    addRandom(grid);
+    addRandom(grid);
+    document.getElementById("overlay").style.display = "none";
+    render();
+  }
+
+  function slide(row) {
+    let r = row.filter((x) => x),
+      added = 0;
+    for (let i = 0; i < r.length - 1; i++) {
+      if (r[i] === r[i + 1]) {
+        r[i] *= 2;
+        score += r[i];
+        r.splice(i + 1, 1);
+        added++;
+        if (r[i] === 2048 && !gameWon) {
+          gameWon = true;
+        }
+      }
+    }
+    while (r.length < 4) r.push(0);
+    return r;
+  }
+
+  function move(dir) {
+    let moved = false;
+    const prev = JSON.stringify(grid);
+    if (dir === "left") {
+      grid = grid.map((r) => slide(r));
+    } else if (dir === "right") {
+      grid = grid.map((r) => slide([...r].reverse()).reverse());
+    } else if (dir === "up") {
+      for (let c = 0; c < 4; c++) {
+        const col = grid.map((r) => r[c]);
+        const sl = slide(col);
+        sl.forEach((v, r) => (grid[r][c] = v));
+      }
+    } else if (dir === "down") {
+      for (let c = 0; c < 4; c++) {
+        const col = grid.map((r) => r[c]).reverse();
+        const sl = slide(col).reverse();
+        sl.forEach((v, r) => (grid[r][c] = v));
+      }
+    }
+    if (JSON.stringify(grid) !== prev) {
+      moved = true;
+      addRandom(grid);
+      if (score > best) {
+        best = score;
+        document.getElementById("best").textContent = best;
+      }
+    }
+    render();
+    if (moved && gameWon) showOverlay("You Win! 🎉", "Score: " + score, "Play Again");
+    else if (moved && isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
+  }
+
+  function isGameOver() {
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 4; c++) {
+        if (!grid[r][c]) return false;
+        if (c < 3 && grid[r][c] === grid[r][c + 1]) return false;
+        if (r < 3 && grid[r][c] === grid[r + 1][c]) return false;
+      }
+    return true;
+  }
+
+  function showOverlay(title, msg, btn) {
+    document.getElementById("overlay-title").textContent = title;
+    document.getElementById("overlay-msg").textContent = msg;
+    document.getElementById("overlay-btn").textContent = btn;
+    document.getElementById("overlay").style.display = "flex";
+  }
+
+  function render() {
+    document.getElementById("score").textContent = score;
+    const board = document.getElementById("board");
+    const overlay = document.getElementById("overlay");
+    board.querySelectorAll(".tile").forEach((t) => t.remove());
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 4; c++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.dataset.v = grid[r][c] || "";
+        tile.textContent = grid[r][c] || "";
+        board.appendChild(tile);
+      }
+    board.appendChild(overlay);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const map = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down" };
+    if (map[e.key]) {
+      e.preventDefault();
+      move(map[e.key]);
+    }
+  });
+
+  let touchStart = null;
+  document.getElementById("board").addEventListener(
+    "touchstart",
+    (e) => {
+      touchStart = e.touches[0];
+    },
+    { passive: true }
+  );
+  document.getElementById("board").addEventListener(
+    "touchend",
+    (e) => {
+      if (!touchStart) return;
+      const dx = e.changedTouches[0].clientX - touchStart.clientX;
+      const dy = e.changedTouches[0].clientY - touchStart.clientY;
+      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "right" : "left");
+      else move(dy > 0 ? "down" : "up");
+      touchStart = null;
+    },
+    { passive: true }
+  );
+
+  render();
+  document.getElementById("overlay").style.display = "flex";
+</script>

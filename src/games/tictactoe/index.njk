@@ -1,0 +1,244 @@
+---
+layout: layouts/game.njk
+title: Tic-Tac-Toe
+description: Outsmart your opponent in the classic 3×3 grid game. Play vs AI.
+category: board
+icon: "⭕"
+---
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  #status {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-height: 1.5rem;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 8px;
+  }
+  .cell {
+    width: 100px;
+    height: 100px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .cell:hover:not(.taken) {
+    background: #273449;
+  }
+  .cell.taken {
+    cursor: default;
+  }
+  .cell.x {
+    color: #a78bfa;
+  }
+  .cell.o {
+    color: #34d399;
+  }
+  .cell.win {
+    background: #1e293b;
+    border-color: #7c3aed;
+    box-shadow: 0 0 12px rgba(124, 58, 237, 0.4);
+  }
+  .score-row {
+    display: flex;
+    gap: 1.5rem;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+</style>
+<div id="game-wrapper">
+  <div class="score-row">
+    <div class="stat">
+      <div class="stat-label">You (X)</div>
+      <div class="stat-value" id="p-score">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Draws</div>
+      <div class="stat-value" id="d-score">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">AI (O)</div>
+      <div class="stat-value" id="ai-score">0</div>
+    </div>
+  </div>
+  <div id="status">Your turn (X)</div>
+  <div id="board"></div>
+  <button class="play-btn" onclick="resetGame()">New Game</button>
+  <p style="font-size: 0.75rem; color: #64748b">You are X · AI is O · AI uses minimax</p>
+</div>
+<script>
+  let board,
+    human = "X",
+    ai = "O",
+    gameOver = false;
+  let scores = { X: 0, D: 0, O: 0 };
+  const WINS = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+
+  function resetGame() {
+    board = Array(9).fill("");
+    gameOver = false;
+    setStatus("Your turn (X)");
+    renderBoard();
+  }
+
+  function setStatus(msg) {
+    document.getElementById("status").textContent = msg;
+  }
+
+  function checkWinner(b) {
+    for (const [a, c, d] of WINS) {
+      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
+    }
+    if (b.every((c) => c)) return { winner: "D" };
+    return null;
+  }
+
+  function minimax(b, isMax) {
+    const res = checkWinner(b);
+    if (res) return res.winner === ai ? 10 : res.winner === human ? -10 : 0;
+    const scores = b
+      .map((c, i) =>
+        c
+          ? null
+          : (() => {
+              b[i] = isMax ? ai : human;
+              const s = minimax(b, !isMax);
+              b[i] = "";
+              return s;
+            })()
+      )
+      .filter((x) => x !== null);
+    return isMax ? Math.max(...scores) : Math.min(...scores);
+  }
+
+  function bestMove() {
+    let best = -Infinity,
+      move = 0;
+    board.forEach((c, i) => {
+      if (!c) {
+        board[i] = ai;
+        const s = minimax(board, false);
+        board[i] = "";
+        if (s > best) {
+          best = s;
+          move = i;
+        }
+      }
+    });
+    return move;
+  }
+
+  function play(i) {
+    if (gameOver || board[i]) return;
+    board[i] = human;
+    const res = checkWinner(board);
+    if (res) {
+      finish(res);
+      return;
+    }
+    setStatus("AI is thinking...");
+    renderBoard();
+    setTimeout(() => {
+      board[bestMove()] = ai;
+      const r2 = checkWinner(board);
+      if (r2) {
+        finish(r2);
+        return;
+      }
+      setStatus("Your turn (X)");
+      renderBoard();
+    }, 200);
+  }
+
+  function finish(res) {
+    gameOver = true;
+    if (res.winner === "X") {
+      scores.X++;
+      setStatus("You win! 🎉");
+    } else if (res.winner === "O") {
+      scores.O++;
+      setStatus("AI wins! 🤖");
+    } else {
+      scores.D++;
+      setStatus("It's a draw!");
+    }
+    document.getElementById("p-score").textContent = scores.X;
+    document.getElementById("ai-score").textContent = scores.O;
+    document.getElementById("d-score").textContent = scores.D;
+    renderBoard(res.line);
+  }
+
+  function renderBoard(winLine = []) {
+    const boardEl = document.getElementById("board");
+    boardEl.innerHTML = "";
+    board.forEach((cell, i) => {
+      const div = document.createElement("div");
+      div.className =
+        "cell" + (cell ? " taken" : "") + (cell ? " " + cell.toLowerCase() : "") + (winLine.includes(i) ? " win" : "");
+      div.textContent = cell === "X" ? "✕" : cell === "O" ? "○" : "";
+      div.onclick = () => play(i);
+      boardEl.appendChild(div);
+    });
+  }
+
+  resetGame();
+</script>
