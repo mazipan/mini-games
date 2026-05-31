@@ -21,7 +21,7 @@
     "prepare": "husky"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "devDependencies": {
     "@11ty/eleventy": "^2.0.1",
