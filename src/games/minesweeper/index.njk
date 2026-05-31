@@ -1,0 +1,305 @@
+---
+layout: layouts/game.njk
+title: Minesweeper
+description: Reveal all safe squares without triggering a mine. Use logic and luck.
+category: puzzle
+icon: "💣"
+---
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #board {
+    display: grid;
+    gap: 2px;
+  }
+  .cell {
+    width: 32px;
+    height: 32px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .cell:not(.revealed):not(.flagged):hover {
+    background: #273449;
+    border-color: #7c3aed;
+  }
+  .cell.revealed {
+    background: #0f172a;
+    border-color: #1e293b;
+    cursor: default;
+  }
+  .cell.flagged {
+    background: #2d1b4e;
+    border-color: #7c3aed;
+  }
+  .cell.mine-hit {
+    background: #7f1d1d;
+    border-color: #ef4444;
+  }
+  .cell.safe-reveal {
+    background: #14532d;
+    border-color: #22c55e;
+  }
+  .n1 {
+    color: #60a5fa;
+  }
+  .n2 {
+    color: #34d399;
+  }
+  .n3 {
+    color: #f87171;
+  }
+  .n4 {
+    color: #818cf8;
+  }
+  .n5 {
+    color: #f97316;
+  }
+  .n6 {
+    color: #22d3ee;
+  }
+  .n7 {
+    color: #e2e8f0;
+  }
+  .n8 {
+    color: #94a3b8;
+  }
+  #status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-height: 1.5rem;
+  }
+  .play-btn {
+    padding: 0.4rem 1rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .difficulty-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .diff-btn {
+    padding: 0.3rem 0.8rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .diff-btn.active,
+  .diff-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
+</style>
+<div id="game-wrapper">
+  <div class="difficulty-row">
+    <button class="diff-btn active" id="d-easy" onclick="setDiff('easy')">Easy 9×9</button>
+    <button class="diff-btn" id="d-med" onclick="setDiff('medium')">Medium 16×9</button>
+    <button class="diff-btn" id="d-hard" onclick="setDiff('hard')">Hard 16×16</button>
+  </div>
+  <div class="score-row">
+    <div class="stat">
+      <div class="stat-label">Mines</div>
+      <div class="stat-value" id="mine-count">10</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Time</div>
+      <div class="stat-value" id="timer">0s</div>
+    </div>
+    <button class="play-btn" onclick="newGame()">New Game</button>
+  </div>
+  <div id="status">Left-click to reveal · Right-click to flag</div>
+  <div id="board"></div>
+</div>
+<script>
+  const DIFFS = {
+    easy: { cols: 9, rows: 9, mines: 10 },
+    medium: { cols: 16, rows: 9, mines: 25 },
+    hard: { cols: 16, rows: 16, mines: 40 },
+  };
+  let diff = "easy",
+    cols,
+    rows,
+    mineCount,
+    grid,
+    revealed,
+    flagged,
+    gameState = "idle",
+    timerInterval,
+    startTime;
+
+  function setDiff(d) {
+    diff = d;
+    document.querySelectorAll(".diff-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("d-" + d).classList.add("active");
+    newGame();
+  }
+
+  function newGame() {
+    const cfg = DIFFS[diff];
+    cols = cfg.cols;
+    rows = cfg.rows;
+    mineCount = cfg.mines;
+    grid = Array.from({ length: rows }, () => Array(cols).fill(0));
+    revealed = Array.from({ length: rows }, () => Array(cols).fill(false));
+    flagged = Array.from({ length: rows }, () => Array(cols).fill(false));
+    gameState = "idle";
+    clearInterval(timerInterval);
+    document.getElementById("timer").textContent = "0s";
+    document.getElementById("mine-count").textContent = mineCount;
+    document.getElementById("status").textContent = "Left-click to reveal · Right-click to flag";
+    document.getElementById("board").style.gridTemplateColumns = `repeat(${cols},32px)`;
+    render();
+  }
+
+  function placeMines(sr, sc) {
+    let placed = 0;
+    while (placed < mineCount) {
+      const r = Math.floor(Math.random() * rows),
+        c = Math.floor(Math.random() * cols);
+      if (grid[r][c] === -1 || (Math.abs(r - sr) <= 1 && Math.abs(c - sc) <= 1)) continue;
+      grid[r][c] = -1;
+      placed++;
+    }
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        if (grid[r][c] === -1) continue;
+        let n = 0;
+        for (let dr = -1; dr <= 1; dr++)
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr,
+              nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] === -1) n++;
+          }
+        grid[r][c] = n;
+      }
+  }
+
+  function reveal(r, c) {
+    if (r < 0 || r >= rows || c < 0 || c >= cols || revealed[r][c] || flagged[r][c]) return;
+    revealed[r][c] = true;
+    if (grid[r][c] === 0) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) reveal(r + dr, c + dc);
+  }
+
+  function click(r, c) {
+    if (gameState === "over" || gameState === "win" || flagged[r][c]) return;
+    if (gameState === "idle") {
+      placeMines(r, c);
+      gameState = "playing";
+      startTime = Date.now();
+      timerInterval = setInterval(
+        () => (document.getElementById("timer").textContent = Math.floor((Date.now() - startTime) / 1000) + "s"),
+        1000
+      );
+    }
+    if (grid[r][c] === -1) {
+      revealed[r][c] = true;
+      gameState = "over";
+      clearInterval(timerInterval);
+      for (let rr = 0; rr < rows; rr++)
+        for (let cc = 0; cc < cols; cc++) if (grid[rr][cc] === -1) revealed[rr][cc] = true;
+      document.getElementById("status").textContent = "💥 Boom! Game over!";
+      render();
+      return;
+    }
+    reveal(r, c);
+    const safe = rows * cols - mineCount;
+    let revCount = 0;
+    for (let rr = 0; rr < rows; rr++) for (let cc = 0; cc < cols; cc++) if (revealed[rr][cc]) revCount++;
+    if (revCount >= safe) {
+      gameState = "win";
+      clearInterval(timerInterval);
+      document.getElementById("status").textContent = "🎉 You won!";
+    }
+    render();
+  }
+
+  function flag(e, r, c) {
+    e.preventDefault();
+    if (gameState === "over" || gameState === "win" || revealed[r][c]) return;
+    flagged[r][c] = !flagged[r][c];
+    const f = flagged.flat().filter(Boolean).length;
+    document.getElementById("mine-count").textContent = mineCount - f;
+    render();
+  }
+
+  function render() {
+    const board = document.getElementById("board");
+    board.innerHTML = "";
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        if (revealed[r][c]) {
+          cell.classList.add("revealed");
+          if (grid[r][c] === -1)
+            (cell.classList.add(gameState === "over" && !flagged[r][c] ? "mine-hit" : "safe-reveal"),
+              (cell.textContent = "💣"));
+          else if (grid[r][c] > 0) {
+            cell.classList.add("n" + grid[r][c]);
+            cell.textContent = grid[r][c];
+          }
+        } else if (flagged[r][c]) {
+          cell.classList.add("flagged");
+          cell.textContent = "🚩";
+        }
+        cell.onclick = () => click(r, c);
+        cell.oncontextmenu = (e) => flag(e, r, c);
+        board.appendChild(cell);
+      }
+  }
+
+  newGame();
+</script>

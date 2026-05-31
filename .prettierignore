@@ -1,0 +1,6 @@
+node_modules/
+_site/
+.husky/
+*.min.js
+*.min.css
+package-lock.json
