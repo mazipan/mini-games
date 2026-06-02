@@ -69,7 +69,7 @@ icon: "🧱"
     font-family: monospace;
   }
   .play-btn {
-    padding: 0.5rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     background: #ea580c;
     color: white;
     border: none;
@@ -210,11 +210,12 @@ icon: "🧱"
         <li><strong>Finger drag</strong> — drag left/right on the canvas (mobile)</li>
         <li><strong>Hold ← →</strong> — hold arrow keys for continuous paddle movement</li>
       </ul>
-      <h4>Levels</h4>
+      <h4>Levels &amp; Patterns</h4>
       <ul>
-        <li>5 levels total — ball speeds up each level</li>
-        <li>Level 1 starts slow and manageable</li>
-        <li>Top rows (pink/orange) take <strong>2 hits</strong> to break</li>
+        <li>8 levels — each uses a unique brick layout</li>
+        <li>Patterns: Classic, Pyramid, Diamond, Checkerboard, Cross, Fortress, Arrow, Wave</li>
+        <li>Ball speeds up each level</li>
+        <li>Darker bricks take <strong>2 hits</strong> to break</li>
       </ul>
       <h4>Scoring</h4>
       <ul>
@@ -258,8 +259,7 @@ icon: "🧱"
   const PADDLE_W = Math.round(80 * S);
   const PADDLE_H = Math.round(10 * S);
   const BALL_R = Math.max(5, Math.round(7 * S));
-  const BRICK_ROWS = 5,
-    BRICK_COLS = 10;
+  const BRICK_COLS = 10;
   const BRICK_H = Math.round(16 * S);
   const BRICK_GAP = Math.max(2, Math.round(4 * S));
   const BRICK_W = (W - BRICK_GAP) / BRICK_COLS - BRICK_GAP;
@@ -267,6 +267,78 @@ icon: "🧱"
   const PADDLE_Y = H - Math.round(28 * S);
   const PADDLE_SPEED = Math.round(8 * S);
   const BRICK_COLORS = ["#f43f5e", "#f97316", "#eab308", "#22c55e", "#3b82f6"];
+
+  // prettier-ignore
+  const PATTERNS = [
+    { name: "Classic", grid: [
+      [2,2,2,2,2,2,2,2,2,2],
+      [2,2,2,2,2,2,2,2,2,2],
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1],
+    ]},
+    { name: "Pyramid", grid: [
+      [1,1,1,1,1,1,1,1,1,1],
+      [0,1,1,1,1,1,1,1,1,0],
+      [0,0,1,1,1,1,1,1,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,0,0,1,1,0,0,0,0],
+    ]},
+    { name: "Diamond", grid: [
+      [0,0,0,0,1,1,0,0,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,1,1,2,2,1,1,0,0],
+      [0,1,1,2,2,2,2,1,1,0],
+      [1,1,2,2,2,2,2,2,1,1],
+      [0,1,1,2,2,2,2,1,1,0],
+      [0,0,1,1,2,2,1,1,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,0,0,1,1,0,0,0,0],
+    ]},
+    { name: "Checkerboard", grid: [
+      [2,0,2,0,2,0,2,0,2,0],
+      [0,1,0,1,0,1,0,1,0,1],
+      [2,0,2,0,2,0,2,0,2,0],
+      [0,1,0,1,0,1,0,1,0,1],
+      [2,0,2,0,2,0,2,0,2,0],
+      [0,1,0,1,0,1,0,1,0,1],
+    ]},
+    { name: "Cross", grid: [
+      [0,0,0,0,2,2,0,0,0,0],
+      [0,0,0,0,2,2,0,0,0,0],
+      [1,1,1,1,2,2,1,1,1,1],
+      [1,1,1,1,2,2,1,1,1,1],
+      [0,0,0,0,2,2,0,0,0,0],
+      [0,0,0,0,2,2,0,0,0,0],
+    ]},
+    { name: "Fortress", grid: [
+      [2,2,2,2,0,0,2,2,2,2],
+      [2,0,0,0,0,0,0,0,0,2],
+      [2,0,1,1,1,1,1,1,0,2],
+      [2,0,1,0,0,0,0,1,0,2],
+      [2,0,1,1,1,1,1,1,0,2],
+      [2,0,0,0,0,0,0,0,0,2],
+      [2,2,2,2,0,0,2,2,2,2],
+    ]},
+    { name: "Arrow", grid: [
+      [0,0,0,0,2,2,0,0,0,0],
+      [0,0,0,2,2,2,2,0,0,0],
+      [0,0,2,2,2,2,2,2,0,0],
+      [0,2,2,2,2,2,2,2,2,0],
+      [2,2,2,2,2,2,2,2,2,2],
+      [0,0,0,0,2,2,0,0,0,0],
+      [0,0,0,0,2,2,0,0,0,0],
+    ]},
+    { name: "Wave", grid: [
+      [1,1,1,0,0,0,0,1,1,1],
+      [0,1,1,1,0,0,1,1,1,0],
+      [0,0,1,1,1,1,1,1,0,0],
+      [0,0,0,1,1,1,1,0,0,0],
+      [0,0,1,1,1,1,1,1,0,0],
+      [0,1,1,1,0,0,1,1,1,0],
+      [1,1,1,0,0,0,0,1,1,1],
+    ]},
+  ];
 
   let paddle,
     ball,
@@ -288,19 +360,22 @@ icon: "🧱"
     return { vx, vy };
   }
 
-  function createBricks() {
+  function createBricks(idx) {
+    const grid = PATTERNS[idx % PATTERNS.length].grid;
     const arr = [];
-    for (let r = 0; r < BRICK_ROWS; r++)
-      for (let c = 0; c < BRICK_COLS; c++)
+    for (let r = 0; r < grid.length; r++)
+      for (let c = 0; c < grid[r].length; c++) {
+        if (!grid[r][c]) continue;
         arr.push({
           x: BRICK_GAP + c * (BRICK_W + BRICK_GAP),
           y: BRICK_TOP + r * (BRICK_H + BRICK_GAP),
           w: BRICK_W,
           h: BRICK_H,
-          color: BRICK_COLORS[r],
+          color: BRICK_COLORS[r % BRICK_COLORS.length],
           alive: true,
-          hits: r < 2 ? 2 : 1,
+          hits: grid[r][c],
         });
+      }
     return arr;
   }
 
@@ -317,7 +392,7 @@ icon: "🧱"
     score = 0;
     lives = 3;
     paddle = { x: W / 2 - PADDLE_W / 2, y: PADDLE_Y };
-    bricks = createBricks();
+    bricks = createBricks(0);
     resetBall(1);
     updateUI();
     document.getElementById("overlay").style.display = "none";
@@ -397,12 +472,12 @@ icon: "🧱"
     }
     if (bricks.every((b) => !b.alive)) {
       level++;
-      if (level > 5) {
+      if (level > PATTERNS.length) {
         showEnd("You Win! 🎉");
         return;
       }
       updateUI();
-      bricks = createBricks();
+      bricks = createBricks(level - 1);
       resetBall(level);
     }
   }
@@ -450,8 +525,8 @@ icon: "🧱"
     paddle = { x: W / 2 - PADDLE_W / 2, y: PADDLE_Y };
     const spd = ballSpeed(1);
     ball = { x: W / 2, y: H / 2, vx: spd.vx * 0.7, vy: Math.abs(spd.vy) * 0.7 };
-    bricks = createBricks();
-    let demoScore = 0;
+    let demoPatternIdx = Math.floor(Math.random() * PATTERNS.length);
+    bricks = createBricks(demoPatternIdx);
 
     function demoLoop() {
       // AI: smoothly track ball
@@ -501,7 +576,10 @@ icon: "🧱"
           break;
         }
       }
-      if (bricks.every((b) => !b.alive)) bricks = createBricks();
+      if (bricks.every((b) => !b.alive)) {
+        demoPatternIdx = (demoPatternIdx + 1) % PATTERNS.length;
+        bricks = createBricks(demoPatternIdx);
+      }
       draw();
       demoAnimId = requestAnimationFrame(demoLoop);
     }
