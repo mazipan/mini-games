@@ -605,8 +605,10 @@ icon: "🟦"
     } else if (key === "ArrowRight") {
       if (isValid(piece.matrix, piece.x + 1, piece.y)) piece.x++;
     } else if (key === "ArrowDown") {
-      if (isValid(piece.matrix, piece.x, piece.y + 1)) piece.y++;
-      else place();
+      if (isValid(piece.matrix, piece.x, piece.y + 1)) {
+        piece.y++;
+        lastDrop = performance.now();
+      } else place();
     } else if (key === "ArrowUp") {
       const rot = rotate(piece.matrix);
       if (isValid(rot, piece.x, piece.y)) piece.matrix = rot;
