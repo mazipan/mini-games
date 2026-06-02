@@ -342,7 +342,7 @@ icon: "🟦"
     }));
     const start = performance.now();
     function draw(now) {
-      if (now - start > 3000) {
+      if (now - start > 1500) {
         canvas.remove();
         return;
       }
@@ -463,6 +463,7 @@ icon: "🟦"
     for (let r = 0; r < ROWS; r++) if (board[r].every((c) => c !== 0)) fullRows.push(r);
 
     const proceed = () => {
+      const prevLevel = level;
       clearLines();
       piece = nextPiece;
       nextPiece = randomPiece();
@@ -472,8 +473,18 @@ icon: "🟦"
         return;
       }
       if (gameRunning) {
-        lastDrop = performance.now();
-        animFrame = requestAnimationFrame(gameLoop);
+        if (level > prevLevel) {
+          launchConfetti();
+          setTimeout(() => {
+            if (gameRunning) {
+              lastDrop = performance.now();
+              animFrame = requestAnimationFrame(gameLoop);
+            }
+          }, 1500);
+        } else {
+          lastDrop = performance.now();
+          animFrame = requestAnimationFrame(gameLoop);
+        }
       }
     };
 
@@ -507,13 +518,11 @@ icon: "🟦"
       const pts = [0, 100, 300, 500, 800][cleared] * level;
       score += pts;
       lines += cleared;
-      const prevLevel = level;
       level = Math.floor(lines / 10) + 1;
       dropInterval = Math.max(100, 800 - (level - 1) * 80);
       document.getElementById("score-display").textContent = score;
       document.getElementById("lines-display").textContent = lines;
       document.getElementById("level-display").textContent = level;
-      if (level > prevLevel) launchConfetti();
       if (score > best) {
         best = score;
         localStorage.setItem(STORAGE_KEY, best);

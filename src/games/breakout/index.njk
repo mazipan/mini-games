@@ -264,7 +264,7 @@ icon: "🧱"
     }));
     const start = performance.now();
     function draw(now) {
-      if (now - start > 3000) {
+      if (now - start > 1500) {
         canvas.remove();
         return;
       }
@@ -455,7 +455,7 @@ icon: "🧱"
     if (keys["ArrowRight"]) paddle.x = Math.min(W - PADDLE_W, paddle.x + PADDLE_SPEED);
     update();
     draw();
-    animId = requestAnimationFrame(loop);
+    if (running) animId = requestAnimationFrame(loop);
   }
 
   function update() {
@@ -518,9 +518,14 @@ icon: "🧱"
         showEnd("You Win! 🎉");
         return;
       }
+      running = false;
       updateUI();
       bricks = createBricks(level - 1);
       resetBall(level);
+      setTimeout(() => {
+        running = true;
+        animId = requestAnimationFrame(loop);
+      }, 1500);
     }
   }
 
