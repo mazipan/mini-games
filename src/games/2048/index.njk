@@ -21,7 +21,7 @@ icon: "🔢"
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    max-width: 340px;
+    max-width: min(340px, calc(100vw - 2rem));
   }
   .stat {
     text-align: center;
@@ -44,8 +44,8 @@ icon: "🔢"
     font-family: monospace;
   }
   #board {
-    width: 340px;
-    height: 340px;
+    width: min(340px, calc(100vw - 2rem));
+    aspect-ratio: 1;
     background: #0f172a;
     border-radius: 8px;
     border: 2px solid #1e293b;
@@ -147,6 +147,8 @@ icon: "🔢"
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
@@ -163,11 +165,74 @@ icon: "🔢"
     border-radius: 6px;
     font-size: 0.85rem;
     cursor: pointer;
+    touch-action: manipulation;
   }
   .new-btn:hover {
     background: #475569;
   }
+  .info-section {
+    width: 100%;
+    max-width: 380px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
   <div id="header">
     <div class="stat">
@@ -190,11 +255,50 @@ icon: "🔢"
   <button class="new-btn" onclick="newGame()">New Game</button>
   <p class="controls-hint">Arrow keys or swipe to merge tiles</p>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>
+        Slide all tiles in one direction. Tiles with the same number <strong>merge</strong> into one tile with their
+        sum. Reach the <strong>2048 tile</strong> to win!
+      </p>
+      <h4>Controls</h4>
+      <ul>
+        <li><strong>Arrow keys</strong> — slide all tiles in that direction (desktop)</li>
+        <li><strong>Swipe</strong> — swipe left/right/up/down on the board (mobile)</li>
+      </ul>
+      <h4>Strategy Tips</h4>
+      <ul>
+        <li>Keep your highest tile in a corner</li>
+        <li>Build a chain of decreasing values towards that corner</li>
+        <li>Avoid filling the board — plan ahead!</li>
+      </ul>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>What happens after reaching 2048?</h4>
+      <p>You win, but the game continues! You can keep merging tiles to reach 4096, 8192, and beyond.</p>
+      <h4>Is my best score saved?</h4>
+      <p>Yes — your best score is automatically saved in your browser's local storage.</p>
+      <h4>Can I undo a move?</h4>
+      <p>Not currently. Think carefully before each swipe!</p>
+    </div>
+  </details>
+</div>
+
 <script>
+  const STORAGE_KEY = "mini-2048-best";
   let grid,
     score,
-    best = 0,
+    best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10),
     gameWon = false;
+
+  document.getElementById("best").textContent = best;
 
   function newGrid() {
     return Array.from({ length: 4 }, () => Array(4).fill(0));
@@ -227,9 +331,7 @@ icon: "🔢"
         score += r[i];
         r.splice(i + 1, 1);
         added++;
-        if (r[i] === 2048 && !gameWon) {
-          gameWon = true;
-        }
+        if (r[i] === 2048 && !gameWon) gameWon = true;
       }
     }
     while (r.length < 4) r.push(0);
@@ -237,36 +339,33 @@ icon: "🔢"
   }
 
   function move(dir) {
-    let moved = false;
     const prev = JSON.stringify(grid);
-    if (dir === "left") {
-      grid = grid.map((r) => slide(r));
-    } else if (dir === "right") {
-      grid = grid.map((r) => slide([...r].reverse()).reverse());
-    } else if (dir === "up") {
+    if (dir === "left") grid = grid.map((r) => slide(r));
+    else if (dir === "right") grid = grid.map((r) => slide([...r].reverse()).reverse());
+    else if (dir === "up") {
       for (let c = 0; c < 4; c++) {
         const col = grid.map((r) => r[c]);
-        const sl = slide(col);
-        sl.forEach((v, r) => (grid[r][c] = v));
+        slide(col).forEach((v, r) => (grid[r][c] = v));
       }
     } else if (dir === "down") {
       for (let c = 0; c < 4; c++) {
         const col = grid.map((r) => r[c]).reverse();
-        const sl = slide(col).reverse();
-        sl.forEach((v, r) => (grid[r][c] = v));
+        slide(col)
+          .reverse()
+          .forEach((v, r) => (grid[r][c] = v));
       }
     }
     if (JSON.stringify(grid) !== prev) {
-      moved = true;
       addRandom(grid);
       if (score > best) {
         best = score;
+        localStorage.setItem(STORAGE_KEY, best);
         document.getElementById("best").textContent = best;
       }
     }
     render();
-    if (moved && gameWon) showOverlay("You Win! 🎉", "Score: " + score, "Play Again");
-    else if (moved && isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
+    if (gameWon) showOverlay("You Win! 🎉", "Score: " + score, "Keep Going");
+    else if (isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
   }
 
   function isGameOver() {
@@ -284,6 +383,7 @@ icon: "🔢"
     document.getElementById("overlay-msg").textContent = msg;
     document.getElementById("overlay-btn").textContent = btn;
     document.getElementById("overlay").style.display = "flex";
+    gameWon = false;
   }
 
   function render() {
@@ -324,8 +424,10 @@ icon: "🔢"
       if (!touchStart) return;
       const dx = e.changedTouches[0].clientX - touchStart.clientX;
       const dy = e.changedTouches[0].clientY - touchStart.clientY;
-      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "right" : "left");
-      else move(dy > 0 ? "down" : "up");
+      if (Math.abs(dx) > 20 || Math.abs(dy) > 20) {
+        if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? "right" : "left");
+        else move(dy > 0 ? "down" : "up");
+      }
       touchStart = null;
     },
     { passive: true }

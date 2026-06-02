@@ -21,26 +21,29 @@ icon: "⭕"
     font-weight: 600;
     color: #e2e8f0;
     min-height: 1.5rem;
+    text-align: center;
   }
   #board {
     display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
+    grid-template-columns: repeat(3, min(100px, 30vw));
+    grid-template-rows: repeat(3, min(100px, 30vw));
     gap: 8px;
   }
   .cell {
-    width: 100px;
-    height: 100px;
+    width: min(100px, 30vw);
+    height: min(100px, 30vw);
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: clamp(2rem, 8vw, 3rem);
     cursor: pointer;
     transition: background 0.15s;
     user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .cell:hover:not(.taken) {
     background: #273449;
@@ -62,6 +65,8 @@ icon: "⭕"
   .score-row {
     display: flex;
     gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .stat {
     text-align: center;
@@ -91,11 +96,75 @@ icon: "⭕"
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
   }
+  .info-section {
+    width: 100%;
+    max-width: 380px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
   <div class="score-row">
     <div class="stat">
@@ -114,14 +183,54 @@ icon: "⭕"
   <div id="status">Your turn (X)</div>
   <div id="board"></div>
   <button class="play-btn" onclick="resetGame()">New Game</button>
-  <p style="font-size: 0.75rem; color: #64748b">You are X · AI is O · AI uses minimax</p>
+  <p style="font-size: 0.75rem; color: #64748b">You are X · AI is O · Scores saved between sessions</p>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>Get three of your marks (X) in a row — horizontally, vertically, or diagonally — before the AI does.</p>
+      <h4>Controls</h4>
+      <ul>
+        <li><strong>Click / tap</strong> any empty square to place your X</li>
+        <li>The AI (O) responds automatically</li>
+      </ul>
+      <h4>About the AI</h4>
+      <p>
+        The AI uses the <strong>minimax algorithm</strong>, meaning it plays <em>perfectly</em>. You cannot beat it —
+        but you can draw with optimal play!
+      </p>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>Can I actually win?</h4>
+      <p>
+        No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw. Try
+        to find the optimal strategy!
+      </p>
+      <h4>Are scores saved?</h4>
+      <p>Yes — your wins, draws, and losses are saved in your browser and persist between sessions.</p>
+      <h4>What is minimax?</h4>
+      <p>
+        Minimax is a game-theory algorithm that evaluates all possible future moves and picks the one most likely to
+        win. It guarantees optimal play for both sides.
+      </p>
+    </div>
+  </details>
+</div>
+
 <script>
+  const STORAGE_KEY = "mini-tictactoe-scores";
   let board,
     human = "X",
     ai = "O",
     gameOver = false;
-  let scores = { X: 0, D: 0, O: 0 };
+  let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"X":0,"D":0,"O":0}');
+
   const WINS = [
     [0, 1, 2],
     [3, 4, 5],
@@ -132,6 +241,10 @@ icon: "⭕"
     [0, 4, 8],
     [2, 4, 6],
   ];
+
+  function saveScores() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+  }
 
   function resetGame() {
     board = Array(9).fill("");
@@ -145,9 +258,7 @@ icon: "⭕"
   }
 
   function checkWinner(b) {
-    for (const [a, c, d] of WINS) {
-      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
-    }
+    for (const [a, c, d] of WINS) if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
     if (b.every((c) => c)) return { winner: "D" };
     return null;
   }
@@ -155,19 +266,19 @@ icon: "⭕"
   function minimax(b, isMax) {
     const res = checkWinner(b);
     if (res) return res.winner === ai ? 10 : res.winner === human ? -10 : 0;
-    const scores = b
+    const s = b
       .map((c, i) =>
         c
           ? null
           : (() => {
               b[i] = isMax ? ai : human;
-              const s = minimax(b, !isMax);
+              const v = minimax(b, !isMax);
               b[i] = "";
-              return s;
+              return v;
             })()
       )
       .filter((x) => x !== null);
-    return isMax ? Math.max(...scores) : Math.min(...scores);
+    return isMax ? Math.max(...s) : Math.min(...s);
   }
 
   function bestMove() {
@@ -221,6 +332,7 @@ icon: "⭕"
       scores.D++;
       setStatus("It's a draw!");
     }
+    saveScores();
     document.getElementById("p-score").textContent = scores.X;
     document.getElementById("ai-score").textContent = scores.O;
     document.getElementById("d-score").textContent = scores.D;
@@ -239,6 +351,11 @@ icon: "⭕"
       boardEl.appendChild(div);
     });
   }
+
+  // Show saved scores on load
+  document.getElementById("p-score").textContent = scores.X;
+  document.getElementById("ai-score").textContent = scores.O;
+  document.getElementById("d-score").textContent = scores.D;
 
   resetGame();
 </script>

@@ -29,24 +29,24 @@ icon: "🟦"
   #side-panel {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    min-width: 120px;
+    gap: 0.75rem;
+    min-width: 110px;
   }
   .panel-box {
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 1rem;
+    padding: 0.75rem;
   }
   .panel-label {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #94a3b8;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
   }
   .panel-value {
-    font-size: 1.4rem;
+    font-size: 1.3rem;
     font-weight: bold;
     color: #e2e8f0;
     font-family: monospace;
@@ -79,6 +79,8 @@ icon: "🟦"
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
@@ -92,7 +94,129 @@ icon: "🟦"
   .canvas-wrapper {
     position: relative;
   }
+
+  /* Virtual D-pad for mobile */
+  #tetris-dpad {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.5rem;
+  }
+  .dpad-row {
+    display: flex;
+    gap: 4px;
+  }
+  .dpad-btn {
+    width: 56px;
+    height: 56px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+  }
+  .dpad-btn:active {
+    background: #334155;
+  }
+  .dpad-btn.wide {
+    width: 116px;
+    font-size: 0.85rem;
+  }
+
+  @media (max-width: 500px) {
+    #game-container {
+      flex-direction: column;
+      align-items: center;
+    }
+    #side-panel {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+      min-width: unset;
+      width: 100%;
+      max-width: 300px;
+    }
+    .panel-box {
+      min-width: 80px;
+      text-align: center;
+      padding: 0.5rem 0.75rem;
+    }
+    #tetris-dpad {
+      display: flex;
+    }
+  }
+
+  .info-section {
+    width: 100%;
+    max-width: 500px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
   <div id="game-container">
     <div class="canvas-wrapper">
@@ -117,6 +241,10 @@ icon: "🟦"
         <div class="panel-value" id="score-display">0</div>
       </div>
       <div class="panel-box">
+        <div class="panel-label">Best</div>
+        <div class="panel-value" id="best-display">0</div>
+      </div>
+      <div class="panel-box">
         <div class="panel-label">Lines</div>
         <div class="panel-value" id="lines-display">0</div>
       </div>
@@ -126,12 +254,77 @@ icon: "🟦"
       </div>
       <div class="panel-box">
         <div class="panel-label">Next</div>
-        <canvas id="next-piece" width="100" height="100"></canvas>
+        <canvas id="next-piece" width="100" height="80"></canvas>
       </div>
     </div>
   </div>
+
+  <div id="tetris-dpad">
+    <div class="dpad-row">
+      <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
+    </div>
+    <div class="dpad-row">
+      <button class="dpad-btn" onclick="tetrisKey('ArrowLeft')">◀</button>
+      <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
+      <button class="dpad-btn" onclick="tetrisKey('ArrowRight')">▶</button>
+    </div>
+    <div class="dpad-row">
+      <button class="dpad-btn wide" onclick="tetrisKey(' ')">⬇ Drop</button>
+    </div>
+  </div>
+
   <p class="controls-hint">← → Move &nbsp;·&nbsp; ↑ Rotate &nbsp;·&nbsp; ↓ Drop &nbsp;·&nbsp; Space Hard Drop</p>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>
+        Stack falling tetrominoes (shaped blocks) to form complete horizontal lines. Completed lines are cleared and you
+        earn points. The game ends when pieces reach the top.
+      </p>
+      <h4>Controls — Desktop</h4>
+      <ul>
+        <li><strong>← →</strong> — move piece left/right</li>
+        <li><strong>↑</strong> — rotate piece</li>
+        <li><strong>↓</strong> — soft drop (move down faster)</li>
+        <li><strong>Space</strong> — hard drop (instant drop)</li>
+      </ul>
+      <h4>Controls — Mobile</h4>
+      <ul>
+        <li>Use the <strong>D-pad buttons</strong> that appear below the board</li>
+        <li>↻ = rotate · ▼ = soft drop · ⬇ Drop = hard drop</li>
+      </ul>
+      <h4>Levels &amp; Scoring</h4>
+      <ul>
+        <li>Level increases every <strong>10 lines cleared</strong></li>
+        <li>Pieces fall faster each level</li>
+        <li>Clearing multiple lines at once earns bonus points</li>
+        <li>The ghost piece (transparent) shows where the piece will land</li>
+      </ul>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>What is the ghost piece?</h4>
+      <p>
+        The transparent/faded piece shows exactly where your current piece will land if you drop it now. Use it to plan
+        placements accurately.
+      </p>
+      <h4>How do I score more points?</h4>
+      <p>
+        Clear multiple lines at once — a Tetris (4 lines at once) gives the most points. Higher levels also multiply
+        your score.
+      </p>
+      <h4>Is my best score saved?</h4>
+      <p>Yes — your best score is saved in your browser's local storage.</p>
+    </div>
+  </details>
+</div>
+
 <script>
   const COLS = 10,
     ROWS = 20,
@@ -179,8 +372,11 @@ icon: "🟦"
   const ctx = canvas.getContext("2d");
   const nextCanvas = document.getElementById("next-piece");
   const nextCtx = nextCanvas.getContext("2d");
+  const STORAGE_KEY = "mini-tetris-best";
 
   let board, piece, nextPiece, score, lines, level, gameRunning, animFrame, dropInterval, lastDrop;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  document.getElementById("best-display").textContent = best;
 
   function createBoard() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
@@ -203,7 +399,7 @@ icon: "🟦"
   }
 
   function isValid(mat, ox, oy) {
-    for (let r = 0; r < mat.length; r++) {
+    for (let r = 0; r < mat.length; r++)
       for (let c = 0; c < mat[r].length; c++) {
         if (!mat[r][c]) continue;
         const nx = ox + c,
@@ -211,12 +407,11 @@ icon: "🟦"
         if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
         if (ny >= 0 && board[ny][nx]) return false;
       }
-    }
     return true;
   }
 
   function place() {
-    for (let r = 0; r < piece.matrix.length; r++) {
+    for (let r = 0; r < piece.matrix.length; r++)
       for (let c = 0; c < piece.matrix[r].length; c++) {
         if (piece.matrix[r][c]) {
           const ny = piece.y + r;
@@ -227,14 +422,11 @@ icon: "🟦"
           board[ny][piece.x + c] = piece.type;
         }
       }
-    }
     clearLines();
     piece = nextPiece;
     nextPiece = randomPiece();
     drawNext();
-    if (!isValid(piece.matrix, piece.x, piece.y)) {
-      endGame();
-    }
+    if (!isValid(piece.matrix, piece.x, piece.y)) endGame();
   }
 
   function clearLines() {
@@ -252,9 +444,15 @@ icon: "🟦"
       score += pts;
       lines += cleared;
       level = Math.floor(lines / 10) + 1;
+      dropInterval = Math.max(100, 800 - (level - 1) * 80);
       document.getElementById("score-display").textContent = score;
       document.getElementById("lines-display").textContent = lines;
       document.getElementById("level-display").textContent = level;
+      if (score > best) {
+        best = score;
+        localStorage.setItem(STORAGE_KEY, best);
+        document.getElementById("best-display").textContent = best;
+      }
     }
   }
 
@@ -269,11 +467,9 @@ icon: "🟦"
     let gy = piece.y;
     while (isValid(piece.matrix, piece.x, gy + 1)) gy++;
     ctx.globalAlpha = 0.2;
-    for (let r = 0; r < piece.matrix.length; r++) {
-      for (let c = 0; c < piece.matrix[r].length; c++) {
+    for (let r = 0; r < piece.matrix.length; r++)
+      for (let c = 0; c < piece.matrix[r].length; c++)
         if (piece.matrix[r][c]) drawBlock(ctx, piece.x + c, gy + r, piece.type);
-      }
-    }
     ctx.globalAlpha = 1;
   }
 
@@ -282,48 +478,33 @@ icon: "🟦"
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = 0.5;
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++) {
-        ctx.strokeRect(c * BLOCK, r * BLOCK, BLOCK, BLOCK);
-      }
-    for (let r = 0; r < ROWS; r++)
-      for (let c = 0; c < COLS; c++) {
-        if (board[r][c]) drawBlock(ctx, c, r, board[r][c]);
-      }
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) ctx.strokeRect(c * BLOCK, r * BLOCK, BLOCK, BLOCK);
+    for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if (board[r][c]) drawBlock(ctx, c, r, board[r][c]);
     if (gameRunning) {
       drawGhost();
-      for (let r = 0; r < piece.matrix.length; r++) {
-        for (let c = 0; c < piece.matrix[r].length; c++) {
+      for (let r = 0; r < piece.matrix.length; r++)
+        for (let c = 0; c < piece.matrix[r].length; c++)
           if (piece.matrix[r][c]) drawBlock(ctx, piece.x + c, piece.y + r, piece.type);
-        }
-      }
     }
   }
 
   function drawNext() {
     nextCtx.fillStyle = "#1e293b";
-    nextCtx.fillRect(0, 0, 100, 100);
-    const s = 20;
+    nextCtx.fillRect(0, 0, 100, 80);
+    const s = 18;
     const ox = Math.floor((5 - nextPiece.matrix[0].length) / 2);
-    const oy = Math.floor((5 - nextPiece.matrix.length) / 2);
+    const oy = Math.floor((4 - nextPiece.matrix.length) / 2);
     nextCtx.fillStyle = COLORS[nextPiece.type];
-    for (let r = 0; r < nextPiece.matrix.length; r++) {
-      for (let c = 0; c < nextPiece.matrix[r].length; c++) {
-        if (nextPiece.matrix[r][c]) {
-          nextCtx.fillRect((ox + c) * s + 1, (oy + r) * s + 1, s - 2, s - 2);
-        }
-      }
-    }
+    for (let r = 0; r < nextPiece.matrix.length; r++)
+      for (let c = 0; c < nextPiece.matrix[r].length; c++)
+        if (nextPiece.matrix[r][c]) nextCtx.fillRect((ox + c) * s + 4, (oy + r) * s + 4, s - 2, s - 2);
   }
 
   function gameLoop(ts) {
     if (!gameRunning) return;
     if (ts - lastDrop > dropInterval) {
-      if (isValid(piece.matrix, piece.x, piece.y + 1)) {
-        piece.y++;
-      } else {
-        place();
-      }
+      if (isValid(piece.matrix, piece.x, piece.y + 1)) piece.y++;
+      else place();
       lastDrop = ts;
     }
     draw();
@@ -337,6 +518,7 @@ icon: "🟦"
     score = 0;
     lines = 0;
     level = 1;
+    dropInterval = 800;
     document.getElementById("score-display").textContent = "0";
     document.getElementById("lines-display").textContent = "0";
     document.getElementById("level-display").textContent = "1";
@@ -344,7 +526,6 @@ icon: "🟦"
     nextPiece = randomPiece();
     drawNext();
     gameRunning = true;
-    dropInterval = 800;
     cancelAnimationFrame(animFrame);
     lastDrop = performance.now();
     animFrame = requestAnimationFrame(gameLoop);
@@ -353,20 +534,25 @@ icon: "🟦"
   function endGame() {
     gameRunning = false;
     cancelAnimationFrame(animFrame);
-    document.getElementById("final-score").textContent = `Score: ${score} · Lines: ${lines}`;
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+    }
+    document.getElementById("final-score").textContent = `Score: ${score} · Lines: ${lines} · Level: ${level}`;
     document.getElementById("gameover-screen").style.display = "flex";
   }
 
-  document.addEventListener("keydown", (e) => {
+  function tetrisKey(key) {
     if (!gameRunning) return;
-    if (e.key === "ArrowLeft") {
+    if (key === "ArrowLeft") {
       if (isValid(piece.matrix, piece.x - 1, piece.y)) piece.x--;
-    } else if (e.key === "ArrowRight") {
+    } else if (key === "ArrowRight") {
       if (isValid(piece.matrix, piece.x + 1, piece.y)) piece.x++;
-    } else if (e.key === "ArrowDown") {
+    } else if (key === "ArrowDown") {
       if (isValid(piece.matrix, piece.x, piece.y + 1)) piece.y++;
       else place();
-    } else if (e.key === "ArrowUp") {
+    } else if (key === "ArrowUp") {
       const rot = rotate(piece.matrix);
       if (isValid(rot, piece.x, piece.y)) piece.matrix = rot;
       else if (isValid(rot, piece.x + 1, piece.y)) {
@@ -376,12 +562,19 @@ icon: "🟦"
         piece.matrix = rot;
         piece.x--;
       }
-    } else if (e.key === " ") {
-      e.preventDefault();
+    } else if (key === " ") {
       while (isValid(piece.matrix, piece.x, piece.y + 1)) piece.y++;
       place();
     }
     draw();
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (!gameRunning) return;
+    if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", " "].includes(e.key)) {
+      e.preventDefault();
+      tetrisKey(e.key);
+    }
   });
 
   draw();

@@ -13,19 +13,21 @@ icon: "🃏"
     align-items: center;
     justify-content: center;
     min-height: calc(100vh - 60px);
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding: 1rem;
   }
   .score-row {
     display: flex;
-    gap: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .stat {
     text-align: center;
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 0.5rem 1.2rem;
+    padding: 0.5rem 1rem;
   }
   .stat-label {
     font-size: 0.65rem;
@@ -34,17 +36,37 @@ icon: "🃏"
     color: #94a3b8;
   }
   .stat-value {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #e2e8f0;
     font-family: monospace;
   }
+  .difficulty-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .diff-btn {
+    padding: 0.3rem 0.9rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .diff-btn.active,
+  .diff-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
   #grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+    gap: 8px;
     width: 100%;
-    max-width: 380px;
+    max-width: min(400px, calc(100vw - 2rem));
   }
   .card {
     aspect-ratio: 1;
@@ -54,12 +76,16 @@ icon: "🃏"
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
     cursor: pointer;
     transition:
       transform 0.2s ease,
       border-color 0.2s;
     user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card span {
+    font-size: clamp(1.2rem, 4vw, 2rem);
   }
   .card:not(.flipped):not(.matched) {
     background: linear-gradient(135deg, #1e293b, #273449);
@@ -100,16 +126,89 @@ icon: "🃏"
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
   }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
+  <div class="difficulty-row">
+    <button class="diff-btn active" id="d-easy" onclick="setDiff('easy')">Easy 4×4</button>
+    <button class="diff-btn" id="d-medium" onclick="setDiff('medium')">Medium 5×4</button>
+    <button class="diff-btn" id="d-hard" onclick="setDiff('hard')">Hard 6×4</button>
+  </div>
   <div class="score-row">
     <div class="stat">
       <div class="stat-label">Moves</div>
       <div class="stat-value" id="moves">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Best</div>
+      <div class="stat-value" id="best-moves">—</div>
     </div>
     <div class="stat">
       <div class="stat-label">Matched</div>
@@ -128,15 +227,105 @@ icon: "🃏"
   </div>
   <button class="play-btn" onclick="newGame()">New Game</button>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>
+        Flip two cards at a time to find matching emoji pairs. Match all pairs to win! Try to do it in the fewest moves
+        possible.
+      </p>
+      <h4>Difficulty</h4>
+      <ul>
+        <li><strong>Easy</strong> — 4×4 grid, 8 pairs (16 cards)</li>
+        <li><strong>Medium</strong> — 5×4 grid, 10 pairs (20 cards)</li>
+        <li><strong>Hard</strong> — 6×4 grid, 12 pairs (24 cards)</li>
+      </ul>
+      <h4>Scoring</h4>
+      <ul>
+        <li>Each pair of flips = 1 move</li>
+        <li>Fewer moves = better score</li>
+        <li>Your best (lowest) move count per difficulty is saved</li>
+      </ul>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>What happens when two cards don't match?</h4>
+      <p>Both cards flip face-down again after a short pause. Try to memorise their positions!</p>
+      <h4>Is my best score saved?</h4>
+      <p>Yes — the fewest moves you've used to complete each difficulty is saved in your browser.</p>
+      <h4>Can I play on mobile?</h4>
+      <p>Yes! Just tap the cards to flip them. The grid automatically adjusts to your screen size.</p>
+    </div>
+  </details>
+</div>
+
 <script>
-  const EMOJIS = ["🐶", "🐱", "🐭", "🐹", "🐰", "🦊", "🐻", "🐼", "🐨", "🐯", "🦁", "🐮", "🐷", "🐸", "🐵", "🐔"];
+  const EMOJIS = [
+    "🐶",
+    "🐱",
+    "🐭",
+    "🐹",
+    "🐰",
+    "🦊",
+    "🐻",
+    "🐼",
+    "🐨",
+    "🐯",
+    "🦁",
+    "🐮",
+    "🐷",
+    "🐸",
+    "🐵",
+    "🐔",
+    "🐧",
+    "🐦",
+    "🦋",
+    "🐝",
+    "🦄",
+    "🐙",
+  ];
+  const DIFFS = {
+    easy: { cols: 4, pairs: 8 },
+    medium: { cols: 5, pairs: 10 },
+    hard: { cols: 6, pairs: 12 },
+  };
+
+  let diff = "easy";
   let cards,
     flipped = [],
-    matchCount = 0,
-    moves = 0,
-    locked = false,
+    matchCount,
+    moves,
+    locked,
     startTime,
     timerInterval;
+
+  function getBestKey(d) {
+    return "mini-memory-best-" + d;
+  }
+  function getBest(d) {
+    const v = localStorage.getItem(getBestKey(d));
+    return v ? parseInt(v, 10) : null;
+  }
+  function setBest(d, v) {
+    localStorage.setItem(getBestKey(d), v);
+  }
+
+  function showBest() {
+    const b = getBest(diff);
+    document.getElementById("best-moves").textContent = b !== null ? b : "—";
+  }
+
+  function setDiff(d) {
+    diff = d;
+    document.querySelectorAll(".diff-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("d-" + d).classList.add("active");
+    newGame();
+  }
 
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
@@ -147,20 +336,24 @@ icon: "🃏"
   }
 
   function newGame() {
-    const pairs = shuffle([...EMOJIS]).slice(0, 8);
+    const cfg = DIFFS[diff];
+    const pairs = shuffle([...EMOJIS]).slice(0, cfg.pairs);
     cards = shuffle([...pairs, ...pairs].map((e, i) => ({ id: i, emoji: e, flipped: false, matched: false })));
     flipped = [];
     matchCount = 0;
     moves = 0;
     locked = false;
     document.getElementById("moves").textContent = "0";
-    document.getElementById("matched").textContent = "0/8";
+    document.getElementById("matched").textContent = `0/${cfg.pairs}`;
     document.getElementById("win-msg").style.display = "none";
+    showBest();
     clearInterval(timerInterval);
     startTime = Date.now();
     timerInterval = setInterval(() => {
       document.getElementById("timer").textContent = Math.floor((Date.now() - startTime) / 1000) + "s";
     }, 1000);
+    const grid = document.getElementById("grid");
+    grid.style.gridTemplateColumns = `repeat(${cfg.cols}, 1fr)`;
     render();
   }
 
@@ -174,16 +367,24 @@ icon: "🃏"
       moves++;
       document.getElementById("moves").textContent = moves;
       const [a, b] = flipped;
+      const cfg = DIFFS[diff];
       if (cards[a].emoji === cards[b].emoji) {
         cards[a].matched = cards[b].matched = true;
         matchCount++;
-        document.getElementById("matched").textContent = matchCount + "/8";
+        document.getElementById("matched").textContent = matchCount + "/" + cfg.pairs;
         flipped = [];
         locked = false;
-        if (matchCount === 8) {
+        if (matchCount === cfg.pairs) {
           clearInterval(timerInterval);
           const t = Math.floor((Date.now() - startTime) / 1000);
-          document.getElementById("win-stats").textContent = `${moves} moves · ${t} seconds`;
+          const prev = getBest(diff);
+          if (prev === null || moves < prev) {
+            setBest(diff, moves);
+            showBest();
+          }
+          const isNew = prev === null || moves < prev;
+          document.getElementById("win-stats").textContent =
+            `${moves} moves · ${t}s` + (isNew ? " · 🏆 New best!" : "");
           document.getElementById("win-msg").style.display = "block";
         }
       } else {
