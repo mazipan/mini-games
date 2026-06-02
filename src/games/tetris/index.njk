@@ -256,7 +256,7 @@ icon: "🟦"
   </div>
 
   <div id="tetris-dpad">
-    <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
+    <button class="dpad-btn" id="dpad-down">▼</button>
     <div class="dpad-gap"></div>
     <button class="dpad-btn" onclick="tetrisKey('ArrowLeft')">◀</button>
     <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
@@ -548,8 +548,40 @@ icon: "🟦"
     animFrame = requestAnimationFrame(gameLoop);
   }
 
+  let dropHoldTimer = null;
+  function startDropHold() {
+    if (!gameRunning) return;
+    tetrisKey("ArrowDown");
+    dropHoldTimer = setInterval(() => {
+      if (!gameRunning) {
+        stopDropHold();
+        return;
+      }
+      tetrisKey("ArrowDown");
+    }, 60);
+  }
+  function stopDropHold() {
+    clearInterval(dropHoldTimer);
+    dropHoldTimer = null;
+  }
+  const dpadDown = document.getElementById("dpad-down");
+  dpadDown.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      startDropHold();
+    },
+    { passive: false }
+  );
+  dpadDown.addEventListener("touchend", stopDropHold);
+  dpadDown.addEventListener("touchcancel", stopDropHold);
+  dpadDown.addEventListener("mousedown", startDropHold);
+  dpadDown.addEventListener("mouseup", stopDropHold);
+  dpadDown.addEventListener("mouseleave", stopDropHold);
+
   function endGame() {
     gameRunning = false;
+    stopDropHold();
     cancelAnimationFrame(animFrame);
     if (score > best) {
       best = score;
