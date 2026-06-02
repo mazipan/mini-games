@@ -146,8 +146,8 @@ icon: "🟦"
       min-width: 48px;
     }
     #next-piece {
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
     }
   }
 
@@ -234,7 +234,7 @@ icon: "🟦"
     </div>
     <div class="stat-box next-box">
       <div class="stat-label">Next</div>
-      <canvas id="next-piece" width="96" height="96"></canvas>
+      <canvas id="next-piece" width="60" height="60"></canvas>
     </div>
   </div>
 
@@ -506,7 +506,7 @@ icon: "🟦"
   }
 
   function drawNext() {
-    const s = 16;
+    const s = Math.floor(nextCanvas.width / 5);
     nextCtx.fillStyle = "#1e293b";
     nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     const ox = Math.floor((nextCanvas.width / s - nextPiece.matrix[0].length) / 2);
