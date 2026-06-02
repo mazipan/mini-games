@@ -105,14 +105,10 @@ icon: "🟦"
   /* Virtual D-pad for mobile */
   #tetris-dpad {
     display: none;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     gap: 4px;
     margin-top: 0.25rem;
-  }
-  .dpad-row {
-    display: flex;
-    gap: 4px;
   }
   .dpad-btn {
     width: 60px;
@@ -133,9 +129,9 @@ icon: "🟦"
   .dpad-btn:active {
     background: #334155;
   }
-  .dpad-btn.wide {
-    width: 128px;
-    font-size: 0.9rem;
+  .dpad-gap {
+    width: 16px;
+    flex-shrink: 0;
   }
 
   @media (max-width: 500px) {
@@ -249,20 +245,14 @@ icon: "🟦"
   </div>
 
   <div id="tetris-dpad">
-    <div class="dpad-row">
-      <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
-    </div>
-    <div class="dpad-row">
-      <button class="dpad-btn" onclick="tetrisKey('ArrowLeft')">◀</button>
-      <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
-      <button class="dpad-btn" onclick="tetrisKey('ArrowRight')">▶</button>
-    </div>
-    <div class="dpad-row">
-      <button class="dpad-btn wide" onclick="tetrisKey(' ')">⬇ Hard Drop</button>
-    </div>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
+    <div class="dpad-gap"></div>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowLeft')">◀</button>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowRight')">▶</button>
   </div>
 
-  <p class="controls-hint">← → Move &nbsp;·&nbsp; ↑ Rotate &nbsp;·&nbsp; ↓ Drop &nbsp;·&nbsp; Space Hard Drop</p>
+  <p class="controls-hint">← → Move &nbsp;·&nbsp; ↑ Rotate &nbsp;·&nbsp; ↓ Drop</p>
 </div>
 
 <div class="info-section">
