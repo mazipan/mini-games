@@ -89,3 +89,4 @@ src/
 - Use DOM manipulation for grid-based games (2048, Minesweeper, Memory Match)
 - Commit types include a custom `game:` type for adding new games
 - All code must be formatted with Prettier before committing (enforced via husky)
+- **Always add a `launchConfetti()` reward animation** when a player wins a game or advances a level. Paste the standard implementation (fixed canvas overlay, 80 particles, 3s duration, pointer-events:none) directly into the game's `<script>` block since each game is self-contained. Call it at: game-win moments (all pairs matched, 2048 tile reached, board cleared, match won) and level-advance moments (Tetris line-clear level up, Breakout level clear, Snake level up).

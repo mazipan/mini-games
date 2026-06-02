@@ -1,7 +1,7 @@
 ---
 layout: layouts/game.njk
 title: Tic-Tac-Toe
-description: Outsmart your opponent in the classic 3×3 grid game. Play vs AI.
+description: Outsmart your opponent in the classic 3×3 grid game. Play vs AI or a friend.
 category: board
 icon: "⭕"
 ---
@@ -21,26 +21,29 @@ icon: "⭕"
     font-weight: 600;
     color: #e2e8f0;
     min-height: 1.5rem;
+    text-align: center;
   }
   #board {
     display: grid;
-    grid-template-columns: repeat(3, 100px);
-    grid-template-rows: repeat(3, 100px);
+    grid-template-columns: repeat(3, min(100px, 30vw));
+    grid-template-rows: repeat(3, min(100px, 30vw));
     gap: 8px;
   }
   .cell {
-    width: 100px;
-    height: 100px;
+    width: min(100px, 30vw);
+    height: min(100px, 30vw);
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: clamp(2rem, 8vw, 3rem);
     cursor: pointer;
     transition: background 0.15s;
     user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .cell:hover:not(.taken) {
     background: #273449;
@@ -62,6 +65,8 @@ icon: "⭕"
   .score-row {
     display: flex;
     gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .stat {
     text-align: center;
@@ -82,6 +87,28 @@ icon: "⭕"
     color: #e2e8f0;
     font-family: monospace;
   }
+  .mode-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-btn.active,
+  .mode-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
   .play-btn {
     padding: 0.5rem 1.5rem;
     background: #7c3aed;
@@ -91,15 +118,83 @@ icon: "⭕"
     font-size: 0.95rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
   }
+  .info-section {
+    width: 100%;
+    max-width: 380px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-machine" onclick="setMode('machine')">VS Machine</button>
+    <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
+  </div>
   <div class="score-row">
     <div class="stat">
-      <div class="stat-label">You (X)</div>
+      <div class="stat-label" id="x-label">You (X)</div>
       <div class="stat-value" id="p-score">0</div>
     </div>
     <div class="stat">
@@ -107,21 +202,104 @@ icon: "⭕"
       <div class="stat-value" id="d-score">0</div>
     </div>
     <div class="stat">
-      <div class="stat-label">AI (O)</div>
+      <div class="stat-label" id="o-label">AI (O)</div>
       <div class="stat-value" id="ai-score">0</div>
     </div>
   </div>
   <div id="status">Your turn (X)</div>
   <div id="board"></div>
   <button class="play-btn" onclick="resetGame()">New Game</button>
-  <p style="font-size: 0.75rem; color: #64748b">You are X · AI is O · AI uses minimax</p>
+  <p id="mode-hint" style="font-size: 0.75rem; color: #64748b">You are X · AI is O · Scores saved between sessions</p>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>Get three of your marks in a row — horizontally, vertically, or diagonally — before your opponent does.</p>
+      <h4>VS Machine</h4>
+      <p>
+        Play as X against the AI (O). The AI uses the <strong>minimax algorithm</strong> and plays perfectly — your best
+        result is a draw!
+      </p>
+      <h4>VS Friend</h4>
+      <p>Two players take turns on the same device. X goes first, then O, alternating each turn.</p>
+      <h4>Controls</h4>
+      <ul>
+        <li><strong>Click / tap</strong> any empty square to place your mark</li>
+      </ul>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>Can I beat the AI?</h4>
+      <p>
+        No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw.
+      </p>
+      <h4>Are scores saved?</h4>
+      <p>Yes — wins, draws, and losses are saved in your browser and persist between sessions.</p>
+      <h4>What is minimax?</h4>
+      <p>
+        Minimax is a game-theory algorithm that evaluates all possible future moves and picks the one most likely to
+        win. It guarantees optimal play.
+      </p>
+    </div>
+  </details>
+</div>
+
 <script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 1500) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  const STORAGE_KEY = "mini-tictactoe-scores";
   let board,
     human = "X",
     ai = "O",
-    gameOver = false;
-  let scores = { X: 0, D: 0, O: 0 };
+    gameOver = false,
+    currentTurn = "X",
+    mode = "machine";
+  let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"X":0,"D":0,"O":0}');
+
   const WINS = [
     [0, 1, 2],
     [3, 4, 5],
@@ -133,10 +311,31 @@ icon: "⭕"
     [2, 4, 6],
   ];
 
+  function saveScores() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("mode-" + m).classList.add("active");
+    if (m === "machine") {
+      document.getElementById("x-label").textContent = "You (X)";
+      document.getElementById("o-label").textContent = "AI (O)";
+      document.getElementById("mode-hint").textContent = "You are X · AI is O · Scores saved between sessions";
+    } else {
+      document.getElementById("x-label").textContent = "Player X";
+      document.getElementById("o-label").textContent = "Player O";
+      document.getElementById("mode-hint").textContent = "X goes first · Scores saved between sessions";
+    }
+    resetGame();
+  }
+
   function resetGame() {
     board = Array(9).fill("");
     gameOver = false;
-    setStatus("Your turn (X)");
+    currentTurn = "X";
+    setStatus(mode === "machine" ? "Your turn (X)" : "Player X's turn");
     renderBoard();
   }
 
@@ -145,9 +344,7 @@ icon: "⭕"
   }
 
   function checkWinner(b) {
-    for (const [a, c, d] of WINS) {
-      if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
-    }
+    for (const [a, c, d] of WINS) if (b[a] && b[a] === b[c] && b[a] === b[d]) return { winner: b[a], line: [a, c, d] };
     if (b.every((c) => c)) return { winner: "D" };
     return null;
   }
@@ -155,19 +352,19 @@ icon: "⭕"
   function minimax(b, isMax) {
     const res = checkWinner(b);
     if (res) return res.winner === ai ? 10 : res.winner === human ? -10 : 0;
-    const scores = b
+    const s = b
       .map((c, i) =>
         c
           ? null
           : (() => {
               b[i] = isMax ? ai : human;
-              const s = minimax(b, !isMax);
+              const v = minimax(b, !isMax);
               b[i] = "";
-              return s;
+              return v;
             })()
       )
       .filter((x) => x !== null);
-    return isMax ? Math.max(...scores) : Math.min(...scores);
+    return isMax ? Math.max(...s) : Math.min(...s);
   }
 
   function bestMove() {
@@ -189,38 +386,54 @@ icon: "⭕"
 
   function play(i) {
     if (gameOver || board[i]) return;
-    board[i] = human;
-    const res = checkWinner(board);
-    if (res) {
-      finish(res);
-      return;
-    }
-    setStatus("AI is thinking...");
-    renderBoard();
-    setTimeout(() => {
-      board[bestMove()] = ai;
-      const r2 = checkWinner(board);
-      if (r2) {
-        finish(r2);
+
+    if (mode === "machine") {
+      board[i] = human;
+      const res = checkWinner(board);
+      if (res) {
+        finish(res);
         return;
       }
-      setStatus("Your turn (X)");
+      setStatus("AI is thinking...");
       renderBoard();
-    }, 200);
+      setTimeout(() => {
+        board[bestMove()] = ai;
+        const r2 = checkWinner(board);
+        if (r2) {
+          finish(r2);
+          return;
+        }
+        setStatus("Your turn (X)");
+        renderBoard();
+      }, 200);
+    } else {
+      board[i] = currentTurn;
+      const res = checkWinner(board);
+      if (res) {
+        finish(res);
+        return;
+      }
+      currentTurn = currentTurn === "X" ? "O" : "X";
+      setStatus("Player " + currentTurn + "'s turn");
+      renderBoard();
+    }
   }
 
   function finish(res) {
     gameOver = true;
     if (res.winner === "X") {
       scores.X++;
-      setStatus("You win! 🎉");
+      setStatus(mode === "machine" ? "You win! 🎉" : "Player X wins! 🎉");
+      launchConfetti();
     } else if (res.winner === "O") {
       scores.O++;
-      setStatus("AI wins! 🤖");
+      setStatus(mode === "machine" ? "AI wins! 🤖" : "Player O wins! 🎉");
+      if (mode === "player") launchConfetti();
     } else {
       scores.D++;
       setStatus("It's a draw!");
     }
+    saveScores();
     document.getElementById("p-score").textContent = scores.X;
     document.getElementById("ai-score").textContent = scores.O;
     document.getElementById("d-score").textContent = scores.D;
@@ -239,6 +452,10 @@ icon: "⭕"
       boardEl.appendChild(div);
     });
   }
+
+  document.getElementById("p-score").textContent = scores.X;
+  document.getElementById("ai-score").textContent = scores.O;
+  document.getElementById("d-score").textContent = scores.D;
 
   resetGame();
 </script>

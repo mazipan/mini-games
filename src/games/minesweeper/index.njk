@@ -13,13 +13,15 @@ icon: "💣"
     align-items: center;
     justify-content: center;
     min-height: calc(100vh - 60px);
-    gap: 1.5rem;
+    gap: 1.25rem;
     padding: 1rem;
   }
   .score-row {
     display: flex;
     gap: 1rem;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .stat {
     text-align: center;
@@ -45,19 +47,21 @@ icon: "💣"
     gap: 2px;
   }
   .cell {
-    width: 32px;
-    height: 32px;
+    width: var(--cell-size, 32px);
+    height: var(--cell-size, 32px);
     background: #1e293b;
     border: 1px solid #334155;
-    border-radius: 4px;
+    border-radius: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: bold;
     cursor: pointer;
     transition: background 0.1s;
     user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .cell:not(.revealed):not(.flagged):hover {
     background: #273449;
@@ -109,6 +113,7 @@ icon: "💣"
     font-weight: 600;
     color: #e2e8f0;
     min-height: 1.5rem;
+    text-align: center;
   }
   .play-btn {
     padding: 0.4rem 1rem;
@@ -119,6 +124,8 @@ icon: "💣"
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
@@ -126,6 +133,8 @@ icon: "💣"
   .difficulty-row {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .diff-btn {
     padding: 0.3rem 0.8rem;
@@ -135,6 +144,7 @@ icon: "💣"
     border-radius: 6px;
     font-size: 0.8rem;
     cursor: pointer;
+    touch-action: manipulation;
   }
   .diff-btn.active,
   .diff-btn:hover {
@@ -142,7 +152,78 @@ icon: "💣"
     color: white;
     border-color: #7c3aed;
   }
+  .flag-hint {
+    font-size: 0.7rem;
+    color: #475569;
+    text-align: center;
+  }
+  #board-scroll {
+    overflow-x: auto;
+    max-width: calc(100vw - 2rem);
+  }
+  .info-section {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
 </style>
+
 <div id="game-wrapper">
   <div class="difficulty-row">
     <button class="diff-btn active" id="d-easy" onclick="setDiff('easy')">Easy 9×9</button>
@@ -158,11 +239,59 @@ icon: "💣"
       <div class="stat-label">Time</div>
       <div class="stat-value" id="timer">0s</div>
     </div>
+    <div class="stat">
+      <div class="stat-label">Best Time</div>
+      <div class="stat-value" id="best-time">—</div>
+    </div>
     <button class="play-btn" onclick="newGame()">New Game</button>
   </div>
   <div id="status">Left-click to reveal · Right-click to flag</div>
-  <div id="board"></div>
+  <p class="flag-hint">Mobile: tap to reveal · long-press to flag</p>
+  <div id="board-scroll"><div id="board"></div></div>
 </div>
+
+<div class="info-section">
+  <details class="info-details">
+    <summary>How to Play</summary>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>
+        Reveal all squares that don't contain mines. The number in a revealed square tells you how many mines are in the
+        8 surrounding squares.
+      </p>
+      <h4>Controls — Desktop</h4>
+      <ul>
+        <li><strong>Left-click</strong> — reveal a square</li>
+        <li><strong>Right-click</strong> — place/remove a flag 🚩</li>
+      </ul>
+      <h4>Controls — Mobile</h4>
+      <ul>
+        <li><strong>Tap</strong> — reveal a square</li>
+        <li><strong>Long-press</strong> — place/remove a flag 🚩</li>
+      </ul>
+      <h4>Tips</h4>
+      <ul>
+        <li>The first click is always safe — mines are placed after</li>
+        <li>Clicking an empty square (0) automatically reveals neighbours</li>
+        <li>Use flags to mark squares you're sure are mines</li>
+      </ul>
+    </div>
+  </details>
+  <details class="info-details">
+    <summary>FAQ</summary>
+    <div class="info-body">
+      <h4>Is the first click always safe?</h4>
+      <p>Yes! Mines are placed after your first click, ensuring you can never hit one immediately.</p>
+      <h4>Is my best time saved?</h4>
+      <p>Yes — best completion time per difficulty is saved in your browser's local storage.</p>
+      <h4>What do the numbers mean?</h4>
+      <p>
+        A number shows how many mines are among the 8 squares surrounding it. Use this to deduce which squares are safe.
+      </p>
+    </div>
+  </details>
+</div>
+
 <script>
   const DIFFS = {
     easy: { cols: 9, rows: 9, mines: 10 },
@@ -178,13 +307,37 @@ icon: "💣"
     flagged,
     gameState = "idle",
     timerInterval,
-    startTime;
+    startTime,
+    timerSecs = 0;
+
+  function getBestKey(d) {
+    return "mini-minesweeper-best-" + d;
+  }
+  function getBest(d) {
+    const v = localStorage.getItem(getBestKey(d));
+    return v ? parseInt(v, 10) : null;
+  }
+  function setBest(d, v) {
+    localStorage.setItem(getBestKey(d), v);
+  }
+
+  function showBest() {
+    const b = getBest(diff);
+    document.getElementById("best-time").textContent = b !== null ? b + "s" : "—";
+  }
 
   function setDiff(d) {
     diff = d;
     document.querySelectorAll(".diff-btn").forEach((b) => b.classList.remove("active"));
     document.getElementById("d-" + d).classList.add("active");
     newGame();
+  }
+
+  function getCellSize() {
+    const cfg = DIFFS[diff];
+    const available = window.innerWidth - 32;
+    const maxCell = Math.floor((available - (cfg.cols - 1) * 2) / cfg.cols);
+    return Math.min(32, Math.max(18, maxCell));
   }
 
   function newGame() {
@@ -196,11 +349,15 @@ icon: "💣"
     revealed = Array.from({ length: rows }, () => Array(cols).fill(false));
     flagged = Array.from({ length: rows }, () => Array(cols).fill(false));
     gameState = "idle";
+    timerSecs = 0;
     clearInterval(timerInterval);
     document.getElementById("timer").textContent = "0s";
     document.getElementById("mine-count").textContent = mineCount;
     document.getElementById("status").textContent = "Left-click to reveal · Right-click to flag";
-    document.getElementById("board").style.gridTemplateColumns = `repeat(${cols},32px)`;
+    const cs = getCellSize();
+    document.documentElement.style.setProperty("--cell-size", cs + "px");
+    document.getElementById("board").style.gridTemplateColumns = `repeat(${cols},${cs}px)`;
+    showBest();
     render();
   }
 
@@ -239,10 +396,10 @@ icon: "💣"
       placeMines(r, c);
       gameState = "playing";
       startTime = Date.now();
-      timerInterval = setInterval(
-        () => (document.getElementById("timer").textContent = Math.floor((Date.now() - startTime) / 1000) + "s"),
-        1000
-      );
+      timerInterval = setInterval(() => {
+        timerSecs = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById("timer").textContent = timerSecs + "s";
+      }, 1000);
     }
     if (grid[r][c] === -1) {
       revealed[r][c] = true;
@@ -261,7 +418,13 @@ icon: "💣"
     if (revCount >= safe) {
       gameState = "win";
       clearInterval(timerInterval);
-      document.getElementById("status").textContent = "🎉 You won!";
+      const t = Math.floor((Date.now() - startTime) / 1000);
+      const prev = getBest(diff);
+      if (prev === null || t < prev) {
+        setBest(diff, t);
+        showBest();
+      }
+      document.getElementById("status").textContent = `🎉 You won in ${t}s!`;
     }
     render();
   }
@@ -273,6 +436,22 @@ icon: "💣"
     const f = flagged.flat().filter(Boolean).length;
     document.getElementById("mine-count").textContent = mineCount - f;
     render();
+  }
+
+  // Long-press for mobile flagging
+  let longPressTimer = null;
+  function onTouchStart(e, r, c) {
+    longPressTimer = setTimeout(() => {
+      longPressTimer = null;
+      flag(e, r, c);
+      render();
+    }, 500);
+  }
+  function onTouchEnd(e, r, c) {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
   }
 
   function render() {
@@ -297,6 +476,8 @@ icon: "💣"
         }
         cell.onclick = () => click(r, c);
         cell.oncontextmenu = (e) => flag(e, r, c);
+        cell.addEventListener("touchstart", (e) => onTouchStart(e, r, c), { passive: true });
+        cell.addEventListener("touchend", (e) => onTouchEnd(e, r, c), { passive: true });
         board.appendChild(cell);
       }
   }
