@@ -138,6 +138,17 @@ icon: "🟦"
     #tetris-dpad {
       display: flex;
     }
+    #stats-row {
+      gap: 5px;
+    }
+    .stat-box {
+      padding: 0.35rem 0.4rem;
+      min-width: 48px;
+    }
+    #next-piece {
+      width: 44px;
+      height: 44px;
+    }
   }
 
   .info-section {
@@ -245,10 +256,10 @@ icon: "🟦"
   </div>
 
   <div id="tetris-dpad">
-    <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
     <div class="dpad-gap"></div>
     <button class="dpad-btn" onclick="tetrisKey('ArrowLeft')">◀</button>
-    <button class="dpad-btn" onclick="tetrisKey('ArrowDown')">▼</button>
+    <button class="dpad-btn" onclick="tetrisKey('ArrowUp')" title="Rotate">↻</button>
     <button class="dpad-btn" onclick="tetrisKey('ArrowRight')">▶</button>
   </div>
 
@@ -400,11 +411,39 @@ icon: "🟦"
           board[ny][piece.x + c] = piece.type;
         }
       }
-    clearLines();
-    piece = nextPiece;
-    nextPiece = randomPiece();
-    drawNext();
-    if (!isValid(piece.matrix, piece.x, piece.y)) endGame();
+
+    const fullRows = [];
+    for (let r = 0; r < ROWS; r++) if (board[r].every((c) => c !== 0)) fullRows.push(r);
+
+    const proceed = () => {
+      clearLines();
+      piece = nextPiece;
+      nextPiece = randomPiece();
+      drawNext();
+      if (!isValid(piece.matrix, piece.x, piece.y)) {
+        endGame();
+        return;
+      }
+      if (gameRunning) {
+        lastDrop = performance.now();
+        animFrame = requestAnimationFrame(gameLoop);
+      }
+    };
+
+    if (fullRows.length > 0) {
+      cancelAnimationFrame(animFrame);
+      let tick = 0;
+      const flash = () => {
+        draw();
+        ctx.fillStyle = tick % 2 === 0 ? "rgba(255,255,255,0.85)" : "rgba(167,139,250,0.5)";
+        fullRows.forEach((r) => ctx.fillRect(0, r * BLOCK, COLS * BLOCK, BLOCK));
+        if (++tick < 6) setTimeout(flash, 55);
+        else proceed();
+      };
+      flash();
+    } else {
+      proceed();
+    }
   }
 
   function clearLines() {
