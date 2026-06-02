@@ -13,44 +13,54 @@ icon: "🟦"
     align-items: center;
     justify-content: center;
     min-height: calc(100vh - 60px);
-    gap: 1rem;
+    gap: 0.75rem;
     padding: 1rem;
-  }
-  #game-container {
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
   }
   canvas {
     display: block;
     border: 2px solid #4c1d95;
     border-radius: 4px;
   }
-  #side-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    min-width: 110px;
+  .canvas-wrapper {
+    position: relative;
   }
-  .panel-box {
+
+  /* Stats row at top */
+  #stats-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 500px;
+  }
+  .stat-box {
+    text-align: center;
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 8px;
-    padding: 0.75rem;
+    padding: 0.5rem 0.9rem;
+    min-width: 68px;
   }
-  .panel-label {
-    font-size: 0.7rem;
+  .stat-label {
+    font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #94a3b8;
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.2rem;
   }
-  .panel-value {
-    font-size: 1.3rem;
+  .stat-value {
+    font-size: 1.2rem;
     font-weight: bold;
     color: #e2e8f0;
     font-family: monospace;
   }
+  .next-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
   #start-screen,
   #gameover-screen {
     position: absolute;
@@ -91,9 +101,6 @@ icon: "🟦"
     text-align: center;
     line-height: 1.6;
   }
-  .canvas-wrapper {
-    position: relative;
-  }
 
   /* Virtual D-pad for mobile */
   #tetris-dpad {
@@ -101,20 +108,20 @@ icon: "🟦"
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    margin-top: 0.5rem;
+    margin-top: 0.25rem;
   }
   .dpad-row {
     display: flex;
     gap: 4px;
   }
   .dpad-btn {
-    width: 56px;
-    height: 56px;
+    width: 60px;
+    height: 60px;
     background: #1e293b;
     border: 1px solid #334155;
     border-radius: 8px;
     color: white;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -127,28 +134,11 @@ icon: "🟦"
     background: #334155;
   }
   .dpad-btn.wide {
-    width: 116px;
-    font-size: 0.85rem;
+    width: 128px;
+    font-size: 0.9rem;
   }
 
   @media (max-width: 500px) {
-    #game-container {
-      flex-direction: column;
-      align-items: center;
-    }
-    #side-panel {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: center;
-      min-width: unset;
-      width: 100%;
-      max-width: 300px;
-    }
-    .panel-box {
-      min-width: 80px;
-      text-align: center;
-      padding: 0.5rem 0.75rem;
-    }
     #tetris-dpad {
       display: flex;
     }
@@ -218,44 +208,43 @@ icon: "🟦"
 </style>
 
 <div id="game-wrapper">
-  <div id="game-container">
-    <div class="canvas-wrapper">
-      <canvas id="tetris" width="300" height="600"></canvas>
-      <div id="start-screen">
-        <span style="font-size: 3rem">🟦</span>
-        <h2>Tetris</h2>
-        <p class="controls-hint">
-          ← → Move &nbsp;·&nbsp; ↑ Rotate &nbsp;·&nbsp; ↓ Soft drop &nbsp;·&nbsp; Space Hard drop
-        </p>
-        <button class="play-btn" onclick="startGame()">Play Game</button>
-      </div>
-      <div id="gameover-screen" style="display: none">
-        <h2>Game Over</h2>
-        <p id="final-score" style="color: #a78bfa; font-size: 1.1rem"></p>
-        <button class="play-btn" onclick="startGame()">Play Again</button>
-      </div>
+  <div id="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Score</div>
+      <div class="stat-value" id="score-display">0</div>
     </div>
-    <div id="side-panel">
-      <div class="panel-box">
-        <div class="panel-label">Score</div>
-        <div class="panel-value" id="score-display">0</div>
-      </div>
-      <div class="panel-box">
-        <div class="panel-label">Best</div>
-        <div class="panel-value" id="best-display">0</div>
-      </div>
-      <div class="panel-box">
-        <div class="panel-label">Lines</div>
-        <div class="panel-value" id="lines-display">0</div>
-      </div>
-      <div class="panel-box">
-        <div class="panel-label">Level</div>
-        <div class="panel-value" id="level-display">1</div>
-      </div>
-      <div class="panel-box">
-        <div class="panel-label">Next</div>
-        <canvas id="next-piece" width="100" height="80"></canvas>
-      </div>
+    <div class="stat-box">
+      <div class="stat-label">Best</div>
+      <div class="stat-value" id="best-display">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Lines</div>
+      <div class="stat-value" id="lines-display">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Level</div>
+      <div class="stat-value" id="level-display">1</div>
+    </div>
+    <div class="stat-box next-box">
+      <div class="stat-label">Next</div>
+      <canvas id="next-piece" width="72" height="54"></canvas>
+    </div>
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="tetris" width="300" height="600"></canvas>
+    <div id="start-screen">
+      <span style="font-size: 3rem">🟦</span>
+      <h2>Tetris</h2>
+      <p class="controls-hint">
+        ← → Move &nbsp;·&nbsp; ↑ Rotate &nbsp;·&nbsp; ↓ Soft drop &nbsp;·&nbsp; Space Hard drop
+      </p>
+      <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+    <div id="gameover-screen" style="display: none">
+      <h2>Game Over</h2>
+      <p id="final-score" style="color: #a78bfa; font-size: 1.1rem"></p>
+      <button class="play-btn" onclick="startGame()">Play Again</button>
     </div>
   </div>
 
@@ -269,7 +258,7 @@ icon: "🟦"
       <button class="dpad-btn" onclick="tetrisKey('ArrowRight')">▶</button>
     </div>
     <div class="dpad-row">
-      <button class="dpad-btn wide" onclick="tetrisKey(' ')">⬇ Drop</button>
+      <button class="dpad-btn wide" onclick="tetrisKey(' ')">⬇ Hard Drop</button>
     </div>
   </div>
 
@@ -295,7 +284,7 @@ icon: "🟦"
       <h4>Controls — Mobile</h4>
       <ul>
         <li>Use the <strong>D-pad buttons</strong> that appear below the board</li>
-        <li>↻ = rotate · ▼ = soft drop · ⬇ Drop = hard drop</li>
+        <li>↻ = rotate · ▼ = soft drop · ⬇ Hard Drop = instant drop</li>
       </ul>
       <h4>Levels &amp; Scoring</h4>
       <ul>
@@ -394,7 +383,6 @@ icon: "🟦"
   }
 
   function rotate(matrix) {
-    const N = matrix.length;
     return matrix[0].map((_, i) => matrix.map((row) => row[i]).reverse());
   }
 
@@ -489,15 +477,15 @@ icon: "🟦"
   }
 
   function drawNext() {
+    const s = 16;
     nextCtx.fillStyle = "#1e293b";
-    nextCtx.fillRect(0, 0, 100, 80);
-    const s = 18;
-    const ox = Math.floor((5 - nextPiece.matrix[0].length) / 2);
-    const oy = Math.floor((4 - nextPiece.matrix.length) / 2);
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    const ox = Math.floor((nextCanvas.width / s - nextPiece.matrix[0].length) / 2);
+    const oy = Math.floor((nextCanvas.height / s - nextPiece.matrix.length) / 2);
     nextCtx.fillStyle = COLORS[nextPiece.type];
     for (let r = 0; r < nextPiece.matrix.length; r++)
       for (let c = 0; c < nextPiece.matrix[r].length; c++)
-        if (nextPiece.matrix[r][c]) nextCtx.fillRect((ox + c) * s + 4, (oy + r) * s + 4, s - 2, s - 2);
+        if (nextPiece.matrix[r][c]) nextCtx.fillRect((ox + c) * s + 1, (oy + r) * s + 1, s - 2, s - 2);
   }
 
   function gameLoop(ts) {
