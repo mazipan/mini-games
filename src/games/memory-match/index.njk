@@ -62,6 +62,31 @@ icon: "🃏"
     color: white;
     border-color: #7c3aed;
   }
+  .set-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(400px, calc(100vw - 2rem));
+  }
+  .set-btn {
+    padding: 0.25rem 0.7rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    white-space: nowrap;
+  }
+  .set-btn.active,
+  .set-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
   #grid {
     display: grid;
     gap: 8px;
@@ -201,6 +226,14 @@ icon: "🃏"
     <button class="diff-btn" id="d-medium" onclick="setDiff('medium')">Medium 5×4</button>
     <button class="diff-btn" id="d-hard" onclick="setDiff('hard')">Hard 6×4</button>
   </div>
+  <div class="set-row">
+    <button class="set-btn active" id="s-animals" onclick="setEmojiSet('animals')">🐶 Animals</button>
+    <button class="set-btn" id="s-food" onclick="setEmojiSet('food')">🍎 Food</button>
+    <button class="set-btn" id="s-sports" onclick="setEmojiSet('sports')">⚽ Sports</button>
+    <button class="set-btn" id="s-nature" onclick="setEmojiSet('nature')">🌸 Nature</button>
+    <button class="set-btn" id="s-faces" onclick="setEmojiSet('faces')">😀 Faces</button>
+    <button class="set-btn" id="s-things" onclick="setEmojiSet('things')">🎮 Things</button>
+  </div>
   <div class="score-row">
     <div class="stat">
       <div class="stat-label">Moves</div>
@@ -237,6 +270,15 @@ icon: "🃏"
         Flip two cards at a time to find matching emoji pairs. Match all pairs to win! Try to do it in the fewest moves
         possible.
       </p>
+      <h4>Emoji Sets</h4>
+      <ul>
+        <li><strong>Animals</strong> — farm &amp; wild animals</li>
+        <li><strong>Food</strong> — fruits, snacks &amp; meals</li>
+        <li><strong>Sports</strong> — sport &amp; activity icons</li>
+        <li><strong>Nature</strong> — flowers, plants &amp; weather</li>
+        <li><strong>Faces</strong> — emoji expressions</li>
+        <li><strong>Things</strong> — objects, music &amp; games</li>
+      </ul>
       <h4>Difficulty</h4>
       <ul>
         <li><strong>Easy</strong> — 4×4 grid, 8 pairs (16 cards)</li>
@@ -247,7 +289,7 @@ icon: "🃏"
       <ul>
         <li>Each pair of flips = 1 move</li>
         <li>Fewer moves = better score</li>
-        <li>Your best (lowest) move count per difficulty is saved</li>
+        <li>Best (lowest) moves per difficulty saved automatically</li>
       </ul>
     </div>
   </details>
@@ -257,7 +299,7 @@ icon: "🃏"
       <h4>What happens when two cards don't match?</h4>
       <p>Both cards flip face-down again after a short pause. Try to memorise their positions!</p>
       <h4>Is my best score saved?</h4>
-      <p>Yes — the fewest moves you've used to complete each difficulty is saved in your browser.</p>
+      <p>Yes — the fewest moves you've used per difficulty is saved in your browser.</p>
       <h4>Can I play on mobile?</h4>
       <p>Yes! Just tap the cards to flip them. The grid automatically adjusts to your screen size.</p>
     </div>
@@ -265,30 +307,171 @@ icon: "🃏"
 </div>
 
 <script>
-  const EMOJIS = [
-    "🐶",
-    "🐱",
-    "🐭",
-    "🐹",
-    "🐰",
-    "🦊",
-    "🐻",
-    "🐼",
-    "🐨",
-    "🐯",
-    "🦁",
-    "🐮",
-    "🐷",
-    "🐸",
-    "🐵",
-    "🐔",
-    "🐧",
-    "🐦",
-    "🦋",
-    "🐝",
-    "🦄",
-    "🐙",
-  ];
+  const EMOJI_SETS = {
+    animals: {
+      label: "Animals",
+      emojis: [
+        "🐶",
+        "🐱",
+        "🐭",
+        "🐹",
+        "🐰",
+        "🦊",
+        "🐻",
+        "🐼",
+        "🐨",
+        "🐯",
+        "🦁",
+        "🐮",
+        "🐷",
+        "🐸",
+        "🐵",
+        "🐔",
+        "🐧",
+        "🐦",
+        "🦋",
+        "🐝",
+        "🦄",
+        "🐙",
+      ],
+    },
+    food: {
+      label: "Food",
+      emojis: [
+        "🍎",
+        "🍊",
+        "🍋",
+        "🍇",
+        "🍓",
+        "🍒",
+        "🍑",
+        "🥝",
+        "🍍",
+        "🥭",
+        "🍌",
+        "🍉",
+        "🍔",
+        "🍕",
+        "🌮",
+        "🍜",
+        "🍣",
+        "🍦",
+        "🍩",
+        "🍪",
+        "🎂",
+        "🍫",
+      ],
+    },
+    sports: {
+      label: "Sports",
+      emojis: [
+        "⚽",
+        "🏀",
+        "🏈",
+        "⚾",
+        "🏐",
+        "🏉",
+        "🎾",
+        "🏓",
+        "🏸",
+        "🥊",
+        "🎯",
+        "⛳",
+        "🎣",
+        "🏊",
+        "🚴",
+        "🏋️",
+        "🤸",
+        "⛸️",
+        "🥋",
+        "🎽",
+        "🛹",
+        "🏆",
+      ],
+    },
+    nature: {
+      label: "Nature",
+      emojis: [
+        "🌸",
+        "🌼",
+        "🌻",
+        "🌹",
+        "🌷",
+        "🌺",
+        "🍀",
+        "🍁",
+        "🍃",
+        "🌾",
+        "🌵",
+        "🌴",
+        "🌱",
+        "🌲",
+        "🌊",
+        "🔥",
+        "💧",
+        "❄️",
+        "🌈",
+        "⭐",
+        "🌙",
+        "☀️",
+      ],
+    },
+    faces: {
+      label: "Faces",
+      emojis: [
+        "😀",
+        "😂",
+        "🤣",
+        "😊",
+        "😍",
+        "🥰",
+        "😎",
+        "🤩",
+        "🥳",
+        "😏",
+        "😅",
+        "🤗",
+        "🤔",
+        "😴",
+        "🥺",
+        "😭",
+        "😤",
+        "🤯",
+        "🥸",
+        "🫡",
+        "😇",
+        "🤪",
+      ],
+    },
+    things: {
+      label: "Things",
+      emojis: [
+        "🎸",
+        "🎺",
+        "🎷",
+        "🎹",
+        "💎",
+        "👑",
+        "🔮",
+        "🎩",
+        "🎨",
+        "🎮",
+        "🧩",
+        "🎲",
+        "🚀",
+        "🎁",
+        "🔑",
+        "💡",
+        "🧲",
+        "🎭",
+        "🎬",
+        "🃏",
+        "🎪",
+        "🎰",
+      ],
+    },
+  };
+
   const DIFFS = {
     easy: { cols: 4, pairs: 8 },
     medium: { cols: 5, pairs: 10 },
@@ -296,6 +479,7 @@ icon: "🃏"
   };
 
   let diff = "easy";
+  let setKey = "animals";
   let cards,
     flipped = [],
     matchCount,
@@ -327,6 +511,13 @@ icon: "🃏"
     newGame();
   }
 
+  function setEmojiSet(key) {
+    setKey = key;
+    document.querySelectorAll(".set-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("s-" + key).classList.add("active");
+    newGame();
+  }
+
   function shuffle(arr) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -337,7 +528,8 @@ icon: "🃏"
 
   function newGame() {
     const cfg = DIFFS[diff];
-    const pairs = shuffle([...EMOJIS]).slice(0, cfg.pairs);
+    const pool = EMOJI_SETS[setKey].emojis;
+    const pairs = shuffle([...pool]).slice(0, cfg.pairs);
     cards = shuffle([...pairs, ...pairs].map((e, i) => ({ id: i, emoji: e, flipped: false, matched: false })));
     flipped = [];
     matchCount = 0;
