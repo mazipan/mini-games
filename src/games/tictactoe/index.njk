@@ -1,7 +1,7 @@
 ---
 layout: layouts/game.njk
 title: Tic-Tac-Toe
-description: Outsmart your opponent in the classic 3×3 grid game. Play vs AI.
+description: Outsmart your opponent in the classic 3×3 grid game. Play vs AI or a friend.
 category: board
 icon: "⭕"
 ---
@@ -87,6 +87,28 @@ icon: "⭕"
     color: #e2e8f0;
     font-family: monospace;
   }
+  .mode-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-btn.active,
+  .mode-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
   .play-btn {
     padding: 0.5rem 1.5rem;
     background: #7c3aed;
@@ -166,9 +188,13 @@ icon: "⭕"
 </style>
 
 <div id="game-wrapper">
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-machine" onclick="setMode('machine')">VS Machine</button>
+    <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
+  </div>
   <div class="score-row">
     <div class="stat">
-      <div class="stat-label">You (X)</div>
+      <div class="stat-label" id="x-label">You (X)</div>
       <div class="stat-value" id="p-score">0</div>
     </div>
     <div class="stat">
@@ -176,14 +202,14 @@ icon: "⭕"
       <div class="stat-value" id="d-score">0</div>
     </div>
     <div class="stat">
-      <div class="stat-label">AI (O)</div>
+      <div class="stat-label" id="o-label">AI (O)</div>
       <div class="stat-value" id="ai-score">0</div>
     </div>
   </div>
   <div id="status">Your turn (X)</div>
   <div id="board"></div>
   <button class="play-btn" onclick="resetGame()">New Game</button>
-  <p style="font-size: 0.75rem; color: #64748b">You are X · AI is O · Scores saved between sessions</p>
+  <p id="mode-hint" style="font-size: 0.75rem; color: #64748b">You are X · AI is O · Scores saved between sessions</p>
 </div>
 
 <div class="info-section">
@@ -191,33 +217,33 @@ icon: "⭕"
     <summary>How to Play</summary>
     <div class="info-body">
       <h4>Goal</h4>
-      <p>Get three of your marks (X) in a row — horizontally, vertically, or diagonally — before the AI does.</p>
+      <p>Get three of your marks in a row — horizontally, vertically, or diagonally — before your opponent does.</p>
+      <h4>VS Machine</h4>
+      <p>
+        Play as X against the AI (O). The AI uses the <strong>minimax algorithm</strong> and plays perfectly — your best
+        result is a draw!
+      </p>
+      <h4>VS Friend</h4>
+      <p>Two players take turns on the same device. X goes first, then O, alternating each turn.</p>
       <h4>Controls</h4>
       <ul>
-        <li><strong>Click / tap</strong> any empty square to place your X</li>
-        <li>The AI (O) responds automatically</li>
+        <li><strong>Click / tap</strong> any empty square to place your mark</li>
       </ul>
-      <h4>About the AI</h4>
-      <p>
-        The AI uses the <strong>minimax algorithm</strong>, meaning it plays <em>perfectly</em>. You cannot beat it —
-        but you can draw with optimal play!
-      </p>
     </div>
   </details>
   <details class="info-details">
     <summary>FAQ</summary>
     <div class="info-body">
-      <h4>Can I actually win?</h4>
+      <h4>Can I beat the AI?</h4>
       <p>
-        No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw. Try
-        to find the optimal strategy!
+        No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw.
       </p>
       <h4>Are scores saved?</h4>
-      <p>Yes — your wins, draws, and losses are saved in your browser and persist between sessions.</p>
+      <p>Yes — wins, draws, and losses are saved in your browser and persist between sessions.</p>
       <h4>What is minimax?</h4>
       <p>
         Minimax is a game-theory algorithm that evaluates all possible future moves and picks the one most likely to
-        win. It guarantees optimal play for both sides.
+        win. It guarantees optimal play.
       </p>
     </div>
   </details>
@@ -228,7 +254,9 @@ icon: "⭕"
   let board,
     human = "X",
     ai = "O",
-    gameOver = false;
+    gameOver = false,
+    currentTurn = "X",
+    mode = "machine";
   let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"X":0,"D":0,"O":0}');
 
   const WINS = [
@@ -246,10 +274,27 @@ icon: "⭕"
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   }
 
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("mode-" + m).classList.add("active");
+    if (m === "machine") {
+      document.getElementById("x-label").textContent = "You (X)";
+      document.getElementById("o-label").textContent = "AI (O)";
+      document.getElementById("mode-hint").textContent = "You are X · AI is O · Scores saved between sessions";
+    } else {
+      document.getElementById("x-label").textContent = "Player X";
+      document.getElementById("o-label").textContent = "Player O";
+      document.getElementById("mode-hint").textContent = "X goes first · Scores saved between sessions";
+    }
+    resetGame();
+  }
+
   function resetGame() {
     board = Array(9).fill("");
     gameOver = false;
-    setStatus("Your turn (X)");
+    currentTurn = "X";
+    setStatus(mode === "machine" ? "Your turn (X)" : "Player X's turn");
     renderBoard();
   }
 
@@ -300,34 +345,47 @@ icon: "⭕"
 
   function play(i) {
     if (gameOver || board[i]) return;
-    board[i] = human;
-    const res = checkWinner(board);
-    if (res) {
-      finish(res);
-      return;
-    }
-    setStatus("AI is thinking...");
-    renderBoard();
-    setTimeout(() => {
-      board[bestMove()] = ai;
-      const r2 = checkWinner(board);
-      if (r2) {
-        finish(r2);
+
+    if (mode === "machine") {
+      board[i] = human;
+      const res = checkWinner(board);
+      if (res) {
+        finish(res);
         return;
       }
-      setStatus("Your turn (X)");
+      setStatus("AI is thinking...");
       renderBoard();
-    }, 200);
+      setTimeout(() => {
+        board[bestMove()] = ai;
+        const r2 = checkWinner(board);
+        if (r2) {
+          finish(r2);
+          return;
+        }
+        setStatus("Your turn (X)");
+        renderBoard();
+      }, 200);
+    } else {
+      board[i] = currentTurn;
+      const res = checkWinner(board);
+      if (res) {
+        finish(res);
+        return;
+      }
+      currentTurn = currentTurn === "X" ? "O" : "X";
+      setStatus("Player " + currentTurn + "'s turn");
+      renderBoard();
+    }
   }
 
   function finish(res) {
     gameOver = true;
     if (res.winner === "X") {
       scores.X++;
-      setStatus("You win! 🎉");
+      setStatus(mode === "machine" ? "You win! 🎉" : "Player X wins! 🎉");
     } else if (res.winner === "O") {
       scores.O++;
-      setStatus("AI wins! 🤖");
+      setStatus(mode === "machine" ? "AI wins! 🤖" : "Player O wins! 🎉");
     } else {
       scores.D++;
       setStatus("It's a draw!");
@@ -352,7 +410,6 @@ icon: "⭕"
     });
   }
 
-  // Show saved scores on load
   document.getElementById("p-score").textContent = scores.X;
   document.getElementById("ai-score").textContent = scores.O;
   document.getElementById("d-score").textContent = scores.D;

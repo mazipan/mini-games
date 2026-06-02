@@ -311,7 +311,7 @@ icon: "🧱"
   }
 
   function startGame() {
-    clearTimeout(demoAnimId);
+    cancelAnimationFrame(demoAnimId);
     document.getElementById("demo-label").style.display = "none";
     level = 1;
     score = 0;
