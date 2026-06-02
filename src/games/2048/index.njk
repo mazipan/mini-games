@@ -158,6 +158,28 @@ icon: "🔢"
     font-size: 0.75rem;
     color: #64748b;
   }
+  #dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 52px);
+    grid-template-rows: repeat(2, 52px);
+    gap: 6px;
+  }
+  .dpad-btn {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: white;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .dpad-btn:active {
+    background: #334155;
+  }
   .new-btn {
     padding: 0.4rem 1rem;
     background: #334155;
@@ -254,7 +276,15 @@ icon: "🔢"
     </div>
   </div>
   <button class="new-btn" onclick="newGame()">New Game</button>
-  <p class="controls-hint">Arrow keys or swipe to merge tiles</p>
+  <div id="dpad">
+    <div></div>
+    <button class="dpad-btn" onclick="move('up')">▲</button>
+    <div></div>
+    <button class="dpad-btn" onclick="move('left')">◀</button>
+    <button class="dpad-btn" onclick="move('down')">▼</button>
+    <button class="dpad-btn" onclick="move('right')">▶</button>
+  </div>
+  <p class="controls-hint">Arrow keys · D-pad · or swipe</p>
 </div>
 
 <div class="info-section">
@@ -293,6 +323,47 @@ icon: "🔢"
 </div>
 
 <script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
   const STORAGE_KEY = "mini-2048-best";
   let grid,
     score,
@@ -365,8 +436,10 @@ icon: "🔢"
       }
     }
     render();
-    if (gameWon) showOverlay("You Win! 🎉", "Score: " + score, "Keep Going");
-    else if (isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
+    if (gameWon) {
+      launchConfetti();
+      showOverlay("You Win! 🎉", "Score: " + score, "Keep Going");
+    } else if (isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
   }
 
   function isGameOver() {
