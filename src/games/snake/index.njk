@@ -207,13 +207,13 @@ icon: "🐍"
   </div>
   <div id="dpad">
     <div></div>
-    <button class="dpad-btn" onclick="setDir(0, -1)">▲</button>
+    <button class="dpad-btn" data-dir="0,-1">▲</button>
     <div></div>
-    <button class="dpad-btn" onclick="setDir(-1, 0)">◀</button>
+    <button class="dpad-btn" data-dir="-1,0">◀</button>
     <div></div>
-    <button class="dpad-btn" onclick="setDir(1, 0)">▶</button>
+    <button class="dpad-btn" data-dir="1,0">▶</button>
     <div></div>
-    <button class="dpad-btn" onclick="setDir(0, 1)">▼</button>
+    <button class="dpad-btn" data-dir="0,1">▼</button>
     <div></div>
   </div>
   <p class="controls-hint">Arrow keys or WASD to move</p>
@@ -276,13 +276,32 @@ icon: "🐍"
     level,
     highScore = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10),
     running = false,
+    holding = false,
     interval,
     demoInterval;
 
   document.getElementById("high-score").textContent = highScore;
 
   function getSpeed(lvl) {
-    return Math.max(80, 320 - (lvl - 1) * 25);
+    return Math.max(100, 450 - (lvl - 1) * 25);
+  }
+  function getFastSpeed(lvl) {
+    return Math.max(70, Math.floor(getSpeed(lvl) * 0.4));
+  }
+  function applySpeed() {
+    if (!running) return;
+    clearInterval(interval);
+    interval = setInterval(tick, holding ? getFastSpeed(level) : getSpeed(level));
+  }
+  function startHold() {
+    if (holding || !running) return;
+    holding = true;
+    applySpeed();
+  }
+  function stopHold() {
+    if (!holding) return;
+    holding = false;
+    applySpeed();
   }
   function rnd(n) {
     return Math.floor(Math.random() * n);
@@ -388,6 +407,7 @@ icon: "🐍"
     document.getElementById("level-display").textContent = "1";
     spawnFood();
     running = true;
+    holding = false;
     document.getElementById("overlay").style.display = "none";
     clearInterval(interval);
     interval = setInterval(tick, getSpeed(1));
@@ -421,8 +441,7 @@ icon: "🐍"
       if (newLevel !== level) {
         level = newLevel;
         document.getElementById("level-display").textContent = level;
-        clearInterval(interval);
-        interval = setInterval(tick, getSpeed(level));
+        applySpeed();
       }
       spawnFood();
     } else {
@@ -451,6 +470,7 @@ icon: "🐍"
 
   function endGame() {
     running = false;
+    holding = false;
     clearInterval(interval);
     if (score > highScore) {
       highScore = score;
@@ -466,21 +486,49 @@ icon: "🐍"
     startDemo();
   }
 
+  const KEY_MAP = {
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1],
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    w: [0, -1],
+    s: [0, 1],
+    a: [-1, 0],
+    d: [1, 0],
+  };
+
   document.addEventListener("keydown", (e) => {
-    const map = {
-      ArrowUp: [0, -1],
-      ArrowDown: [0, 1],
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-      w: [0, -1],
-      s: [0, 1],
-      a: [-1, 0],
-      d: [1, 0],
-    };
-    if (map[e.key]) {
-      e.preventDefault();
-      setDir(...map[e.key]);
+    if (!KEY_MAP[e.key]) return;
+    e.preventDefault();
+    if (!e.repeat) {
+      setDir(...KEY_MAP[e.key]);
+      startHold();
     }
+  });
+
+  document.addEventListener("keyup", (e) => {
+    if (KEY_MAP[e.key]) stopHold();
+  });
+
+  document.querySelectorAll(".dpad-btn").forEach((btn) => {
+    const [x, y] = btn.dataset.dir.split(",").map(Number);
+    btn.addEventListener(
+      "touchstart",
+      (e) => {
+        e.preventDefault();
+        setDir(x, y);
+        startHold();
+      },
+      { passive: false }
+    );
+    btn.addEventListener("touchend", stopHold);
+    btn.addEventListener("touchcancel", stopHold);
+    btn.addEventListener("mousedown", () => {
+      setDir(x, y);
+      startHold();
+    });
+    btn.addEventListener("mouseup", stopHold);
+    btn.addEventListener("mouseleave", stopHold);
   });
 
   // Start demo immediately
