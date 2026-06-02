@@ -551,6 +551,7 @@ icon: "🧱"
       bestScore = score;
       localStorage.setItem(STORAGE_KEY, bestScore);
       document.getElementById("best-score").textContent = bestScore;
+      launchConfetti();
     }
     draw();
     const overlay = document.getElementById("overlay");

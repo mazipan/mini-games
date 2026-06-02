@@ -368,7 +368,8 @@ icon: "🔢"
   let grid,
     score,
     best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10),
-    gameWon = false;
+    gameWon = false,
+    newBestThisGame = false;
 
   document.getElementById("best").textContent = best;
 
@@ -388,6 +389,7 @@ icon: "🔢"
     grid = newGrid();
     score = 0;
     gameWon = false;
+    newBestThisGame = false;
     addRandom(grid);
     addRandom(grid);
     document.getElementById("overlay").style.display = "none";
@@ -431,6 +433,7 @@ icon: "🔢"
       addRandom(grid);
       if (score > best) {
         best = score;
+        newBestThisGame = true;
         localStorage.setItem(STORAGE_KEY, best);
         document.getElementById("best").textContent = best;
       }
@@ -439,7 +442,10 @@ icon: "🔢"
     if (gameWon) {
       launchConfetti();
       showOverlay("You Win! 🎉", "Score: " + score, "Keep Going");
-    } else if (isGameOver()) showOverlay("Game Over", "Score: " + score, "Try Again");
+    } else if (isGameOver()) {
+      if (newBestThisGame) launchConfetti();
+      showOverlay("Game Over", "Score: " + score, "Try Again");
+    }
   }
 
   function isGameOver() {

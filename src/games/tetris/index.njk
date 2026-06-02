@@ -636,6 +636,7 @@ icon: "🟦"
       best = score;
       localStorage.setItem(STORAGE_KEY, best);
       document.getElementById("best-display").textContent = best;
+      launchConfetti();
     }
     document.getElementById("final-score").textContent = `Score: ${score} · Lines: ${lines} · Level: ${level}`;
     document.getElementById("gameover-screen").style.display = "flex";

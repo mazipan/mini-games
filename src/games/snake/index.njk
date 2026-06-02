@@ -518,6 +518,7 @@ icon: "🐍"
       highScore = score;
       localStorage.setItem(STORAGE_KEY, highScore);
       document.getElementById("high-score").textContent = highScore;
+      launchConfetti();
     }
     const overlay = document.getElementById("overlay");
     document.getElementById("demo-label").style.display = "none";
