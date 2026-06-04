@@ -105,6 +105,60 @@ Every game in this project must implement the following features.
 
 ---
 
+## Nunjucks Macros
+
+Reusable HTML component macros live in `src/_includes/macros/game-components.njk`.
+Import them at the top of a game file (after the front matter block):
+
+```njk
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+```
+
+### Available macros
+
+#### `statCard(label, id, value="0", valueClass="", labelId="")`
+
+Renders a stat card for the live score row.
+
+```njk
+{{ statCard("Score", "score") }}
+{{ statCard("Level", "level-display", "1") }}
+{{ statCard("Lives", "lives", "❤️❤️❤️", "lives") }}
+{{ statCard("You (X)", "p-score", "0", "", "x-label") }}  {# labelId for JS-updated labels #}
+```
+
+#### `summaryStatCard(label, id, value="0")`
+
+Smaller stat card used inside the game-over / win overlay summary row.
+
+```njk
+<div class="summary-row">
+  {{ summaryStatCard("Score", "go-score") }}
+  {{ summaryStatCard("Best", "go-best") }}
+  {{ summaryStatCard("Level", "go-level", "1") }}
+</div>
+```
+
+#### `infoDetails(title)` — use with `{% call %}`
+
+Wraps a collapsible `<details>` info block. Pass body content via `{% call %}`:
+
+```njk
+{% call infoDetails("How to Play") %}
+<h4>Goal</h4>
+<p>...</p>
+{% endcall %}
+
+{% call infoDetails("FAQ") %}
+<h4>Is my best score saved?</h4>
+<p>Yes — saved in your browser's local storage.</p>
+{% endcall %}
+```
+
+The CSS for `.info-details` / `.info-body` must still be present in the game's `<style>` block — macros only generate HTML structure.
+
+---
+
 ## Code Conventions
 
 - Every game is fully self-contained in `src/games/<slug>/index.njk` — no external JS dependencies
