@@ -271,8 +271,14 @@ icon: "👾"
   </p>
   <h4>Mystery UFO ⚡</h4>
   <p>
-    A 🛸 UFO flies across the top every ~12 seconds. Shoot it to drop another ⚡ token — move into it for 8 seconds of
-    rapid fire (+100 bonus points).
+    A 🛸 UFO flies across the <strong>top</strong> every ~12 seconds. Shoot it to drop a ⚡ token — collect for 8
+    seconds of rapid fire (+100 pts).
+  </p>
+  <h4>Gift 🎁</h4>
+  <p>
+    A 🎁 gift floats across the <strong>middle</strong> of the screen every ~9 seconds. Shoot it to drop a 🎁 token —
+    collect for 8 seconds of double-row shot: two bullets fire side-by-side each burst (+80 pts). Stack it with rapid
+    fire for maximum carnage!
   </p>
   <h4>Scoring</h4>
   <ul>
@@ -422,15 +428,24 @@ icon: "👾"
   const RAPID_DURATION = 8000; // ms the rapid-fire buff lasts
   let rapidFireUntil = 0; // performance.now() deadline; 0 = inactive
 
-  // Mystery UFO — flies across the top, dropping a power-up when shot
-  const UFO_INTERVAL = 720; // frames between UFO appearances (~12 s at 60 fps)
+  // Mystery UFO — flies across the top, drops ⚡ rapid-fire token when shot
+  const UFO_INTERVAL = 720; // frames (~12 s at 60 fps)
   const UFO_SPEED = 1.8 * S;
-  let ufo = null; // { x, y, dir } or null when absent
+  let ufo = null; // { x, y, dir }
   let ufoTimer = 0;
 
-  // Falling power-up tokens
-  let powerUps = []; // { x, y }
-  let powerUpMsg = 0; // frames remaining to show the "⚡ RAPID FIRE!" banner
+  // Gift — flies across the mid-screen, drops 🎁 double-shot token when shot
+  const GIFT_INTERVAL = 540; // frames (~9 s at 60 fps)
+  const GIFT_SPEED = 1.5 * S;
+  let gift = null; // { x, y, dir }
+  let giftTimer = 0;
+  const DOUBLE_DURATION = 8000; // ms
+  const DOUBLE_SPREAD = 10 * S; // side-by-side bullet offset
+  let doubleFireUntil = 0;
+
+  // Falling power-up tokens — type: 'rapid' | 'double'
+  let powerUps = []; // { x, y, type }
+  let powerUpMsg = 0;
 
   // Secret aliens — one per wave, different emoji each wave, pulses to hint at its presence
   const SECRET_EMOJIS = ["💀", "🤡", "👹", "😈", "🎃", "🦹", "🤑", "💥"];
@@ -498,8 +513,11 @@ icon: "👾"
     waveAnnounce = 90;
     ufo = null;
     ufoTimer = 0;
+    gift = null;
+    giftTimer = 0;
     powerUps = [];
     rapidFireUntil = 0;
+    doubleFireUntil = 0;
     powerUpMsg = 0;
     player = { x: gameCanvas.width / 2, y: gameCanvas.height - 30 * S };
     updateHUD();
@@ -517,6 +535,8 @@ icon: "👾"
     waveAnnounce = 100;
     ufo = null;
     ufoTimer = 0;
+    gift = null;
+    giftTimer = 0;
     powerUps = [];
     player.x = gameCanvas.width / 2;
     updateHUD();
@@ -562,52 +582,54 @@ icon: "👾"
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // Player bullets — yellow when rapid-fire active
-    ctx.fillStyle = performance.now() < rapidFireUntil ? "#fde047" : "#86efac";
+    // Player bullets — colour shows active buffs
+    const _now = performance.now();
+    const _rapid = _now < rapidFireUntil,
+      _dbl = _now < doubleFireUntil;
+    ctx.fillStyle = _rapid && _dbl ? "#f0abfc" : _rapid ? "#fde047" : _dbl ? "#67e8f9" : "#86efac";
     for (const b of playerBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
     // Alien bullets
     ctx.fillStyle = "#f87171";
     for (const b of alienBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
-    // Mystery UFO
-    if (ufo) {
-      ctx.font = `${Math.round(alienH * 0.9)}px serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("🛸", ufo.x, ufo.y);
-      ctx.textAlign = "left";
-      ctx.textBaseline = "alphabetic";
-    }
+    // Mystery UFO + Gift — share emoji rendering setup
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${Math.round(alienH * 0.9)}px serif`;
+    if (ufo) ctx.fillText("🛸", ufo.x, ufo.y);
+    if (gift) ctx.fillText("🎁", gift.x, gift.y);
 
-    // Falling power-ups
+    // Falling power-up tokens
     if (powerUps.length > 0) {
       ctx.font = `${Math.round(alienH * 0.85)}px serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      for (const p of powerUps) ctx.fillText("⚡", p.x, p.y);
-      ctx.textAlign = "left";
-      ctx.textBaseline = "alphabetic";
+      for (const p of powerUps) ctx.fillText(p.type === "double" ? "🎁" : "⚡", p.x, p.y);
     }
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
 
-    // Rapid-fire timer bar (shows while buff is active)
-    const rfRemaining = rapidFireUntil - performance.now();
-    if (rfRemaining > 0) {
-      const barW = gameCanvas.width * 0.4;
-      const barH = 5 * S;
-      const barX = (gameCanvas.width - barW) / 2;
-      const barY = gameCanvas.height - 22 * S;
-      const fill = (rfRemaining / RAPID_DURATION) * barW;
+    // Buff timer bars — rapid fire (yellow) and double shot (pink), stacked
+    const _buffNow = performance.now();
+    const _barW = gameCanvas.width * 0.4;
+    const _barH = 5 * S;
+    const _barX = (gameCanvas.width - _barW) / 2;
+    ctx.font = `${Math.round(9 * S)}px monospace`;
+    ctx.textAlign = "center";
+    let _barSlot = 0;
+    function drawBuffBar(remaining, total, color, label) {
+      const barY = gameCanvas.height - 22 * S - _barSlot * 18 * S;
       ctx.fillStyle = "#1e293b";
-      ctx.fillRect(barX, barY, barW, barH);
-      ctx.fillStyle = "#fde047";
-      ctx.fillRect(barX, barY, fill, barH);
-      ctx.font = `${Math.round(9 * S)}px monospace`;
-      ctx.textAlign = "center";
-      ctx.fillStyle = "#fde047";
-      ctx.fillText("⚡ RAPID FIRE", gameCanvas.width / 2, barY - 4 * S);
-      ctx.textAlign = "left";
+      ctx.fillRect(_barX, barY, _barW, _barH);
+      ctx.fillStyle = color;
+      ctx.fillRect(_barX, barY, (remaining / total) * _barW, _barH);
+      ctx.fillStyle = color;
+      ctx.fillText(label, gameCanvas.width / 2, barY - 4 * S);
+      _barSlot++;
     }
+    if (_buffNow < rapidFireUntil) drawBuffBar(rapidFireUntil - _buffNow, RAPID_DURATION, "#fde047", "⚡ RAPID FIRE");
+    if (_buffNow < doubleFireUntil)
+      drawBuffBar(doubleFireUntil - _buffNow, DOUBLE_DURATION, "#f472b6", "🎁 DOUBLE SHOT");
+    ctx.textAlign = "left";
 
     // Wave announcement banner
     if (waveAnnounce > 0) {
@@ -636,11 +658,20 @@ icon: "👾"
     if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
     if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
 
-    // Auto-fire (rate depends on buff)
+    // Auto-fire (rate depends on rapid buff; count depends on double buff)
     const fireRate = getFireRate();
-    const maxBullets = performance.now() < rapidFireUntil ? 5 : 3;
-    if (frameCount % fireRate === 0 && playerBullets.length < maxBullets) {
-      playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
+    const isDouble = performance.now() < doubleFireUntil;
+    const maxBullets = performance.now() < rapidFireUntil ? 6 : 4;
+    const bulletY = player.y - playerH - 8 * S;
+    if (frameCount % fireRate === 0) {
+      if (isDouble) {
+        if (playerBullets.length < maxBullets - 1) {
+          playerBullets.push({ x: player.x - DOUBLE_SPREAD, y: bulletY });
+          playerBullets.push({ x: player.x + DOUBLE_SPREAD, y: bulletY });
+        }
+      } else if (playerBullets.length < maxBullets) {
+        playerBullets.push({ x: player.x, y: bulletY });
+      }
     }
 
     // Demo AI: track the lowest alive alien
@@ -654,12 +685,11 @@ icon: "👾"
       }
     }
 
-    // Mystery UFO
+    // Mystery UFO (top of screen → ⚡ rapid fire)
     if (!demo) {
       ufoTimer++;
       if (!ufo && ufoTimer >= UFO_INTERVAL) {
         ufoTimer = 0;
-        // Alternate direction each appearance
         const goRight = frameCount % 2 === 0;
         ufo = { x: goRight ? -alienW : gameCanvas.width + alienW, y: 14 * S, dir: goRight ? 1 : -1 };
       }
@@ -669,13 +699,28 @@ icon: "👾"
       }
     }
 
-    // Falling power-ups
+    // Gift (mid-screen → 🎁 double shot)
+    if (!demo) {
+      giftTimer++;
+      if (!gift && giftTimer >= GIFT_INTERVAL) {
+        giftTimer = 0;
+        const goRight = Math.random() < 0.5;
+        const midY = gameCanvas.height * 0.42;
+        gift = { x: goRight ? -alienW : gameCanvas.width + alienW, y: midY, dir: goRight ? 1 : -1 };
+      }
+      if (gift) {
+        gift.x += GIFT_SPEED * gift.dir;
+        if (gift.x < -alienW * 2 || gift.x > gameCanvas.width + alienW * 2) gift = null;
+      }
+    }
+
+    // Falling power-up tokens
     if (!demo) {
       powerUps = powerUps.filter((p) => {
         p.y += 1.5 * S;
-        // Collect: player touches it
         if (Math.abs(p.x - player.x) < playerW && p.y >= player.y - playerH && p.y <= player.y) {
-          rapidFireUntil = performance.now() + RAPID_DURATION;
+          if (p.type === "double") doubleFireUntil = performance.now() + DOUBLE_DURATION;
+          else rapidFireUntil = performance.now() + RAPID_DURATION;
           powerUpMsg = 120;
           return false;
         }
@@ -733,12 +778,33 @@ icon: "👾"
 
     if (demo) return;
 
+    // Collision: player bullet ↔ Gift
+    if (gift) {
+      for (let bi = playerBullets.length - 1; bi >= 0; bi--) {
+        const b = playerBullets[bi];
+        if (Math.abs(b.x - gift.x) < alienW / 2 && Math.abs(b.y - gift.y) < alienH / 2) {
+          powerUps.push({ x: gift.x, y: gift.y, type: "double" });
+          score += 80;
+          updateHUD();
+          if (score > best) {
+            best = score;
+            localStorage.setItem(STORAGE_KEY, best);
+            launchConfetti();
+            updateHUD();
+          }
+          gift = null;
+          playerBullets.splice(bi, 1);
+          break;
+        }
+      }
+    }
+
     // Collision: player bullet ↔ UFO
     if (ufo) {
       for (let bi = playerBullets.length - 1; bi >= 0; bi--) {
         const b = playerBullets[bi];
         if (Math.abs(b.x - ufo.x) < alienW / 2 && Math.abs(b.y - ufo.y) < alienH / 2) {
-          powerUps.push({ x: ufo.x, y: ufo.y });
+          powerUps.push({ x: ufo.x, y: ufo.y, type: "rapid" });
           score += 100;
           updateHUD();
           if (score > best) {
