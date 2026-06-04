@@ -187,6 +187,7 @@ Every game must follow these rules for end-of-game screens.
 ### Win / Completion
 
 Same structure as die, with:
+
 - Icon — `🏆` for win
 - Title — `"You Win!"`
 - Same stat cards

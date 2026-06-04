@@ -8,15 +8,15 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 
 ## Games
 
-| Game | Category | Difficulty |
-| --- | --- | --- |
-| 🟦 Tetris | Arcade | Medium |
-| 🐍 Snake | Arcade | Easy |
-| 🧱 Breakout | Arcade | Medium |
-| 🔢 2048 | Puzzle | Medium |
-| 💣 Minesweeper | Puzzle | Hard |
-| ⭕ Tic-Tac-Toe | Board | Easy |
-| 🃏 Memory Match | Board | Easy |
+| Game            | Category | Difficulty |
+| --------------- | -------- | ---------- |
+| 🟦 Tetris       | Arcade   | Medium     |
+| 🐍 Snake        | Arcade   | Easy       |
+| 🧱 Breakout     | Arcade   | Medium     |
+| 🔢 2048         | Puzzle   | Medium     |
+| 💣 Minesweeper  | Puzzle   | Hard       |
+| ⭕ Tic-Tac-Toe  | Board    | Easy       |
+| 🃏 Memory Match | Board    | Easy       |
 
 ## Tech Stack
 
