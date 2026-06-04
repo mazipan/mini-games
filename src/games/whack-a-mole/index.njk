@@ -59,9 +59,6 @@ icon: "🦔"
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
   }
   .hole::before {
     content: "";
@@ -77,6 +74,8 @@ icon: "🦔"
   .mole {
     position: absolute;
     bottom: -100%;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: clamp(2rem, 10vw, 3rem);
     line-height: 1;
     transition: bottom 0.12s ease-out;
@@ -85,7 +84,7 @@ icon: "🦔"
     pointer-events: none;
   }
   .hole.up .mole {
-    bottom: 5%;
+    bottom: 15%;
   }
   .hole.whacked .mole {
     bottom: -100%;
@@ -275,7 +274,7 @@ icon: "🦔"
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("Score", "score") }} {{ statCard("Best", "best-display", "—") }} {{ statCard("Lives", "lives-display",
-    "❤️❤️❤️", "lives-display") }} {{ statCard("Time", "timer-display", "30s") }}
+    "❤️❤️❤️") }} {{ statCard("Level", "level-display", "1") }}
   </div>
 
   <div id="board">
@@ -321,33 +320,37 @@ icon: "🦔"
   <ul>
     <li>+1 point for each mole whacked</li>
     <li>Lose a life when a mole disappears unwhacked</li>
-    <li>Game ends when all 3 lives are lost or 30 seconds run out</li>
-    <li>Moles appear faster as your score increases</li>
+    <li>Game ends when all 3 lives are lost — no time limit!</li>
+    <li>Level 2 at score 8 — moles speed up</li>
+    <li>Level 3 at score 18 — two moles appear simultaneously</li>
+    <li>Level 4 at score 32 — three moles at once, very fast</li>
   </ul>
   {% endcall %} {% call infoDetails("FAQ") %}
   <h4>Is my best score saved?</h4>
   <p>Yes — your best score is saved in your browser's local storage and persists between sessions.</p>
   <h4>Why do moles appear faster over time?</h4>
-  <p>The game speeds up as your score grows to keep it challenging. At score 10+ the moles pop up noticeably faster.</p>
+  <p>
+    Each level brings faster moles and more of them. Levels unlock at scores 8, 18, and 32 — level 3 and 4 send two or
+    three moles popping at once!
+  </p>
   <h4>Can I play on mobile?</h4>
   <p>Yes! Just tap the moles when they appear. The grid scales to fit your screen.</p>
-  <h4>What happens when I miss a mole?</h4>
-  <p>Missing a mole costs one life (shown as ❤️). Lose all 3 lives and it's game over.</p>
+  <h4>Is there a time limit?</h4>
+  <p>No! You play as long as you can keep your lives. Miss a mole and lose a ❤️ — lose all 3 and it's game over.</p>
   {% endcall %}
 </div>
 
 <script>
   const STORAGE_KEY = "mini-whack-a-mole-best";
   const TOTAL_HOLES = 9;
-  const GAME_DURATION = 30;
+  // Level thresholds for score
+  const LEVEL_SCORES = [0, 8, 18, 32];
 
   let score = 0;
   let lives = 3;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let level = 1;
   let running = false;
-  let timeLeft = GAME_DURATION;
-  let timerInterval = null;
   let moleTimers = new Array(TOTAL_HOLES).fill(null);
   let holeActive = new Array(TOTAL_HOLES).fill(false);
 
@@ -356,47 +359,53 @@ icon: "🦔"
   document.getElementById("best-display").textContent = best > 0 ? best : "—";
 
   function getLevel() {
-    if (score >= 20) return 4;
-    if (score >= 10) return 3;
-    if (score >= 5) return 2;
+    for (let i = LEVEL_SCORES.length - 1; i >= 0; i--) {
+      if (score >= LEVEL_SCORES[i]) return i + 1;
+    }
+    return 1;
+  }
+
+  // How many concurrent mole "chains" run at this level
+  function getConcurrentMoles() {
+    if (level >= 4) return 3;
+    if (level >= 3) return 2;
     return 1;
   }
 
   function getMoleDelay() {
-    const lvl = getLevel();
-    return Math.max(600, 1400 - (lvl - 1) * 200);
+    return Math.max(450, 1300 - (level - 1) * 220);
   }
 
   function getMoleDuration() {
-    const lvl = getLevel();
-    return Math.max(600, 1200 - (lvl - 1) * 150);
+    return Math.max(500, 1100 - (level - 1) * 160);
   }
 
   function updateLivesDisplay() {
     document.getElementById("lives-display").textContent = "❤️".repeat(lives);
   }
 
-  function updateScoreDisplay() {
-    document.getElementById("score").textContent = score;
-    const lvl = getLevel();
-    if (lvl !== level) {
-      level = lvl;
-      document.getElementById("timer-display").textContent = timeLeft + "s";
+  function checkLevelUp() {
+    const newLvl = getLevel();
+    if (newLvl !== level) {
+      const prevConcurrent = getConcurrentMoles();
+      level = newLvl;
+      document.getElementById("level-display").textContent = level;
+      const newConcurrent = getConcurrentMoles();
+      // Spawn extra chains when concurrent moles increase
+      for (let i = prevConcurrent; i < newConcurrent; i++) {
+        setTimeout(() => scheduleNextMole(), i * 350);
+      }
     }
   }
 
   function popUpMole(index) {
     if (!running || holeActive[index]) return;
-
     holeActive[index] = true;
     holes[index].classList.add("up");
 
     const duration = getMoleDuration() + Math.random() * 300;
-
     moleTimers[index] = setTimeout(() => {
-      if (holeActive[index]) {
-        missedMole(index);
-      }
+      if (holeActive[index]) missedMole(index);
     }, duration);
   }
 
@@ -412,7 +421,9 @@ icon: "🦔"
 
     if (lives === 0) {
       endGame();
+      return;
     }
+    scheduleNextMole();
   }
 
   function whack(index) {
@@ -427,7 +438,8 @@ icon: "🦔"
     setTimeout(() => holes[index].classList.remove("whacked", "hit-flash"), 300);
 
     score++;
-    updateScoreDisplay();
+    document.getElementById("score").textContent = score;
+    checkLevelUp();
 
     if (score > best) {
       best = score;
@@ -452,9 +464,9 @@ icon: "🦔"
   }
 
   function startMoleLoop() {
-    const startCount = Math.min(2, TOTAL_HOLES);
-    for (let i = 0; i < startCount; i++) {
-      setTimeout(() => scheduleNextMole(), i * 400);
+    const concurrent = getConcurrentMoles();
+    for (let i = 0; i < concurrent; i++) {
+      setTimeout(() => scheduleNextMole(), i * 500);
     }
   }
 
@@ -462,7 +474,6 @@ icon: "🦔"
     score = 0;
     lives = 3;
     level = 1;
-    timeLeft = GAME_DURATION;
     running = true;
 
     moleTimers.forEach((t) => clearTimeout(t));
@@ -471,25 +482,17 @@ icon: "🦔"
     holes.forEach((h) => h.classList.remove("up", "whacked", "hit-flash"));
 
     document.getElementById("score").textContent = "0";
-    document.getElementById("timer-display").textContent = timeLeft + "s";
+    document.getElementById("level-display").textContent = "1";
     updateLivesDisplay();
 
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
-
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      document.getElementById("timer-display").textContent = timeLeft + "s";
-      if (timeLeft <= 0) endGame();
-    }, 1000);
 
     startMoleLoop();
   }
 
   function endGame() {
     running = false;
-    clearInterval(timerInterval);
 
     moleTimers.forEach((t, i) => {
       clearTimeout(t);

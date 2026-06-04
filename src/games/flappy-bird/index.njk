@@ -220,7 +220,7 @@ icon: "🐦"
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("Score", "score") }} {{ statCard("Best", "best-display") }} {{ statCard("Level", "level-display", "1")
-    }}
+    }} {{ statCard("Dist", "dist-display", "0m") }}
   </div>
 
   <div class="canvas-wrapper">
@@ -239,7 +239,7 @@ icon: "🐦"
       <h2>Game Over</h2>
       <div class="summary-row">
         {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
-        "go-level", "1") }}
+        "go-level", "1") }} {{ summaryStatCard("Dist", "go-dist", "0m") }}
       </div>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
@@ -257,12 +257,16 @@ icon: "🐦"
     <li><strong>Desktop:</strong> Press Space or click the canvas to flap</li>
     <li><strong>Mobile:</strong> Tap anywhere on the canvas to flap</li>
   </ul>
-  <h4>Levels &amp; Scoring</h4>
+  <h4>Levels &amp; Time of Day</h4>
   <ul>
-    <li>+1 point per pipe pair cleared</li>
-    <li>Level 2 at score 5, Level 3 at score 10, Level 4 at score 20</li>
-    <li>Each level increases pipe speed and reduces the gap slightly</li>
+    <li>Start at night — stars and a crescent moon light your way</li>
+    <li>Score 5: dawn breaks — orange sky, rising sun</li>
+    <li>Score 10: full day — blue sky with drifting clouds</li>
+    <li>Score 20: dusk — red evening sky, setting sun</li>
+    <li>Each level also increases pipe speed and narrows the gap</li>
   </ul>
+  <h4>Distance</h4>
+  <p>Your total flight distance is tracked in metres (km once you're flying far!).</p>
   {% endcall %} {% call infoDetails("FAQ") %}
   <h4>Is my best score saved?</h4>
   <p>Yes — your best score is saved in your browser's local storage and persists between sessions.</p>
@@ -327,7 +331,6 @@ icon: "🐦"
   canvas.height = H;
   const S = W / 360;
 
-  // Geometry constants
   const BIRD_X = Math.round(W * 0.22);
   const BIRD_RX = Math.round(14 * S);
   const BIRD_RY = Math.round(11 * S);
@@ -346,18 +349,100 @@ icon: "🐦"
   const SPD_STEP = 0.55 * S;
   const SPAWN_DIST = Math.round(215 * S);
 
-  // Level thresholds
   const LEVEL_SCORES = [0, 5, 10, 20];
 
-  let birdY, birdVY, pipes, score, level, distSinceSpawn, running, animId, demoAnimId;
+  // ── Scene / time-of-day system ──────────────────────────────────────────────
+  // Scenes: 0=night, 1=morning, 2=day, 3=evening  (index = level - 1)
+  const SCENE_GRADS = [];
+  (function () {
+    function makeGrad(stops) {
+      const g = ctx.createLinearGradient(0, 0, 0, H - GROUND_H);
+      stops.forEach(([p, c]) => g.addColorStop(p, c));
+      return g;
+    }
+    SCENE_GRADS[0] = makeGrad([
+      [0, "#020617"],
+      [1, "#0f172a"],
+    ]); // night
+    SCENE_GRADS[1] = makeGrad([
+      [0, "#7c2d12"],
+      [0.5, "#c2410c"],
+      [1, "#fbbf24"],
+    ]); // morning
+    SCENE_GRADS[2] = makeGrad([
+      [0, "#0c4a6e"],
+      [1, "#38bdf8"],
+    ]); // day
+    SCENE_GRADS[3] = makeGrad([
+      [0, "#1c0a00"],
+      [0.4, "#9a3412"],
+      [1, "#f97316"],
+    ]); // evening
+  })();
+
+  const GROUND_COLORS = [
+    ["#1a3a12", "#0f2d0a"], // night
+    ["#78350f", "#92400e"], // morning
+    ["#92400e", "#16a34a"], // day
+    ["#7c4a0c", "#92400e"], // evening
+  ];
+
+  // Background decoration objects
+  let bgStars = [];
+  let bgClouds = [];
+  let gameTime = 0;
+
+  function initBgObjects() {
+    bgStars = Array.from({ length: 38 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * (H - GROUND_H) * 0.82,
+      r: (Math.random() * 1.1 + 0.4) * S,
+      phase: Math.random() * Math.PI * 2,
+    }));
+    bgClouds = Array.from({ length: 5 }, (_, i) => ({
+      x: (i / 5) * W + Math.random() * (W / 6),
+      y: (Math.random() * 0.28 + 0.04) * (H - GROUND_H),
+      w: (48 + Math.random() * 56) * S,
+      h: (16 + Math.random() * 12) * S,
+    }));
+  }
+
+  function updateBgObjects(spd) {
+    gameTime++;
+    const cloudSpd = spd * 0.26;
+    bgClouds.forEach((c) => {
+      c.x -= cloudSpd;
+      if (c.x + c.w < 0) {
+        c.x = W + Math.random() * 60 * S;
+        c.y = (Math.random() * 0.28 + 0.04) * (H - GROUND_H);
+        c.w = (48 + Math.random() * 56) * S;
+        c.h = (16 + Math.random() * 12) * S;
+      }
+    });
+  }
+
+  function drawCloud(x, y, w, h) {
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.5, y + h * 0.58, w * 0.37, h * 0.52, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.24, y + h * 0.76, w * 0.25, h * 0.38, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.76, y + h * 0.76, w * 0.23, h * 0.34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(x + w * 0.5, y + h * 0.9, w * 0.44, h * 0.22, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // ────────────────────────────────────────────────────────────────────────────
+
+  let birdY, birdVY, pipes, score, level, distSinceSpawn, totalDist, running, animId, demoAnimId;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
 
   document.getElementById("best-display").textContent = best;
-
-  // Pre-build sky gradient
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
-  skyGrad.addColorStop(0, "#0c4a6e");
-  skyGrad.addColorStop(1, "#0284c7");
+  level = 1;
+  initBgObjects();
 
   function getLevel(s) {
     for (let i = LEVEL_SCORES.length - 1; i >= 0; i--) {
@@ -380,6 +465,10 @@ icon: "🐦"
     pipes.push({ x: W, topH, bottomY: topH + gap, scored: false });
   }
 
+  function fmtDist(meters) {
+    return meters >= 1000 ? (meters / 1000).toFixed(1) + "km" : meters + "m";
+  }
+
   function startGame() {
     cancelAnimationFrame(demoAnimId);
     demoAnimId = null;
@@ -388,11 +477,15 @@ icon: "🐦"
     pipes = [];
     score = 0;
     level = 1;
+    totalDist = 0;
     distSinceSpawn = SPAWN_DIST * 0.55;
     running = true;
+    gameTime = 0;
+    initBgObjects();
 
     document.getElementById("score").textContent = "0";
     document.getElementById("level-display").textContent = "1";
+    document.getElementById("dist-display").textContent = "0m";
     document.getElementById("demo-label").style.display = "none";
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
@@ -417,12 +510,10 @@ icon: "🐦"
     birdVY = Math.min(birdVY + GRAVITY, MAX_FALL);
     birdY += birdVY;
 
-    // Ceiling kill
     if (birdY - BIRD_RY < 0) {
       showEnd();
       return;
     }
-    // Ground kill
     if (birdY + BIRD_RY > H - GROUND_H) {
       showEnd();
       return;
@@ -430,6 +521,9 @@ icon: "🐦"
 
     const spd = getSpeed(level);
     distSinceSpawn += spd;
+    totalDist += spd;
+    updateBgObjects(spd);
+
     if (distSinceSpawn >= SPAWN_DIST) {
       distSinceSpawn = 0;
       spawnPipe();
@@ -438,7 +532,6 @@ icon: "🐦"
     for (const p of pipes) {
       p.x -= spd;
 
-      // Score when cleared
       if (!p.scored && p.x + PIPE_W < BIRD_X - BIRD_RX) {
         p.scored = true;
         score++;
@@ -458,7 +551,6 @@ icon: "🐦"
         }
       }
 
-      // Pipe collision (AABB)
       const bL = BIRD_X - BIRD_RX + 2;
       const bR = BIRD_X + BIRD_RX - 2;
       const bT = birdY - BIRD_RY + 2;
@@ -472,38 +564,118 @@ icon: "🐦"
     }
 
     pipes = pipes.filter((p) => p.x + PIPE_W > 0);
+
+    const meters = Math.round((totalDist * 50) / SPAWN_DIST);
+    document.getElementById("dist-display").textContent = fmtDist(meters);
   }
 
   function drawScene(by, bvy, ps) {
+    const si = Math.min(level - 1, 3);
+
     // Sky
-    ctx.fillStyle = skyGrad;
+    ctx.fillStyle = SCENE_GRADS[si];
     ctx.fillRect(0, 0, W, H);
+
+    // Night: stars + crescent moon
+    if (si === 0) {
+      bgStars.forEach((s) => {
+        const alpha = 0.45 + 0.5 * Math.abs(Math.sin(gameTime * 0.035 + s.phase));
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      // Moon
+      const mx = W * 0.74,
+        my = H * 0.1,
+        mr = 17 * S;
+      ctx.fillStyle = "#fef9c3";
+      ctx.beginPath();
+      ctx.arc(mx, my, mr, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#020617";
+      ctx.beginPath();
+      ctx.arc(mx + mr * 0.4, my - mr * 0.08, mr * 0.82, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Morning/day/evening: sun with glow
+    if (si >= 1) {
+      let sx, sy, sc, sw;
+      if (si === 1) {
+        sx = W * 0.13;
+        sy = H * 0.73;
+        sc = "#fbbf24";
+        sw = "rgba(251,191,36,0.22)";
+      } else if (si === 2) {
+        sx = W * 0.78;
+        sy = H * 0.1;
+        sc = "#fde68a";
+        sw = "rgba(253,230,138,0.18)";
+      } else {
+        sx = W * 0.85;
+        sy = H * 0.68;
+        sc = "#f97316";
+        sw = "rgba(249,115,22,0.28)";
+      }
+      const sr = 18 * S;
+      const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr * 2.8);
+      grd.addColorStop(0, sc);
+      grd.addColorStop(0.35, sw);
+      grd.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr * 2.8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = sc;
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Morning / day: clouds
+    if (si === 1 || si === 2) {
+      ctx.globalAlpha = si === 1 ? 0.55 : 0.88;
+      ctx.fillStyle = "#ffffff";
+      bgClouds.forEach((c) => drawCloud(c.x, c.y, c.w, c.h));
+      ctx.globalAlpha = 1;
+    }
+
+    // Evening: a few dim stars peeking through
+    if (si === 3) {
+      bgStars.slice(0, 12).forEach((s) => {
+        ctx.globalAlpha = 0.25 + 0.2 * Math.abs(Math.sin(gameTime * 0.03 + s.phase));
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(s.x, s.y * 0.4, s.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
 
     // Pipes
     for (const p of ps) {
-      // Top pipe shaft
       ctx.fillStyle = "#16a34a";
       ctx.fillRect(p.x, 0, PIPE_W, Math.max(0, p.topH - PIPE_CAP));
-      // Top pipe cap
       ctx.fillStyle = "#15803d";
       ctx.beginPath();
       ctx.roundRect(p.x - 4 * S, p.topH - PIPE_CAP, PIPE_W + 8 * S, PIPE_CAP, [0, 0, 4, 4]);
       ctx.fill();
-      // Bottom pipe cap
       ctx.fillStyle = "#15803d";
       ctx.beginPath();
       ctx.roundRect(p.x - 4 * S, p.bottomY, PIPE_W + 8 * S, PIPE_CAP, [4, 4, 0, 0]);
       ctx.fill();
-      // Bottom pipe shaft
       ctx.fillStyle = "#16a34a";
       const shaftY = p.bottomY + PIPE_CAP;
       ctx.fillRect(p.x, shaftY, PIPE_W, H - shaftY);
     }
 
     // Ground
-    ctx.fillStyle = "#92400e";
+    ctx.fillStyle = GROUND_COLORS[si][0];
     ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
-    ctx.fillStyle = "#16a34a";
+    ctx.fillStyle = GROUND_COLORS[si][1];
     ctx.fillRect(0, H - GROUND_H, W, Math.round(7 * S));
 
     // Bird (with tilt)
@@ -512,30 +684,26 @@ icon: "🐦"
     ctx.translate(BIRD_X, by);
     ctx.rotate(angle);
 
-    // Body
     ctx.fillStyle = "#fbbf24";
     ctx.beginPath();
     ctx.ellipse(0, 0, BIRD_RX, BIRD_RY, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Wing (darker stripe)
     ctx.fillStyle = "#f59e0b";
     ctx.beginPath();
     ctx.ellipse(-BIRD_RX * 0.1, BIRD_RY * 0.3, BIRD_RX * 0.55, BIRD_RY * 0.38, 0.3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Eye white
     ctx.fillStyle = "#ffffff";
     ctx.beginPath();
     ctx.arc(BIRD_RX * 0.42, -BIRD_RY * 0.28, BIRD_RY * 0.34, 0, Math.PI * 2);
     ctx.fill();
-    // Pupil
+
     ctx.fillStyle = "#0f172a";
     ctx.beginPath();
     ctx.arc(BIRD_RX * 0.52, -BIRD_RY * 0.22, BIRD_RY * 0.17, 0, Math.PI * 2);
     ctx.fill();
 
-    // Beak
     ctx.fillStyle = "#f97316";
     ctx.beginPath();
     ctx.moveTo(BIRD_RX * 0.65, -BIRD_RY * 0.1);
@@ -559,15 +727,19 @@ icon: "🐦"
       launchConfetti();
     }
 
+    const meters = Math.round((totalDist * 50) / SPAWN_DIST);
     document.getElementById("go-score").textContent = score;
     document.getElementById("go-best").textContent = best;
     document.getElementById("go-level").textContent = level;
+    document.getElementById("go-dist").textContent = fmtDist(meters);
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "flex";
   }
 
-  // Demo: AI-controlled bird navigates pipes
+  // Demo: AI-controlled bird
   function startDemo() {
+    level = 1;
+    initBgObjects();
     let dBy = H * 0.38;
     let dBvy = 0;
     let dPipes = [];
@@ -597,6 +769,7 @@ icon: "🐦"
       dPipes.forEach((p) => (p.x -= dSpd));
       dPipes = dPipes.filter((p) => p.x + PIPE_W > 0);
 
+      updateBgObjects(dSpd);
       drawScene(dBy, dBvy, dPipes);
       demoAnimId = requestAnimationFrame(demoLoop);
     }
@@ -624,6 +797,5 @@ icon: "🐦"
     }
   });
 
-  // Start with demo
   startDemo();
 </script>

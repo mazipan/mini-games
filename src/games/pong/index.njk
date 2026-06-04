@@ -382,6 +382,9 @@ icon: "🏓"
     p2score = 0;
   let wins = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let gameMode = "ai";
+  let paused = false;
+  let pauseMsg = "";
+  let pauseTimer = null;
   const keys = {};
 
   document.getElementById("best-display").textContent = wins;
@@ -423,15 +426,40 @@ icon: "🏓"
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
 
+    clearTimeout(pauseTimer);
+    paused = false;
+    pauseMsg = "";
+
     cancelAnimationFrame(animId);
     animId = requestAnimationFrame(gameLoop);
   }
 
+  function drawScoreMsg() {
+    const bx = W * 0.18,
+      bw = W * 0.64,
+      by = H * 0.36,
+      bh = H * 0.28;
+    ctx.save();
+    ctx.fillStyle = "rgba(15,23,42,0.82)";
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 10);
+    ctx.fill();
+    ctx.fillStyle = "#fbbf24";
+    ctx.font = `bold ${Math.round(20 * S)}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(pauseMsg, W / 2, H / 2);
+    ctx.restore();
+  }
+
   function gameLoop() {
     if (!running) return;
-    handleInput();
-    updateBall();
+    if (!paused) {
+      handleInput();
+      updateBall();
+    }
     drawScene(p1y, p2y, ball);
+    if (paused) drawScoreMsg();
     if (running) animId = requestAnimationFrame(gameLoop);
   }
 
@@ -500,7 +528,15 @@ icon: "🏓"
         showEnd(false);
         return;
       }
-      resetBall(true);
+      clearTimeout(pauseTimer);
+      paused = true;
+      pauseMsg = gameMode === "pvp" ? "P2 scores! 🎉" : "AI gets one…";
+      pauseTimer = setTimeout(() => {
+        paused = false;
+        pauseMsg = "";
+        resetBall(true);
+      }, 1400);
+      return;
     }
 
     // P1 scores (ball exits right)
@@ -511,7 +547,15 @@ icon: "🏓"
         showEnd(true);
         return;
       }
-      resetBall(false);
+      clearTimeout(pauseTimer);
+      paused = true;
+      pauseMsg = gameMode === "pvp" ? "P1 scores! 🎉" : "Nice shot! 🎉";
+      pauseTimer = setTimeout(() => {
+        paused = false;
+        pauseMsg = "";
+        resetBall(false);
+      }, 1400);
+      return;
     }
   }
 
