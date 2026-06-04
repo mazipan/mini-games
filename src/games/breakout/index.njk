@@ -11,7 +11,7 @@ icon: "🧱"
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1rem;
     padding: 1rem;
@@ -69,7 +69,7 @@ icon: "🧱"
     font-family: monospace;
   }
   .play-btn {
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1.5rem;
     background: #ea580c;
     color: white;
     border: none;
@@ -98,6 +98,72 @@ icon: "🧱"
     color: #ea580c;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+  #gameover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 4px;
+    gap: 0.75rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .pattern-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(480px, calc(100vw - 2rem));
+  }
+  .pattern-btn {
+    padding: 0.3rem 0.8rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pattern-btn.active,
+  .pattern-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #ea580c;
   }
   .info-section {
     width: 100%;
@@ -183,6 +249,17 @@ icon: "🧱"
       <div class="stat-value" id="level">1</div>
     </div>
   </div>
+  <div class="pattern-row">
+    <button class="pattern-btn active" id="pat-random" onclick="setPattern(-1)">🔀 Random</button>
+    <button class="pattern-btn" id="pat-0" onclick="setPattern(0)">Classic</button>
+    <button class="pattern-btn" id="pat-1" onclick="setPattern(1)">Pyramid</button>
+    <button class="pattern-btn" id="pat-2" onclick="setPattern(2)">Diamond</button>
+    <button class="pattern-btn" id="pat-3" onclick="setPattern(3)">Checkerboard</button>
+    <button class="pattern-btn" id="pat-4" onclick="setPattern(4)">Cross</button>
+    <button class="pattern-btn" id="pat-5" onclick="setPattern(5)">Fortress</button>
+    <button class="pattern-btn" id="pat-6" onclick="setPattern(6)">Arrow</button>
+    <button class="pattern-btn" id="pat-7" onclick="setPattern(7)">Wave</button>
+  </div>
   <div class="canvas-wrapper">
     <canvas id="breakout"></canvas>
     <div id="overlay">
@@ -193,6 +270,26 @@ icon: "🧱"
         Mouse, drag, or hold ← → to move paddle
       </p>
       <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+    <div id="gameover-overlay" style="display: none">
+      <span id="go-icon" style="font-size: 2.5rem">💀</span>
+      <h2 id="go-title">Game Over</h2>
+      <div class="summary-row">
+        <div class="summary-stat">
+          <div class="summary-label">Score</div>
+          <div class="summary-value" id="go-score">0</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Best</div>
+          <div class="summary-value" id="go-best">0</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Level</div>
+          <div class="summary-value" id="go-level">1</div>
+        </div>
+      </div>
+      <p id="go-pattern" style="color: #64748b; font-size: 0.8rem"></p>
+      <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
   <p class="controls-hint">Mouse / finger drag · Hold ← → arrow keys</p>
@@ -389,9 +486,16 @@ icon: "🧱"
     level,
     running = false,
     animId,
-    demoAnimId;
+    demoAnimId,
+    chosenPattern = -1;
   let bestScore = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   const keys = {};
+
+  function setPattern(idx) {
+    chosenPattern = idx;
+    document.querySelectorAll(".pattern-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById(idx === -1 ? "pat-random" : "pat-" + idx).classList.add("active");
+  }
 
   document.getElementById("best-score").textContent = bestScore;
 
@@ -429,11 +533,12 @@ icon: "🧱"
   function startGame() {
     cancelAnimationFrame(demoAnimId);
     document.getElementById("demo-label").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
     level = 1;
     score = 0;
     lives = 3;
     paddle = { x: W / 2 - PADDLE_W / 2, y: PADDLE_Y };
-    bricks = createBricks(0);
+    bricks = createBricks(chosenPattern === -1 ? 0 : chosenPattern);
     resetBall(1);
     updateUI();
     document.getElementById("overlay").style.display = "none";
@@ -476,7 +581,7 @@ icon: "🧱"
     if (ball.y + BALL_R > H) {
       lives--;
       if (lives <= 0) {
-        showEnd("Game Over!");
+        showEnd(false);
         return;
       }
       updateUI();
@@ -515,12 +620,12 @@ icon: "🧱"
       level++;
       launchConfetti();
       if (level > PATTERNS.length) {
-        showEnd("You Win! 🎉");
+        showEnd(true);
         return;
       }
       running = false;
       updateUI();
-      bricks = createBricks(level - 1);
+      bricks = createBricks(chosenPattern === -1 ? level - 1 : chosenPattern);
       resetBall(level);
       setTimeout(() => {
         running = true;
@@ -549,7 +654,7 @@ icon: "🧱"
     ctx.fill();
   }
 
-  function showEnd(msg) {
+  function showEnd(isWin) {
     running = false;
     cancelAnimationFrame(animId);
     if (score > bestScore) {
@@ -559,13 +664,15 @@ icon: "🧱"
       launchConfetti();
     }
     draw();
-    const overlay = document.getElementById("overlay");
-    document.getElementById("overlay-title").textContent = msg;
-    document.getElementById("overlay-msg").textContent = `Score: ${score}`;
-    overlay.querySelector("button").textContent = "Play Again";
-    document.getElementById("demo-label").style.display = "none";
-    overlay.style.display = "flex";
-    startDemo();
+    document.getElementById("go-icon").textContent = isWin ? "🏆" : "💀";
+    document.getElementById("go-title").textContent = isWin ? "You Win!" : "Game Over";
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = bestScore;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("go-pattern").textContent =
+      "Pattern: " + (chosenPattern === -1 ? "Random" : PATTERNS[chosenPattern].name);
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "flex";
   }
 
   // Demo: auto-track ball with paddle

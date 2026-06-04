@@ -11,7 +11,7 @@ icon: "🐍"
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1rem;
     padding: 1rem;
@@ -89,6 +89,48 @@ icon: "🐍"
     color: #22c55e;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+  #gameover-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 4px;
+    gap: 0.75rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
   }
   #dpad {
     display: none;
@@ -203,6 +245,25 @@ icon: "🐍"
       <h2 id="overlay-title">Snake</h2>
       <p id="overlay-msg" class="controls-hint" style="color: #94a3b8"></p>
       <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+    <div id="gameover-overlay" style="display: none">
+      <span style="font-size: 2.5rem">💀</span>
+      <h2>Game Over</h2>
+      <div class="summary-row">
+        <div class="summary-stat">
+          <div class="summary-label">Score</div>
+          <div class="summary-value" id="go-score">0</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Best</div>
+          <div class="summary-value" id="go-best">0</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Level</div>
+          <div class="summary-value" id="go-level">1</div>
+        </div>
+      </div>
+      <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
   <div id="dpad">
@@ -434,6 +495,7 @@ icon: "🐍"
   function startGame() {
     clearInterval(demoInterval);
     document.getElementById("demo-label").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
     snake = [
       { x: 10, y: 10 },
       { x: 9, y: 10 },
@@ -523,13 +585,11 @@ icon: "🐍"
       document.getElementById("high-score").textContent = highScore;
       launchConfetti();
     }
-    const overlay = document.getElementById("overlay");
-    document.getElementById("demo-label").style.display = "none";
-    document.getElementById("overlay-title").textContent = "Game Over";
-    document.getElementById("overlay-msg").textContent = `Score: ${score} · Level: ${level}`;
-    overlay.querySelector("button").textContent = "Play Again";
-    overlay.style.display = "flex";
-    startDemo();
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = highScore;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "flex";
   }
 
   const KEY_MAP = {
