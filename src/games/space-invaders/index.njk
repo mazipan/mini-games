@@ -90,6 +90,8 @@ icon: "👾"
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   .play-btn:hover {
     background: #6d28d9;
@@ -247,8 +249,8 @@ icon: "👾"
   {% call infoDetails("How to Play") %}
   <h4>Goal</h4>
   <p>
-    Destroy all alien invaders before they reach the bottom of the screen. Clear every wave to advance — each new wave
-    moves faster!
+    Destroy all alien invaders before they reach the bottom. Clear each wave to advance — formations grow larger and
+    faster as you progress!
   </p>
   <h4>Controls — Desktop</h4>
   <ul>
@@ -260,13 +262,19 @@ icon: "👾"
     <li><strong>◀ ▶ buttons</strong> — hold to move continuously</li>
     <li><strong>🔫 button</strong> — tap to fire</li>
   </ul>
-  <h4>Waves &amp; Scoring</h4>
+  <h4>Wave Progression</h4>
   <ul>
-    <li><strong>Bottom rows (🤖)</strong> — 10 points each</li>
-    <li><strong>Middle rows (👽)</strong> — 20 points each</li>
-    <li><strong>Top row (👾)</strong> — 30 points each</li>
-    <li>Each wave cleared = aliens respawn faster</li>
-    <li>You have <strong>3 lives</strong> — getting hit by an alien bullet costs one</li>
+    <li><strong>Waves 1–2:</strong> 1–3 aliens, no shooting — learn the basics</li>
+    <li><strong>Waves 3–4:</strong> up to 7 aliens, aliens start shooting back</li>
+    <li><strong>Waves 5–6:</strong> 2-row formations, new alien type appears</li>
+    <li><strong>Waves 7–8:</strong> 3-row formations, another new type</li>
+    <li><strong>Waves 9–10:</strong> 4–5 rows — the full invasion!</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>Higher-row aliens are worth more points</li>
+    <li>Remaining aliens speed up as their numbers dwindle</li>
+    <li>You have <strong>3 lives</strong> — getting hit costs one</li>
   </ul>
   {% endcall %} {% call infoDetails("FAQ") %}
   <h4>What is the Live Demo?</h4>
@@ -275,10 +283,15 @@ icon: "👾"
   <p>Yes — your best score is saved automatically in your browser's local storage and persists between sessions.</p>
   <h4>Can I play on mobile?</h4>
   <p>Yes! The D-pad appears automatically on small screens. Hold ◀ or ▶ to move and tap 🔫 to shoot.</p>
-  <h4>Why do aliens speed up?</h4>
+  <h4>Why do aliens speed up as I kill them?</h4>
   <p>
-    As you destroy more aliens the remaining ones move faster — a classic Space Invaders mechanic. Clearing a wave also
-    increases the base speed for the next wave.
+    As fewer aliens remain they move faster — a classic Space Invaders mechanic. Clearing a wave also raises the base
+    speed for the next wave.
+  </p>
+  <h4>When do aliens start shooting?</h4>
+  <p>
+    Aliens don't shoot in waves 1 and 2 — perfect for learning. From wave 3 onward they'll fire back, with increasing
+    frequency each wave.
   </p>
   {% endcall %}
 </div>
@@ -330,54 +343,89 @@ icon: "👾"
   const DESIGN = 480;
   const SIZE = Math.min(DESIGN, window.innerWidth - 32);
   const S = SIZE / DESIGN;
-  const canvas = document.getElementById("si-canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = SIZE;
-  canvas.height = Math.round(SIZE * (560 / 480));
+  const gameCanvas = document.getElementById("si-canvas");
+  const ctx = gameCanvas.getContext("2d");
+  gameCanvas.width = SIZE;
+  gameCanvas.height = Math.round(SIZE * (560 / 480));
 
-  // ── Constants ─────────────────────────────────────────────────────────────
-  const STORAGE_KEY = "mini-space-invaders-best";
-  const ALIEN_COLS = 11;
-  const ALIEN_ROWS = 5;
+  // ── Sizing constants ──────────────────────────────────────────────────────
   const alienW = 32 * S,
     alienH = 24 * S;
-  const alienPadX = 12 * S,
-    alienPadY = 12 * S;
-  const alienOffsetX = 20 * S,
-    alienOffsetY = 40 * S;
+  const alienPadX = 10 * S,
+    alienPadY = 10 * S;
+  const alienOffsetY = 36 * S;
   const playerW = 30 * S,
     playerH = 18 * S;
   const BULLET_W = 3 * S,
     BULLET_H = 10 * S;
-  const ALIEN_COLORS = ["#7c3aed", "#3b82f6", "#3b82f6", "#10b981", "#10b981"];
-  const ALIEN_POINTS = [30, 20, 20, 10, 10];
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // ── Wave progression config ───────────────────────────────────────────────
+  // Each entry: rows × cols of aliens, base movement speed (pre-S), shoot interval in frames (0 = no shooting)
+  const WAVE_CONFIGS = [
+    { rows: 1, cols: 1, speed: 0.35, shoot: 0 }, // wave 1 : 1 alien, no shooting
+    { rows: 1, cols: 3, speed: 0.4, shoot: 0 }, // wave 2 : 3 aliens, no shooting
+    { rows: 1, cols: 5, speed: 0.48, shoot: 150 }, // wave 3 : 5 aliens, aliens fire
+    { rows: 1, cols: 7, speed: 0.55, shoot: 130 }, // wave 4 : 7 aliens
+    { rows: 2, cols: 6, speed: 0.62, shoot: 115 }, // wave 5 : 12 aliens, 2nd type
+    { rows: 2, cols: 8, speed: 0.7, shoot: 100 }, // wave 6 : 16 aliens
+    { rows: 3, cols: 8, speed: 0.8, shoot: 90 }, // wave 7 : 24 aliens, 3rd type
+    { rows: 3, cols: 10, speed: 0.9, shoot: 78 }, // wave 8 : 30 aliens
+    { rows: 4, cols: 10, speed: 1.0, shoot: 65 }, // wave 9 : 40 aliens, 4th type
+    { rows: 5, cols: 11, speed: 1.15, shoot: 55 }, // wave 10+: full grid, 5th type
+  ];
+
+  // 5 alien types, ordered top-row → bottom-row (hardest → easiest)
+  const ALIEN_TYPE_COLORS = ["#7c3aed", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b"];
+  const ALIEN_TYPE_POINTS = [30, 25, 20, 15, 10];
+  const MAX_ROWS = 5;
+
+  function getWaveCfg(w) {
+    const idx = Math.min(w - 1, WAVE_CONFIGS.length - 1);
+    const base = WAVE_CONFIGS[idx];
+    const extra = w > WAVE_CONFIGS.length ? (w - WAVE_CONFIGS.length) * 0.12 : 0;
+    const shootExtra = w > WAVE_CONFIGS.length ? (w - WAVE_CONFIGS.length) * 5 : 0;
+    return {
+      rows: base.rows,
+      cols: base.cols,
+      speed: (base.speed + extra) * S,
+      shoot: base.shoot > 0 ? Math.max(30, base.shoot - shootExtra) : 0,
+    };
+  }
+
+  // ── Storage ───────────────────────────────────────────────────────────────
+  const STORAGE_KEY = "mini-space-invaders-best";
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   document.getElementById("best-display").textContent = best;
 
-  let score, wave, lives, running, isDemo, animId, alienShootTimer, frameCount;
+  // ── State ─────────────────────────────────────────────────────────────────
+  let score, wave, lives, running, animId, alienShootTimer, frameCount;
   let player, playerBullets, alienBullets, aliens;
-  let alienDirX, alienSpeedX;
+  let alienDirX, alienSpeedX, waveCfg;
+  let waveAnnounce = 0; // frames remaining to show wave announcement
   let keys = {};
-
-  // D-pad held state
   let dpadLeft = false,
     dpadRight = false,
     dpadFire = false,
     dpadFireUsed = false;
 
-  // ── Alien grid helpers ────────────────────────────────────────────────────
-  function makeAliens() {
+  // ── Alien grid ────────────────────────────────────────────────────────────
+  function makeAliens(cfg) {
     const grid = [];
-    for (let row = 0; row < ALIEN_ROWS; row++) {
-      for (let col = 0; col < ALIEN_COLS; col++) {
+    const formationW = cfg.cols * alienW + (cfg.cols - 1) * alienPadX;
+    const startX = (gameCanvas.width - formationW) / 2;
+    for (let row = 0; row < cfg.rows; row++) {
+      // Map row to alien type: bottom row of MAX_ROWS array = easiest (orange/10pts)
+      // When cfg.rows < MAX_ROWS, only the bottom cfg.rows types are used
+      const typeIdx = MAX_ROWS - cfg.rows + row;
+      for (let col = 0; col < cfg.cols; col++) {
         grid.push({
           row,
           col,
-          x: alienOffsetX + col * (alienW + alienPadX),
+          x: startX + col * (alienW + alienPadX),
           y: alienOffsetY + row * (alienH + alienPadY),
           alive: true,
+          color: ALIEN_TYPE_COLORS[typeIdx],
+          points: ALIEN_TYPE_POINTS[typeIdx],
         });
       }
     }
@@ -388,36 +436,7 @@ icon: "👾"
     return aliens.filter((a) => a.alive);
   }
 
-  function alienSpeed(w) {
-    return (0.5 + w * 0.3) * S;
-  }
-
-  // ── Init game state ───────────────────────────────────────────────────────
-  function initState(startWave) {
-    wave = startWave || 1;
-    score = 0;
-    lives = 3;
-    playerBullets = [];
-    alienBullets = [];
-    aliens = makeAliens();
-    alienDirX = 1;
-    alienSpeedX = alienSpeed(wave);
-    alienShootTimer = 0;
-    frameCount = 0;
-    player = { x: canvas.width / 2, y: canvas.height - 30 * S };
-    updateHUD();
-  }
-
-  function resetWave() {
-    playerBullets = [];
-    alienBullets = [];
-    aliens = makeAliens();
-    alienDirX = 1;
-    alienSpeedX = alienSpeed(wave);
-    alienShootTimer = 0;
-    player.x = canvas.width / 2;
-  }
-
+  // ── HUD ───────────────────────────────────────────────────────────────────
   function updateHUD() {
     document.getElementById("score").textContent = score;
     document.getElementById("wave-display").textContent = wave;
@@ -425,150 +444,171 @@ icon: "👾"
     document.getElementById("best-display").textContent = best;
   }
 
+  // ── Init ──────────────────────────────────────────────────────────────────
+  function initState() {
+    score = 0;
+    wave = 1;
+    lives = 3;
+    playerBullets = [];
+    alienBullets = [];
+    waveCfg = getWaveCfg(wave);
+    aliens = makeAliens(waveCfg);
+    alienDirX = 1;
+    alienSpeedX = waveCfg.speed;
+    alienShootTimer = 0;
+    frameCount = 0;
+    waveAnnounce = 90;
+    player = { x: gameCanvas.width / 2, y: gameCanvas.height - 30 * S };
+    updateHUD();
+  }
+
+  function startNextWave() {
+    wave++;
+    playerBullets = [];
+    alienBullets = [];
+    waveCfg = getWaveCfg(wave);
+    aliens = makeAliens(waveCfg);
+    alienDirX = 1;
+    alienSpeedX = waveCfg.speed;
+    alienShootTimer = 0;
+    waveAnnounce = 100;
+    player.x = gameCanvas.width / 2;
+    updateHUD();
+  }
+
   // ── Draw ──────────────────────────────────────────────────────────────────
   function draw() {
     ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
 
     // Ground line
     ctx.strokeStyle = "#22c55e";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(0, canvas.height - 10 * S);
-    ctx.lineTo(canvas.width, canvas.height - 10 * S);
+    ctx.moveTo(0, gameCanvas.height - 10 * S);
+    ctx.lineTo(gameCanvas.width, gameCanvas.height - 10 * S);
     ctx.stroke();
 
     // Player cannon
     ctx.fillStyle = "#22c55e";
     ctx.fillRect(player.x - playerW / 2, player.y - playerH, playerW, playerH);
-    // Turret
     ctx.fillRect(player.x - 4 * S, player.y - playerH - 8 * S, 8 * S, 8 * S);
 
     // Aliens
     for (const a of aliens) {
       if (!a.alive) continue;
-      ctx.fillStyle = ALIEN_COLORS[a.row];
+      ctx.fillStyle = a.color;
       ctx.fillRect(a.x, a.y, alienW, alienH);
-      // Simple eye details
-      ctx.fillStyle = "rgba(0,0,0,0.4)";
-      ctx.fillRect(a.x + alienW * 0.2, a.y + alienH * 0.25, alienW * 0.2, alienH * 0.3);
-      ctx.fillRect(a.x + alienW * 0.6, a.y + alienH * 0.25, alienW * 0.2, alienH * 0.3);
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.fillRect(a.x + alienW * 0.18, a.y + alienH * 0.25, alienW * 0.22, alienH * 0.32);
+      ctx.fillRect(a.x + alienW * 0.6, a.y + alienH * 0.25, alienW * 0.22, alienH * 0.32);
     }
 
-    // Player bullets (green)
+    // Player bullets
     ctx.fillStyle = "#86efac";
-    for (const b of playerBullets) {
-      ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
-    }
+    for (const b of playerBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
-    // Alien bullets (red)
+    // Alien bullets
     ctx.fillStyle = "#f87171";
-    for (const b of alienBullets) {
-      ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
-    }
+    for (const b of alienBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
-    // Wave label top-left
-    ctx.fillStyle = "#475569";
-    ctx.font = `${Math.round(11 * S)}px monospace`;
-    ctx.fillText(`WAVE ${wave}`, 8 * S, 16 * S);
+    // Wave announcement banner
+    if (waveAnnounce > 0) {
+      const alpha = Math.min(1, waveAnnounce / 20);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#1e293b";
+      const bh = 36 * S;
+      ctx.fillRect(0, gameCanvas.height / 2 - bh / 2, gameCanvas.width, bh);
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = `bold ${Math.round(15 * S)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillText(`— WAVE ${wave} —`, gameCanvas.width / 2, gameCanvas.height / 2 + 5 * S);
+      ctx.textAlign = "left";
+      ctx.globalAlpha = 1;
+    }
   }
 
   // ── Update ────────────────────────────────────────────────────────────────
   function update(demo) {
     frameCount++;
+    if (waveAnnounce > 0) waveAnnounce--;
+
+    const spd = 3 * S;
 
     // Player movement
-    const spd = 3 * S;
-    if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) {
-      player.x -= spd;
-    }
-    if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < canvas.width) {
-      player.x += spd;
-    }
+    if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
+    if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
 
     // Player fire
-    const canFire = playerBullets.length < 2;
-    if (canFire && (keys[" "] || (dpadFire && !dpadFireUsed))) {
+    if (playerBullets.length < 2 && (keys[" "] || (dpadFire && !dpadFireUsed))) {
       playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
       if (dpadFire) dpadFireUsed = true;
     }
 
-    // Demo AI: track nearest alien column, fire periodically
+    // Demo AI: track the lowest alive alien, fire every 30 frames
     if (demo) {
       const alive = liveAliens();
       if (alive.length > 0) {
-        // Find alien closest to bottom center
-        const target = alive.reduce((best, a) => (a.y > best.y ? a : best), alive[0]);
+        const target = alive.reduce((b, a) => (a.y > b.y ? a : b), alive[0]);
         const cx = target.x + alienW / 2;
-        if (Math.abs(player.x - cx) > 4 * S) {
-          player.x += player.x < cx ? spd : -spd;
-        }
-        player.x = Math.max(playerW / 2, Math.min(canvas.width - playerW / 2, player.x));
-        if (frameCount % 30 === 0 && playerBullets.length < 2) {
+        if (Math.abs(player.x - cx) > 4 * S) player.x += player.x < cx ? spd : -spd;
+        player.x = Math.max(playerW / 2, Math.min(gameCanvas.width - playerW / 2, player.x));
+        if (frameCount % 30 === 0 && playerBullets.length < 2)
           playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
-        }
       }
     }
 
     // Move player bullets
-    const bulletSpd = 5 * S;
     playerBullets = playerBullets.filter((b) => {
-      b.y -= bulletSpd;
+      b.y -= 5 * S;
       return b.y + BULLET_H > 0;
     });
 
     // Move alien bullets
-    const abSpd = 2 * S;
     alienBullets = alienBullets.filter((b) => {
-      b.y += abSpd;
-      return b.y < canvas.height;
+      b.y += 2 * S;
+      return b.y < gameCanvas.height;
     });
 
-    // Move aliens
+    // Move alien formation
     const alive = liveAliens();
-    if (alive.length === 0) return; // wave cleared, handled elsewhere
+    if (alive.length === 0) return;
 
-    // Speed scales with fewer aliens remaining
-    const speedMult = 1 + (1 - alive.length / (ALIEN_COLS * ALIEN_ROWS)) * 1.5;
+    const totalForWave = waveCfg.rows * waveCfg.cols;
+    const speedMult = 1 + (1 - alive.length / totalForWave) * 1.5;
     const step = alienSpeedX * alienDirX * speedMult;
-    for (const a of aliens) {
-      if (a.alive) a.x += step;
-    }
+    for (const a of aliens) if (a.alive) a.x += step;
 
-    // Wall bounce
+    // Wall bounce: shift formation back and descend
     let minX = Infinity,
       maxX = -Infinity;
     for (const a of alive) {
       if (a.x < minX) minX = a.x;
       if (a.x + alienW > maxX) maxX = a.x + alienW;
     }
-    if (maxX >= canvas.width || minX <= 0) {
+    if (maxX >= gameCanvas.width || minX <= 0) {
       alienDirX *= -1;
+      const overshoot = maxX >= gameCanvas.width ? maxX - gameCanvas.width : -minX;
       for (const a of aliens) {
-        if (a.alive) {
-          // Move back within bounds
-          if (maxX >= canvas.width) a.x -= maxX - canvas.width;
-          else a.x += -minX;
-          a.y += alienH * 0.5;
-        }
+        if (!a.alive) continue;
+        a.x += alienDirX * overshoot;
+        a.y += alienH * 0.5;
       }
     }
 
-    // Alien shooting
-    alienShootTimer++;
-    const shootInterval = Math.max(60, 120 - wave * 10);
-    if (alienShootTimer >= shootInterval) {
-      alienShootTimer = 0;
-      // Pick a random alive alien
-      if (alive.length > 0) {
+    // Alien shooting (skip if shoot interval is 0 or in demo)
+    if (waveCfg.shoot > 0 && !demo) {
+      alienShootTimer++;
+      if (alienShootTimer >= waveCfg.shoot) {
+        alienShootTimer = 0;
         const shooter = alive[Math.floor(Math.random() * alive.length)];
         alienBullets.push({ x: shooter.x + alienW / 2, y: shooter.y + alienH });
       }
     }
 
-    if (demo) return; // skip collision in demo
+    if (demo) return;
 
-    // Collision: player bullet vs alien
+    // Collision: player bullet ↔ alien
     outer: for (let bi = playerBullets.length - 1; bi >= 0; bi--) {
       const b = playerBullets[bi];
       for (const a of aliens) {
@@ -576,21 +616,19 @@ icon: "👾"
         if (b.x >= a.x && b.x <= a.x + alienW && b.y >= a.y && b.y <= a.y + alienH) {
           a.alive = false;
           playerBullets.splice(bi, 1);
-          const pts = ALIEN_POINTS[a.row];
-          score += pts;
+          score += a.points;
           if (score > best) {
             best = score;
             localStorage.setItem(STORAGE_KEY, best);
-            document.getElementById("best-display").textContent = best;
             launchConfetti();
           }
-          document.getElementById("score").textContent = score;
+          updateHUD();
           continue outer;
         }
       }
     }
 
-    // Collision: alien bullet vs player
+    // Collision: alien bullet ↔ player
     for (let bi = alienBullets.length - 1; bi >= 0; bi--) {
       const b = alienBullets[bi];
       if (
@@ -605,17 +643,18 @@ icon: "👾"
       }
     }
 
-    // Aliens reach player level → game over
+    // Any alien reaches the ground line → game over
     for (const a of alive) {
-      if (a.y + alienH >= player.y - playerH) {
+      if (a.y + alienH >= gameCanvas.height - 10 * S) {
         gameOver();
         return;
       }
     }
 
-    // All aliens dead → wave cleared
+    // All dead → wave cleared
     if (liveAliens().length === 0) {
-      waveClear();
+      launchConfetti();
+      startNextWave();
     }
   }
 
@@ -625,25 +664,15 @@ icon: "👾"
     if (lives <= 0) {
       gameOver();
     } else {
-      // Reset positions but keep formation and score
-      player.x = canvas.width / 2;
+      player.x = gameCanvas.width / 2;
       playerBullets = [];
       alienBullets = [];
     }
   }
 
-  function waveClear() {
-    wave++;
-    launchConfetti();
-    resetWave();
-    alienSpeedX = alienSpeed(wave);
-    updateHUD();
-  }
-
   function gameOver() {
     running = false;
     cancelAnimationFrame(animId);
-
     document.getElementById("go-score").textContent = score;
     document.getElementById("go-best").textContent = best;
     document.getElementById("go-wave").textContent = wave;
@@ -667,35 +696,43 @@ icon: "👾"
   // ── Start / restart ───────────────────────────────────────────────────────
   function startDemo() {
     running = false;
-    isDemo = true;
     cancelAnimationFrame(animId);
-    initState(1);
+    // Demo uses wave 4 config (1 row × 7) so it looks interesting
+    score = 0;
+    wave = 4;
+    lives = 3;
+    playerBullets = [];
+    alienBullets = [];
+    waveCfg = getWaveCfg(wave);
+    aliens = makeAliens(waveCfg);
+    alienDirX = 1;
+    alienSpeedX = waveCfg.speed;
+    alienShootTimer = 0;
+    frameCount = 0;
+    waveAnnounce = 0;
+    player = { x: gameCanvas.width / 2, y: gameCanvas.height - 30 * S };
     animId = requestAnimationFrame(demoLoop);
   }
 
   function startGame() {
     cancelAnimationFrame(animId);
     running = true;
-    isDemo = false;
     document.getElementById("demo-label").style.display = "none";
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
-    initState(1);
+    initState();
     animId = requestAnimationFrame(gameLoop);
   }
 
-  // ── Keyboard input ────────────────────────────────────────────────────────
+  // ── Input ─────────────────────────────────────────────────────────────────
   document.addEventListener("keydown", (e) => {
-    if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) {
-      e.preventDefault();
-    }
+    if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
     keys[e.key] = true;
   });
   document.addEventListener("keyup", (e) => {
     keys[e.key] = false;
   });
 
-  // ── D-pad input ───────────────────────────────────────────────────────────
   const btnLeft = document.getElementById("btn-left");
   const btnRight = document.getElementById("btn-right");
   const btnFire = document.getElementById("btn-fire");
