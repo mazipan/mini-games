@@ -243,6 +243,10 @@ icon: "🏓"
     statCard("Wins", "best-display") }}
   </div>
 
+  <div class="mode-row" id="orientation-row">
+    <button class="mode-btn active" id="orient-h" onclick="setOrientation('horizontal')">↔ Horizontal</button>
+    <button class="mode-btn" id="orient-v" onclick="setOrientation('vertical')">↕ Vertical</button>
+  </div>
   <div class="mode-row" id="mode-row">
     <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">vs AI</button>
     <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')">vs Player</button>
@@ -380,8 +384,14 @@ icon: "🏓"
   const BALL_MAX_SPD = 11 * S;
   const BALL_SPEEDUP = 0.25 * S;
   const WIN_SCORE = 7;
+  // vertical-mode paddle constants
+  const VPAD_W = PAD_H; // wide horizontal bar
+  const VPAD_H = PAD_W; // thin
+  const VP1_Y = PAD_GAP; // top paddle fixed y
+  const VP2_Y = H - PAD_GAP - VPAD_H; // bottom paddle fixed y
 
-  let p1y, p2y, ball, running, animId, demoAnimId;
+  let p1y, p2y, p1x, p2x, ball, running, animId, demoAnimId;
+  let orientation = "horizontal";
   let p1score = 0,
     p2score = 0;
   let wins = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
@@ -399,22 +409,34 @@ icon: "🏓"
       document.getElementById("p1-label").textContent = "P1";
       document.getElementById("p2-label").textContent = "P2";
     } else if (playerSide === "left") {
-      document.getElementById("p1-label").textContent = "You ◀";
+      const you = orientation === "vertical" ? "You ▲" : "You ◀";
+      document.getElementById("p1-label").textContent = you;
       document.getElementById("p2-label").textContent = "AI";
     } else {
       document.getElementById("p1-label").textContent = "AI";
-      document.getElementById("p2-label").textContent = "You ▶";
+      const you = orientation === "vertical" ? "You ▼" : "You ▶";
+      document.getElementById("p2-label").textContent = you;
     }
   }
 
   function updateControlsHint() {
     const el = document.getElementById("controls-hint");
-    if (gameMode === "pvp") {
-      el.textContent = "W / S — P1 (left) · ↑ / ↓ — P2 (right)";
-    } else if (playerSide === "left") {
-      el.textContent = "W / S or ↑ / ↓ — you (left) · AI on right";
+    if (orientation === "vertical") {
+      if (gameMode === "pvp") {
+        el.textContent = "A / D — P1 (top) · ← / → — P2 (bottom)";
+      } else if (playerSide === "left") {
+        el.textContent = "A / D or ← / → — you (top) · AI on bottom";
+      } else {
+        el.textContent = "A / D or ← / → — you (bottom) · AI on top";
+      }
     } else {
-      el.textContent = "W / S or ↑ / ↓ — you (right) · AI on left";
+      if (gameMode === "pvp") {
+        el.textContent = "W / S — P1 (left) · ↑ / ↓ — P2 (right)";
+      } else if (playerSide === "left") {
+        el.textContent = "W / S or ↑ / ↓ — you (left) · AI on right";
+      } else {
+        el.textContent = "W / S or ↑ / ↓ — you (right) · AI on left";
+      }
     }
   }
 
@@ -435,6 +457,22 @@ icon: "🏓"
     updateControlsHint();
   }
 
+  function setOrientation(o) {
+    orientation = o;
+    document.getElementById("orient-h").classList.toggle("active", o === "horizontal");
+    document.getElementById("orient-v").classList.toggle("active", o === "vertical");
+    const isH = o === "horizontal";
+    document.getElementById("side-left").textContent = isH ? "◀ Left" : "▲ Top";
+    document.getElementById("side-right").textContent = isH ? "Right ▶" : "Bottom ▼";
+    updateLabels();
+    updateControlsHint();
+    if (demoAnimId) {
+      cancelAnimationFrame(demoAnimId);
+      demoAnimId = null;
+      startDemo();
+    }
+  }
+
   function newBallVelocity(towardRight) {
     const angle = ((Math.random() * 40 - 20) * Math.PI) / 180;
     return {
@@ -443,16 +481,31 @@ icon: "🏓"
     };
   }
 
-  function resetBall(towardRight) {
-    const v = newBallVelocity(towardRight);
-    ball = { x: W / 2, y: H / 2, vx: v.vx, vy: v.vy };
+  function resetBall(towardPositive) {
+    if (orientation === "vertical") {
+      const angle = ((Math.random() * 40 - 20) * Math.PI) / 180;
+      ball = {
+        x: W / 2,
+        y: H / 2,
+        vx: BALL_INIT_SPD * Math.sin(angle),
+        vy: BALL_INIT_SPD * (towardPositive ? 1 : -1) * Math.cos(angle),
+      };
+    } else {
+      const v = newBallVelocity(towardPositive);
+      ball = { x: W / 2, y: H / 2, vx: v.vx, vy: v.vy };
+    }
   }
 
   function startGame() {
     cancelAnimationFrame(demoAnimId);
     demoAnimId = null;
-    p1y = H / 2 - PAD_H / 2;
-    p2y = H / 2 - PAD_H / 2;
+    if (orientation === "vertical") {
+      p1x = W / 2 - VPAD_W / 2;
+      p2x = W / 2 - VPAD_W / 2;
+    } else {
+      p1y = H / 2 - PAD_H / 2;
+      p2y = H / 2 - PAD_H / 2;
+    }
     p1score = 0;
     p2score = 0;
     resetBall(Math.random() > 0.5);
@@ -460,6 +513,7 @@ icon: "🏓"
 
     document.getElementById("p1-score").textContent = "0";
     document.getElementById("p2-score").textContent = "0";
+    document.getElementById("orientation-row").style.display = "none";
     document.getElementById("mode-row").style.display = "none";
     document.getElementById("side-row").style.display = "none";
     document.getElementById("demo-label").style.display = "none";
@@ -498,143 +552,218 @@ icon: "🏓"
       handleInput();
       updateBall();
     }
-    drawScene(p1y, p2y, ball);
+    const posA = orientation === "vertical" ? p1x : p1y;
+    const posB = orientation === "vertical" ? p2x : p2y;
+    drawScene(posA, posB, ball);
     if (paused) drawScoreMsg();
     if (running) animId = requestAnimationFrame(gameLoop);
   }
 
   function handleInput() {
-    const up = keys["w"] || keys["W"] || keys["ArrowUp"];
-    const dn = keys["s"] || keys["S"] || keys["ArrowDown"];
-
-    if (gameMode === "pvp") {
-      if (keys["w"] || keys["W"]) p1y = Math.max(0, p1y - PAD_SPEED);
-      if (keys["s"] || keys["S"]) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
-      if (keys["ArrowUp"]) p2y = Math.max(0, p2y - PAD_SPEED);
-      if (keys["ArrowDown"]) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
-    } else if (playerSide === "left") {
-      if (up) p1y = Math.max(0, p1y - PAD_SPEED);
-      if (dn) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
-      const factor = ball.vx > 0 ? 0.09 : 0.04;
-      p2y += (ball.y - PAD_H / 2 - p2y) * factor;
-      p2y = Math.max(0, Math.min(H - PAD_H, p2y));
+    if (orientation === "vertical") {
+      const lt = keys["a"] || keys["A"] || keys["ArrowLeft"];
+      const rt = keys["d"] || keys["D"] || keys["ArrowRight"];
+      if (gameMode === "pvp") {
+        if (keys["a"] || keys["A"]) p1x = Math.max(0, p1x - PAD_SPEED);
+        if (keys["d"] || keys["D"]) p1x = Math.min(W - VPAD_W, p1x + PAD_SPEED);
+        if (keys["ArrowLeft"]) p2x = Math.max(0, p2x - PAD_SPEED);
+        if (keys["ArrowRight"]) p2x = Math.min(W - VPAD_W, p2x + PAD_SPEED);
+      } else if (playerSide === "left") {
+        if (lt) p1x = Math.max(0, p1x - PAD_SPEED);
+        if (rt) p1x = Math.min(W - VPAD_W, p1x + PAD_SPEED);
+        const factor = ball.vy > 0 ? 0.09 : 0.04;
+        p2x += (ball.x - VPAD_W / 2 - p2x) * factor;
+        p2x = Math.max(0, Math.min(W - VPAD_W, p2x));
+      } else {
+        if (lt) p2x = Math.max(0, p2x - PAD_SPEED);
+        if (rt) p2x = Math.min(W - VPAD_W, p2x + PAD_SPEED);
+        const factor = ball.vy < 0 ? 0.09 : 0.04;
+        p1x += (ball.x - VPAD_W / 2 - p1x) * factor;
+        p1x = Math.max(0, Math.min(W - VPAD_W, p1x));
+      }
     } else {
-      if (up) p2y = Math.max(0, p2y - PAD_SPEED);
-      if (dn) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
-      const factor = ball.vx < 0 ? 0.09 : 0.04;
-      p1y += (ball.y - PAD_H / 2 - p1y) * factor;
-      p1y = Math.max(0, Math.min(H - PAD_H, p1y));
+      const up = keys["w"] || keys["W"] || keys["ArrowUp"];
+      const dn = keys["s"] || keys["S"] || keys["ArrowDown"];
+      if (gameMode === "pvp") {
+        if (keys["w"] || keys["W"]) p1y = Math.max(0, p1y - PAD_SPEED);
+        if (keys["s"] || keys["S"]) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
+        if (keys["ArrowUp"]) p2y = Math.max(0, p2y - PAD_SPEED);
+        if (keys["ArrowDown"]) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
+      } else if (playerSide === "left") {
+        if (up) p1y = Math.max(0, p1y - PAD_SPEED);
+        if (dn) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
+        const factor = ball.vx > 0 ? 0.09 : 0.04;
+        p2y += (ball.y - PAD_H / 2 - p2y) * factor;
+        p2y = Math.max(0, Math.min(H - PAD_H, p2y));
+      } else {
+        if (up) p2y = Math.max(0, p2y - PAD_SPEED);
+        if (dn) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
+        const factor = ball.vx < 0 ? 0.09 : 0.04;
+        p1y += (ball.y - PAD_H / 2 - p1y) * factor;
+        p1y = Math.max(0, Math.min(H - PAD_H, p1y));
+      }
     }
   }
 
-  function updateBall() {
-    ball.x += ball.vx;
-    ball.y += ball.vy;
-
-    if (ball.y - BALL_R < 0) {
-      ball.y = BALL_R;
-      ball.vy = Math.abs(ball.vy);
-    }
-    if (ball.y + BALL_R > H) {
-      ball.y = H - BALL_R;
-      ball.vy = -Math.abs(ball.vy);
-    }
-
-    // P1 paddle hit
-    if (
-      ball.vx < 0 &&
-      ball.x - BALL_R <= P1_X + PAD_W &&
-      ball.x >= P1_X &&
-      ball.y + BALL_R > p1y &&
-      ball.y - BALL_R < p1y + PAD_H
-    ) {
-      ball.x = P1_X + PAD_W + BALL_R;
-      const rel = (ball.y - (p1y + PAD_H / 2)) / (PAD_H / 2);
-      const spd = Math.min(Math.abs(ball.vx) + BALL_SPEEDUP, BALL_MAX_SPD);
-      ball.vx = spd;
-      ball.vy = rel * 5.5 * S;
-    }
-
-    // P2 paddle hit
-    if (
-      ball.vx > 0 &&
-      ball.x + BALL_R >= P2_X &&
-      ball.x <= P2_X + PAD_W &&
-      ball.y + BALL_R > p2y &&
-      ball.y - BALL_R < p2y + PAD_H
-    ) {
-      ball.x = P2_X - BALL_R;
-      const rel = (ball.y - (p2y + PAD_H / 2)) / (PAD_H / 2);
-      const spd = Math.min(Math.abs(ball.vx) + BALL_SPEEDUP, BALL_MAX_SPD);
-      ball.vx = -spd;
-      ball.vy = rel * 5.5 * S;
-    }
-
-    // P2 scores (ball exits left)
-    if (ball.x + BALL_R < 0) {
+  function scorePoint(p2got, pvpMsg, playerGotMsg) {
+    if (p2got) {
       p2score++;
       document.getElementById("p2-score").textContent = p2score;
       if (p2score >= WIN_SCORE) {
         showEnd(false);
         return;
       }
-      clearTimeout(pauseTimer);
-      paused = true;
-      pauseMsg = gameMode === "pvp" ? "P2 scores! 🎉" : playerSide === "right" ? "Nice shot! 🎉" : "AI gets one…";
-      pauseTimer = setTimeout(() => {
-        paused = false;
-        pauseMsg = "";
-        resetBall(true);
-      }, 1400);
-      return;
-    }
-
-    // P1 scores (ball exits right)
-    if (ball.x - BALL_R > W) {
+    } else {
       p1score++;
       document.getElementById("p1-score").textContent = p1score;
       if (p1score >= WIN_SCORE) {
         showEnd(true);
         return;
       }
-      clearTimeout(pauseTimer);
-      paused = true;
-      pauseMsg = gameMode === "pvp" ? "P1 scores! 🎉" : playerSide === "left" ? "Nice shot! 🎉" : "AI gets one…";
-      pauseTimer = setTimeout(() => {
-        paused = false;
-        pauseMsg = "";
-        resetBall(false);
-      }, 1400);
-      return;
+    }
+    clearTimeout(pauseTimer);
+    paused = true;
+    pauseMsg = gameMode === "pvp" ? pvpMsg : playerGotMsg;
+    pauseTimer = setTimeout(() => {
+      paused = false;
+      pauseMsg = "";
+      resetBall(p2got);
+    }, 1400);
+  }
+
+  function updateBall() {
+    ball.x += ball.vx;
+    ball.y += ball.vy;
+
+    if (orientation === "vertical") {
+      if (ball.x - BALL_R < 0) {
+        ball.x = BALL_R;
+        ball.vx = Math.abs(ball.vx);
+      }
+      if (ball.x + BALL_R > W) {
+        ball.x = W - BALL_R;
+        ball.vx = -Math.abs(ball.vx);
+      }
+
+      // P1 (top) paddle hit
+      if (
+        ball.vy < 0 &&
+        ball.y - BALL_R <= VP1_Y + VPAD_H &&
+        ball.y >= VP1_Y &&
+        ball.x + BALL_R > p1x &&
+        ball.x - BALL_R < p1x + VPAD_W
+      ) {
+        ball.y = VP1_Y + VPAD_H + BALL_R;
+        const rel = (ball.x - (p1x + VPAD_W / 2)) / (VPAD_W / 2);
+        const spd = Math.min(Math.abs(ball.vy) + BALL_SPEEDUP, BALL_MAX_SPD);
+        ball.vy = spd;
+        ball.vx = rel * 5.5 * S;
+      }
+
+      // P2 (bottom) paddle hit
+      if (
+        ball.vy > 0 &&
+        ball.y + BALL_R >= VP2_Y &&
+        ball.y <= VP2_Y + VPAD_H &&
+        ball.x + BALL_R > p2x &&
+        ball.x - BALL_R < p2x + VPAD_W
+      ) {
+        ball.y = VP2_Y - BALL_R;
+        const rel = (ball.x - (p2x + VPAD_W / 2)) / (VPAD_W / 2);
+        const spd = Math.min(Math.abs(ball.vy) + BALL_SPEEDUP, BALL_MAX_SPD);
+        ball.vy = -spd;
+        ball.vx = rel * 5.5 * S;
+      }
+
+      if (ball.y + BALL_R < 0)
+        return scorePoint(true, "P2 scores! 🎉", playerSide === "right" ? "Nice shot! 🎉" : "AI gets one…");
+      if (ball.y - BALL_R > H)
+        return scorePoint(false, "P1 scores! 🎉", playerSide === "left" ? "Nice shot! 🎉" : "AI gets one…");
+    } else {
+      if (ball.y - BALL_R < 0) {
+        ball.y = BALL_R;
+        ball.vy = Math.abs(ball.vy);
+      }
+      if (ball.y + BALL_R > H) {
+        ball.y = H - BALL_R;
+        ball.vy = -Math.abs(ball.vy);
+      }
+
+      // P1 paddle hit
+      if (
+        ball.vx < 0 &&
+        ball.x - BALL_R <= P1_X + PAD_W &&
+        ball.x >= P1_X &&
+        ball.y + BALL_R > p1y &&
+        ball.y - BALL_R < p1y + PAD_H
+      ) {
+        ball.x = P1_X + PAD_W + BALL_R;
+        const rel = (ball.y - (p1y + PAD_H / 2)) / (PAD_H / 2);
+        const spd = Math.min(Math.abs(ball.vx) + BALL_SPEEDUP, BALL_MAX_SPD);
+        ball.vx = spd;
+        ball.vy = rel * 5.5 * S;
+      }
+
+      // P2 paddle hit
+      if (
+        ball.vx > 0 &&
+        ball.x + BALL_R >= P2_X &&
+        ball.x <= P2_X + PAD_W &&
+        ball.y + BALL_R > p2y &&
+        ball.y - BALL_R < p2y + PAD_H
+      ) {
+        ball.x = P2_X - BALL_R;
+        const rel = (ball.y - (p2y + PAD_H / 2)) / (PAD_H / 2);
+        const spd = Math.min(Math.abs(ball.vx) + BALL_SPEEDUP, BALL_MAX_SPD);
+        ball.vx = -spd;
+        ball.vy = rel * 5.5 * S;
+      }
+
+      if (ball.x + BALL_R < 0)
+        return scorePoint(true, "P2 scores! 🎉", playerSide === "right" ? "Nice shot! 🎉" : "AI gets one…");
+      if (ball.x - BALL_R > W)
+        return scorePoint(false, "P1 scores! 🎉", playerSide === "left" ? "Nice shot! 🎉" : "AI gets one…");
     }
   }
 
-  function drawScene(dp1y, dp2y, db) {
+  function drawScene(posA, posB, db) {
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, W, H);
 
-    // Centre line
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = Math.max(1, Math.round(2 * S));
     ctx.setLineDash([Math.round(10 * S), Math.round(10 * S)]);
     ctx.beginPath();
-    ctx.moveTo(W / 2, 0);
-    ctx.lineTo(W / 2, H);
+    if (orientation === "vertical") {
+      ctx.moveTo(0, H / 2);
+      ctx.lineTo(W, H / 2);
+    } else {
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+    }
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Paddles
-    ctx.fillStyle = "#60a5fa";
-    ctx.beginPath();
-    ctx.roundRect(P1_X, dp1y, PAD_W, PAD_H, 4);
-    ctx.fill();
+    if (orientation === "vertical") {
+      ctx.fillStyle = "#60a5fa";
+      ctx.beginPath();
+      ctx.roundRect(posA, VP1_Y, VPAD_W, VPAD_H, 4);
+      ctx.fill();
+      ctx.fillStyle = "#f87171";
+      ctx.beginPath();
+      ctx.roundRect(posB, VP2_Y, VPAD_W, VPAD_H, 4);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = "#60a5fa";
+      ctx.beginPath();
+      ctx.roundRect(P1_X, posA, PAD_W, PAD_H, 4);
+      ctx.fill();
+      ctx.fillStyle = "#f87171";
+      ctx.beginPath();
+      ctx.roundRect(P2_X, posB, PAD_W, PAD_H, 4);
+      ctx.fill();
+    }
 
-    ctx.fillStyle = "#f87171";
-    ctx.beginPath();
-    ctx.roundRect(P2_X, dp2y, PAD_W, PAD_H, 4);
-    ctx.fill();
-
-    // Ball
     ctx.fillStyle = "#f8fafc";
     ctx.beginPath();
     ctx.arc(db.x, db.y, BALL_R, 0, Math.PI * 2);
@@ -644,7 +773,7 @@ icon: "🏓"
   function showEnd(p1Won) {
     running = false;
     cancelAnimationFrame(animId);
-    drawScene(p1y, p2y, ball);
+    drawScene(orientation === "vertical" ? p1x : p1y, orientation === "vertical" ? p2x : p2y, ball);
 
     const playerWon = gameMode === "pvp" ? p1Won : playerSide === "left" ? p1Won : !p1Won;
 
@@ -673,6 +802,7 @@ icon: "🏓"
     document.getElementById("go-wins").textContent = wins;
     document.getElementById("go-mode").textContent = gameMode === "ai" ? "vs AI" : "vs Player";
 
+    document.getElementById("orientation-row").style.display = "flex";
     document.getElementById("mode-row").style.display = "flex";
     document.getElementById("side-row").style.display = gameMode === "ai" ? "flex" : "none";
     document.getElementById("overlay").style.display = "none";
@@ -681,73 +811,152 @@ icon: "🏓"
 
   // Demo: AI vs AI
   function startDemo() {
-    let dp1y = H / 2 - PAD_H / 2;
-    let dp2y = H / 2 - PAD_H / 2;
-    const v = newBallVelocity(Math.random() > 0.5);
-    let db = { x: W / 2, y: H / 2, vx: v.vx, vy: v.vy };
+    if (orientation === "vertical") {
+      let dpA = W / 2 - VPAD_W / 2;
+      let dpB = W / 2 - VPAD_W / 2;
+      const a = ((Math.random() * 40 - 20) * Math.PI) / 180;
+      let db = {
+        x: W / 2,
+        y: H / 2,
+        vx: BALL_INIT_SPD * Math.sin(a),
+        vy: BALL_INIT_SPD * (Math.random() > 0.5 ? 1 : -1) * Math.cos(a),
+      };
 
-    function demoLoop() {
-      const f1 = db.vx < 0 ? 0.09 : 0.04;
-      const f2 = db.vx > 0 ? 0.09 : 0.04;
-      dp1y += (db.y - PAD_H / 2 - dp1y) * f1;
-      dp2y += (db.y - PAD_H / 2 - dp2y) * f2;
-      dp1y = Math.max(0, Math.min(H - PAD_H, dp1y));
-      dp2y = Math.max(0, Math.min(H - PAD_H, dp2y));
+      function demoLoopV() {
+        const f1 = db.vy < 0 ? 0.09 : 0.04;
+        const f2 = db.vy > 0 ? 0.09 : 0.04;
+        dpA += (db.x - VPAD_W / 2 - dpA) * f1;
+        dpB += (db.x - VPAD_W / 2 - dpB) * f2;
+        dpA = Math.max(0, Math.min(W - VPAD_W, dpA));
+        dpB = Math.max(0, Math.min(W - VPAD_W, dpB));
 
-      db.x += db.vx;
-      db.y += db.vy;
+        db.x += db.vx;
+        db.y += db.vy;
 
-      if (db.y - BALL_R < 0) {
-        db.y = BALL_R;
-        db.vy = Math.abs(db.vy);
+        if (db.x - BALL_R < 0) {
+          db.x = BALL_R;
+          db.vx = Math.abs(db.vx);
+        }
+        if (db.x + BALL_R > W) {
+          db.x = W - BALL_R;
+          db.vx = -Math.abs(db.vx);
+        }
+
+        if (
+          db.vy < 0 &&
+          db.y - BALL_R <= VP1_Y + VPAD_H &&
+          db.y >= VP1_Y &&
+          db.x + BALL_R > dpA &&
+          db.x - BALL_R < dpA + VPAD_W
+        ) {
+          db.y = VP1_Y + VPAD_H + BALL_R;
+          const rel = (db.x - (dpA + VPAD_W / 2)) / (VPAD_W / 2);
+          const spd = Math.min(Math.abs(db.vy) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
+          db.vy = spd;
+          db.vx = rel * 4 * S;
+        }
+
+        if (
+          db.vy > 0 &&
+          db.y + BALL_R >= VP2_Y &&
+          db.y <= VP2_Y + VPAD_H &&
+          db.x + BALL_R > dpB &&
+          db.x - BALL_R < dpB + VPAD_W
+        ) {
+          db.y = VP2_Y - BALL_R;
+          const rel = (db.x - (dpB + VPAD_W / 2)) / (VPAD_W / 2);
+          const spd = Math.min(Math.abs(db.vy) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
+          db.vy = -spd;
+          db.vx = rel * 4 * S;
+        }
+
+        if (db.y + BALL_R < 0 || db.y - BALL_R > H) {
+          const a2 = ((Math.random() * 40 - 20) * Math.PI) / 180;
+          db = {
+            x: W / 2,
+            y: H / 2,
+            vx: BALL_INIT_SPD * Math.sin(a2),
+            vy: BALL_INIT_SPD * (db.y < 0 ? 1 : -1) * Math.cos(a2),
+          };
+          dpA = W / 2 - VPAD_W / 2;
+          dpB = W / 2 - VPAD_W / 2;
+        }
+
+        drawScene(dpA, dpB, db);
+        demoAnimId = requestAnimationFrame(demoLoopV);
       }
-      if (db.y + BALL_R > H) {
-        db.y = H - BALL_R;
-        db.vy = -Math.abs(db.vy);
-      }
 
-      if (
-        db.vx < 0 &&
-        db.x - BALL_R <= P1_X + PAD_W &&
-        db.x >= P1_X &&
-        db.y + BALL_R > dp1y &&
-        db.y - BALL_R < dp1y + PAD_H
-      ) {
-        db.x = P1_X + PAD_W + BALL_R;
-        const rel = (db.y - (dp1y + PAD_H / 2)) / (PAD_H / 2);
-        const spd = Math.min(Math.abs(db.vx) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
-        db.vx = spd;
-        db.vy = rel * 4 * S;
-      }
+      drawScene(dpA, dpB, db);
+      demoAnimId = requestAnimationFrame(demoLoopV);
+    } else {
+      let dp1y = H / 2 - PAD_H / 2;
+      let dp2y = H / 2 - PAD_H / 2;
+      const v = newBallVelocity(Math.random() > 0.5);
+      let db = { x: W / 2, y: H / 2, vx: v.vx, vy: v.vy };
 
-      if (
-        db.vx > 0 &&
-        db.x + BALL_R >= P2_X &&
-        db.x <= P2_X + PAD_W &&
-        db.y + BALL_R > dp2y &&
-        db.y - BALL_R < dp2y + PAD_H
-      ) {
-        db.x = P2_X - BALL_R;
-        const rel = (db.y - (dp2y + PAD_H / 2)) / (PAD_H / 2);
-        const spd = Math.min(Math.abs(db.vx) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
-        db.vx = -spd;
-        db.vy = rel * 4 * S;
-      }
+      function demoLoop() {
+        const f1 = db.vx < 0 ? 0.09 : 0.04;
+        const f2 = db.vx > 0 ? 0.09 : 0.04;
+        dp1y += (db.y - PAD_H / 2 - dp1y) * f1;
+        dp2y += (db.y - PAD_H / 2 - dp2y) * f2;
+        dp1y = Math.max(0, Math.min(H - PAD_H, dp1y));
+        dp2y = Math.max(0, Math.min(H - PAD_H, dp2y));
 
-      if (db.x + BALL_R < 0 || db.x - BALL_R > W) {
-        const dir = db.x < 0 ? 1 : -1;
-        const nv = newBallVelocity(dir > 0);
-        db = { x: W / 2, y: H / 2, vx: nv.vx, vy: nv.vy };
-        dp1y = H / 2 - PAD_H / 2;
-        dp2y = H / 2 - PAD_H / 2;
+        db.x += db.vx;
+        db.y += db.vy;
+
+        if (db.y - BALL_R < 0) {
+          db.y = BALL_R;
+          db.vy = Math.abs(db.vy);
+        }
+        if (db.y + BALL_R > H) {
+          db.y = H - BALL_R;
+          db.vy = -Math.abs(db.vy);
+        }
+
+        if (
+          db.vx < 0 &&
+          db.x - BALL_R <= P1_X + PAD_W &&
+          db.x >= P1_X &&
+          db.y + BALL_R > dp1y &&
+          db.y - BALL_R < dp1y + PAD_H
+        ) {
+          db.x = P1_X + PAD_W + BALL_R;
+          const rel = (db.y - (dp1y + PAD_H / 2)) / (PAD_H / 2);
+          const spd = Math.min(Math.abs(db.vx) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
+          db.vx = spd;
+          db.vy = rel * 4 * S;
+        }
+
+        if (
+          db.vx > 0 &&
+          db.x + BALL_R >= P2_X &&
+          db.x <= P2_X + PAD_W &&
+          db.y + BALL_R > dp2y &&
+          db.y - BALL_R < dp2y + PAD_H
+        ) {
+          db.x = P2_X - BALL_R;
+          const rel = (db.y - (dp2y + PAD_H / 2)) / (PAD_H / 2);
+          const spd = Math.min(Math.abs(db.vx) + BALL_SPEEDUP * 0.5, BALL_MAX_SPD * 0.7);
+          db.vx = -spd;
+          db.vy = rel * 4 * S;
+        }
+
+        if (db.x + BALL_R < 0 || db.x - BALL_R > W) {
+          const dir = db.x < 0 ? 1 : -1;
+          const nv = newBallVelocity(dir > 0);
+          db = { x: W / 2, y: H / 2, vx: nv.vx, vy: nv.vy };
+          dp1y = H / 2 - PAD_H / 2;
+          dp2y = H / 2 - PAD_H / 2;
+        }
+
+        drawScene(dp1y, dp2y, db);
+        demoAnimId = requestAnimationFrame(demoLoop);
       }
 
       drawScene(dp1y, dp2y, db);
       demoAnimId = requestAnimationFrame(demoLoop);
     }
-
-    drawScene(dp1y, dp2y, db);
-    demoAnimId = requestAnimationFrame(demoLoop);
   }
 
   // Touch controls
@@ -761,19 +970,27 @@ icon: "🏓"
       const rect = canvas.getBoundingClientRect();
       for (const t of e.changedTouches) {
         const cx = t.clientX - rect.left;
-        const cy = (t.clientY - rect.top) * (H / rect.height);
-        const isLeft = cx < rect.width / 2;
+        const cy = t.clientY - rect.top;
+        const tx = cx * (W / rect.width);
+        const ty = cy * (H / rect.height);
         let target = null;
-        if (gameMode === "pvp") {
-          target = isLeft ? "p1" : "p2";
-        } else if (playerSide === "left" && isLeft) {
-          target = "p1";
-        } else if (playerSide === "right" && !isLeft) {
-          target = "p2";
+        if (orientation === "vertical") {
+          const isTop = cy < rect.height / 2;
+          if (gameMode === "pvp") target = isTop ? "p1" : "p2";
+          else if (playerSide === "left" && isTop) target = "p1";
+          else if (playerSide === "right" && !isTop) target = "p2";
+          activeTouches[t.identifier] = target;
+          if (target === "p1") p1x = Math.max(0, Math.min(W - VPAD_W, tx - VPAD_W / 2));
+          else if (target === "p2") p2x = Math.max(0, Math.min(W - VPAD_W, tx - VPAD_W / 2));
+        } else {
+          const isLeft = cx < rect.width / 2;
+          if (gameMode === "pvp") target = isLeft ? "p1" : "p2";
+          else if (playerSide === "left" && isLeft) target = "p1";
+          else if (playerSide === "right" && !isLeft) target = "p2";
+          activeTouches[t.identifier] = target;
+          if (target === "p1") p1y = Math.max(0, Math.min(H - PAD_H, ty - PAD_H / 2));
+          else if (target === "p2") p2y = Math.max(0, Math.min(H - PAD_H, ty - PAD_H / 2));
         }
-        activeTouches[t.identifier] = target;
-        if (target === "p1") p1y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
-        else if (target === "p2") p2y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
       }
     },
     { passive: false }
@@ -786,11 +1003,14 @@ icon: "🏓"
       if (!running) return;
       const rect = canvas.getBoundingClientRect();
       for (const t of e.changedTouches) {
-        const cy = (t.clientY - rect.top) * (H / rect.height);
-        if (activeTouches[t.identifier] === "p1") {
-          p1y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
-        } else if (activeTouches[t.identifier] === "p2") {
-          p2y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
+        const tx = (t.clientX - rect.left) * (W / rect.width);
+        const ty = (t.clientY - rect.top) * (H / rect.height);
+        if (orientation === "vertical") {
+          if (activeTouches[t.identifier] === "p1") p1x = Math.max(0, Math.min(W - VPAD_W, tx - VPAD_W / 2));
+          else if (activeTouches[t.identifier] === "p2") p2x = Math.max(0, Math.min(W - VPAD_W, tx - VPAD_W / 2));
+        } else {
+          if (activeTouches[t.identifier] === "p1") p1y = Math.max(0, Math.min(H - PAD_H, ty - PAD_H / 2));
+          else if (activeTouches[t.identifier] === "p2") p2y = Math.max(0, Math.min(H - PAD_H, ty - PAD_H / 2));
         }
       }
     },
@@ -803,7 +1023,7 @@ icon: "🏓"
 
   // Keyboard
   document.addEventListener("keydown", (e) => {
-    if (["ArrowUp", "ArrowDown", " "].includes(e.key)) e.preventDefault();
+    if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
     keys[e.key] = true;
   });
   document.addEventListener("keyup", (e) => {
@@ -811,6 +1031,7 @@ icon: "🏓"
   });
 
   // Start with demo on load
+  setOrientation("horizontal");
   updateLabels();
   updateControlsHint();
   startDemo();

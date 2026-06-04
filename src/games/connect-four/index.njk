@@ -80,7 +80,7 @@ icon: "🔴"
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
     user-select: none;
   }
   #col-btns {
@@ -276,6 +276,31 @@ icon: "🔴"
     text-align: center;
     margin: 0;
   }
+  #lobby-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    z-index: 200;
+    padding: 1rem;
+  }
+  #lobby-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+  }
   .info-section {
     width: 100%;
     max-width: 420px;
@@ -340,7 +365,7 @@ icon: "🔴"
 </style>
 
 <div id="game-wrapper">
-  <div class="mode-row">
+  <div class="mode-row" id="mode-row">
     <button class="mode-btn active" id="mode-machine" onclick="setMode('machine')">VS AI</button>
     <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
   </div>
@@ -357,9 +382,9 @@ icon: "🔴"
     <div id="board"></div>
   </div>
 
-  <div class="btn-row">
+  <div class="btn-row" id="btn-row" style="display: none">
     <button class="hint-btn" id="hint-btn" onclick="toggleHints()">Hints: Off</button>
-    <button class="play-btn" onclick="newGame()">New Game</button>
+    <button class="play-btn" onclick="showLobby()">New Game</button>
   </div>
 </div>
 
@@ -381,7 +406,18 @@ icon: "🔴"
     </div>
   </div>
   <p id="go-context"></p>
-  <button class="play-btn" onclick="newGame()">New Game</button>
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="lobby-overlay">
+  <span style="font-size: 3rem">🔴</span>
+  <h2>Connect Four</h2>
+  <p>Connect 4 in a row — horizontally, vertically, or diagonally!</p>
+  <div class="mode-row">
+    <button class="mode-btn active" id="lobby-ai" onclick="startGame('machine')">VS AI</button>
+    <button class="mode-btn" id="lobby-player" onclick="startGame('player')">VS Friend</button>
+  </div>
+  <button class="hint-btn" id="lobby-hint-btn" onclick="toggleHints()">Hints: Off</button>
 </div>
 
 <div class="info-section">
@@ -466,9 +502,12 @@ icon: "🔴"
 
   function toggleHints() {
     hintsEnabled = !hintsEnabled;
-    const btn = document.getElementById("hint-btn");
-    btn.textContent = hintsEnabled ? "Hints: On" : "Hints: Off";
-    btn.classList.toggle("active", hintsEnabled);
+    ["hint-btn", "lobby-hint-btn"].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.textContent = hintsEnabled ? "Hints: On" : "Hints: Off";
+      btn.classList.toggle("active", hintsEnabled);
+    });
     renderBoard();
   }
 
@@ -476,13 +515,27 @@ icon: "🔴"
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   }
 
-  function setMode(m) {
+  function showLobby() {
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("lobby-overlay").style.display = "flex";
+    document.getElementById("lobby-ai").classList.toggle("active", mode === "machine");
+    document.getElementById("lobby-player").classList.toggle("active", mode === "player");
+  }
+
+  function startGame(m) {
     mode = m;
-    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
-    document.getElementById("mode-" + m).classList.add("active");
+    document.getElementById("lobby-overlay").style.display = "none";
+    document.getElementById("mode-row").style.display = "none";
+    document.getElementById("btn-row").style.display = "none";
     document.getElementById("p1-label").textContent = m === "machine" ? "🔴 You" : "🔴 P1";
     document.getElementById("p2-label").textContent = m === "machine" ? "🟡 AI" : "🟡 P2";
     newGame();
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("p1-label").textContent = m === "machine" ? "🔴 You" : "🔴 P1";
+    document.getElementById("p2-label").textContent = m === "machine" ? "🟡 AI" : "🟡 P2";
   }
 
   function newGame() {
@@ -492,8 +545,16 @@ icon: "🔴"
     hoverCol = -1;
     winCells = [];
     document.getElementById("gameover-overlay").style.display = "none";
-    document.getElementById("status").textContent = "Your turn (🔴)";
-    renderBoard();
+
+    if (mode === "machine") {
+      currentPlayer = "Y";
+      document.getElementById("status").textContent = "AI goes first… (🟡)";
+      renderBoard();
+      setTimeout(aiMove, 700);
+    } else {
+      document.getElementById("status").textContent = "🔴 Player 1's turn";
+      renderBoard();
+    }
   }
 
   function dropRow(col) {
@@ -728,5 +789,5 @@ icon: "🔴"
   document.getElementById("p1-score").textContent = scores.P1;
   document.getElementById("d-score").textContent = scores.D;
   document.getElementById("p2-score").textContent = scores.P2;
-  newGame();
+  showLobby();
 </script>
