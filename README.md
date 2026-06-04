@@ -1,6 +1,6 @@
 # mini-games
 
-A collection of free, browser-based mini games — no ads, no analytics, just fun.
+🎮 A curated collection of classic browser games. Free to play, no account needed, no downloads — just pure fun.
 
 **Live site:** https://games.mazipan.space/
 
@@ -11,6 +11,8 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game            | Category | Difficulty |
 | --------------- | -------- | ---------- |
 | 🟦 Tetris       | Arcade   | Medium     |
+| 🏓 Pong         | Arcade   | Easy       |
+| 🐦 Flappy Bird  | Arcade   | Easy       |
 | 🐍 Snake        | Arcade   | Easy       |
 | 🧱 Breakout     | Arcade   | Medium     |
 | 🔢 2048         | Puzzle   | Medium     |
@@ -20,6 +22,8 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 🔴 Connect Four | Board    | Medium     |
 | 🪨 Mancala      | Board    | Medium     |
 | 🔢 Sudoku       | Puzzle   | Hard       |
+| 🦔 Whack-a-Mole | Arcade   | Easy       |
+| 🪢 Hangman      | Word     | Easy       |
 
 ## Tech Stack
 

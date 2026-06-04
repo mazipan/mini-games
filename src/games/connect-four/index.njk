@@ -80,7 +80,7 @@ icon: "🔴"
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
     user-select: none;
   }
   #col-btns {
@@ -91,29 +91,75 @@ icon: "🔴"
   }
   .col-btn {
     width: var(--cell);
-    height: calc(var(--cell) * 0.55);
-    background: transparent;
-    border: none;
-    color: #475569;
-    font-size: calc(var(--cell) * 0.35);
+    height: calc(var(--cell) * 0.62);
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #64748b;
+    font-size: calc(var(--cell) * 0.32);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 4px;
-    transition: color 0.1s;
+    border-radius: 6px;
+    transition:
+      color 0.1s,
+      background 0.1s,
+      border-color 0.1s;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+  .col-btn:not(:disabled):hover {
+    background: #293548;
+    border-color: #475569;
+    color: #94a3b8;
+  }
   .col-btn.hint-red {
     color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.4);
   }
   .col-btn.hint-yellow {
     color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.4);
+  }
+  .col-btn.hint-win {
+    color: #22c55e;
+    background: rgba(20, 83, 45, 0.35);
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+  .col-btn.hint-block {
+    color: #f97316;
+    background: rgba(124, 45, 18, 0.3);
+    border-color: rgba(249, 115, 22, 0.5);
   }
   .col-btn:disabled {
     cursor: default;
-    color: #1e293b;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+  }
+  .hint-btn {
+    padding: 0.3rem 0.9rem;
+    background: #1e293b;
+    color: #64748b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hint-btn.active {
+    background: #0f2a0f;
+    color: #22c55e;
+    border-color: #22c55e;
+  }
+  .btn-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
   }
   #board {
     display: grid;
@@ -155,10 +201,10 @@ icon: "🔴"
       inset 0 -4px 10px rgba(0, 0, 0, 0.35);
   }
   .cell.hover-r {
-    background: rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.55);
   }
   .cell.hover-y {
-    background: rgba(251, 191, 36, 0.28);
+    background: rgba(251, 191, 36, 0.55);
   }
   .play-btn {
     padding: 0.5rem 1.5rem;
@@ -230,6 +276,31 @@ icon: "🔴"
     text-align: center;
     margin: 0;
   }
+  #lobby-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    z-index: 200;
+    padding: 1rem;
+  }
+  #lobby-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+  }
   .info-section {
     width: 100%;
     max-width: 420px;
@@ -294,7 +365,7 @@ icon: "🔴"
 </style>
 
 <div id="game-wrapper">
-  <div class="mode-row">
+  <div class="mode-row" id="mode-row">
     <button class="mode-btn active" id="mode-machine" onclick="setMode('machine')">VS AI</button>
     <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
   </div>
@@ -311,7 +382,10 @@ icon: "🔴"
     <div id="board"></div>
   </div>
 
-  <button class="play-btn" onclick="newGame()">New Game</button>
+  <div class="btn-row" id="btn-row" style="display: none">
+    <button class="hint-btn" id="hint-btn" onclick="toggleHints()">Hints: Off</button>
+    <button class="play-btn" onclick="showLobby()">New Game</button>
+  </div>
 </div>
 
 <div id="gameover-overlay" style="display: none">
@@ -332,7 +406,19 @@ icon: "🔴"
     </div>
   </div>
   <p id="go-context"></p>
-  <button class="play-btn" onclick="newGame()">New Game</button>
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="lobby-overlay">
+  <span style="font-size: 3rem">🔴</span>
+  <h2>Connect Four</h2>
+  <p>Connect 4 in a row — horizontally, vertically, or diagonally!</p>
+  <div class="mode-row">
+    <button class="mode-btn active" id="lobby-ai" onclick="selectLobbyMode('machine')">VS AI</button>
+    <button class="mode-btn" id="lobby-player" onclick="selectLobbyMode('player')">VS Friend</button>
+  </div>
+  <button class="hint-btn" id="lobby-hint-btn" onclick="toggleHints()">Hints: Off</button>
+  <button class="play-btn" onclick="startGame()">New Game</button>
 </div>
 
 <div class="info-section">
@@ -412,19 +498,52 @@ icon: "🔴"
   const STORAGE_KEY = "mini-connect-four-scores";
 
   let board, currentPlayer, gameOver, mode, hoverCol, winCells;
+  let hintsEnabled = false;
+  let lobbyMode = "machine";
   let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"P1":0,"D":0,"P2":0}');
+
+  function toggleHints() {
+    hintsEnabled = !hintsEnabled;
+    ["hint-btn", "lobby-hint-btn"].forEach((id) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.textContent = hintsEnabled ? "Hints: On" : "Hints: Off";
+      btn.classList.toggle("active", hintsEnabled);
+    });
+    renderBoard();
+  }
 
   function saveScores() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   }
 
-  function setMode(m) {
+  function selectLobbyMode(m) {
+    lobbyMode = m;
+    document.getElementById("lobby-ai").classList.toggle("active", m === "machine");
+    document.getElementById("lobby-player").classList.toggle("active", m === "player");
+  }
+
+  function showLobby() {
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("lobby-overlay").style.display = "flex";
+    selectLobbyMode(mode || "machine");
+  }
+
+  function startGame(m) {
+    m = m !== undefined ? m : lobbyMode;
     mode = m;
-    document.querySelectorAll(".mode-btn").forEach((b) => b.classList.remove("active"));
-    document.getElementById("mode-" + m).classList.add("active");
+    document.getElementById("lobby-overlay").style.display = "none";
+    document.getElementById("mode-row").style.display = "none";
+    document.getElementById("btn-row").style.display = "none";
     document.getElementById("p1-label").textContent = m === "machine" ? "🔴 You" : "🔴 P1";
     document.getElementById("p2-label").textContent = m === "machine" ? "🟡 AI" : "🟡 P2";
     newGame();
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("p1-label").textContent = m === "machine" ? "🔴 You" : "🔴 P1";
+    document.getElementById("p2-label").textContent = m === "machine" ? "🟡 AI" : "🟡 P2";
   }
 
   function newGame() {
@@ -434,8 +553,16 @@ icon: "🔴"
     hoverCol = -1;
     winCells = [];
     document.getElementById("gameover-overlay").style.display = "none";
-    document.getElementById("status").textContent = "Your turn (🔴)";
-    renderBoard();
+
+    if (mode === "machine") {
+      currentPlayer = "Y";
+      document.getElementById("status").textContent = "AI goes first… (🟡)";
+      renderBoard();
+      setTimeout(aiMove, 700);
+    } else {
+      document.getElementById("status").textContent = "🔴 Player 1's turn";
+      renderBoard();
+    }
   }
 
   function dropRow(col) {
@@ -608,20 +735,28 @@ icon: "🔴"
     for (let c = 0; c < COLS; c++) {
       const btn = document.createElement("button");
       const isHovered = c === hoverCol && isHumanTurn;
-      btn.className = "col-btn" + (isHovered ? (currentPlayer === "R" ? " hint-red" : " hint-yellow") : "");
+      let colClass = "col-btn";
+      if (isHovered) {
+        colClass += currentPlayer === "R" ? " hint-red" : " hint-yellow";
+      } else if (hintsEnabled && isHumanTurn && dropRow(c) !== -1) {
+        const opp = currentPlayer === "R" ? "Y" : "R";
+        if (canWinAt(c, currentPlayer)) colClass += " hint-win";
+        else if (canWinAt(c, opp)) colClass += " hint-block";
+      }
+      btn.className = colClass;
       btn.textContent = "▼";
       btn.disabled = !isHumanTurn || dropRow(c) === -1;
       btn.onclick = () => playCol(c);
       btn.onmouseenter = () => {
         if (isHumanTurn) {
           hoverCol = c;
-          renderBoard();
+          requestAnimationFrame(renderBoard);
         }
       };
       btn.onmouseleave = () => {
         if (isHumanTurn) {
           hoverCol = -1;
-          renderBoard();
+          requestAnimationFrame(renderBoard);
         }
       };
       colBtns.appendChild(btn);
@@ -646,11 +781,11 @@ icon: "🔴"
           div.onclick = () => playCol(c);
           div.onmouseenter = () => {
             hoverCol = c;
-            renderBoard();
+            requestAnimationFrame(renderBoard);
           };
           div.onmouseleave = () => {
             hoverCol = -1;
-            renderBoard();
+            requestAnimationFrame(renderBoard);
           };
         }
         boardEl.appendChild(div);
@@ -662,5 +797,5 @@ icon: "🔴"
   document.getElementById("p1-score").textContent = scores.P1;
   document.getElementById("d-score").textContent = scores.D;
   document.getElementById("p2-score").textContent = scores.P2;
-  newGame();
+  showLobby();
 </script>

@@ -27,6 +27,15 @@ module.exports = [
     tags: ["strategy", "two-player", "grid"],
   },
   {
+    slug: "flappy-bird",
+    name: "Flappy Bird",
+    description: "Tap to flap — guide the bird through the pipes without crashing!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🐦",
+    tags: ["flying", "tap", "canvas"],
+  },
+  {
     slug: "mancala",
     name: "Mancala",
     description:
@@ -35,6 +44,15 @@ module.exports = [
     difficulty: "medium",
     icon: "🪨",
     tags: ["strategy", "classic", "board", "two-player"],
+  },
+  {
+    slug: "hangman",
+    name: "Hangman",
+    description: "Guess the hidden word letter by letter before the hangman is complete!",
+    category: "word",
+    difficulty: "easy",
+    icon: "🪢",
+    tags: ["word", "guessing", "classic"],
   },
   {
     slug: "memory-match",
@@ -53,6 +71,15 @@ module.exports = [
     difficulty: "hard",
     icon: "💣",
     tags: ["mines", "logic", "classic"],
+  },
+  {
+    slug: "pong",
+    name: "Pong",
+    description: "Two paddles, one ball — first to 7 points wins. Play vs AI or a friend!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🏓",
+    tags: ["ball", "classic", "canvas", "two-player"],
   },
   {
     slug: "snake",
@@ -89,5 +116,14 @@ module.exports = [
     difficulty: "easy",
     icon: "⭕",
     tags: ["strategy", "classic", "two-player"],
+  },
+  {
+    slug: "whack-a-mole",
+    name: "Whack-a-Mole",
+    description: "Moles pop up from holes at random — click them before they disappear!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🦔",
+    tags: ["reflex", "clicking", "casual", "classic"],
   },
 ];

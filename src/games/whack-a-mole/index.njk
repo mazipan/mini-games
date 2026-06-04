@@ -1,0 +1,562 @@
+---
+layout: layouts/game.njk
+title: Whack-a-Mole
+description: Moles pop up from holes at random — click them before they disappear!
+category: arcade
+icon: "🦔"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    width: min(340px, calc(100vw - 2rem));
+  }
+  .hole {
+    position: relative;
+    aspect-ratio: 1;
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hole::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: radial-gradient(ellipse at 50% 80%, #0f172a 60%, transparent 100%);
+    border-radius: 0 0 50% 50%;
+    z-index: 1;
+  }
+  .mole {
+    position: absolute;
+    bottom: -100%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: clamp(2rem, 10vw, 3rem);
+    line-height: 1;
+    transition: bottom 0.12s ease-out;
+    z-index: 2;
+    user-select: none;
+    pointer-events: none;
+  }
+  .hole.up .mole {
+    bottom: 15%;
+  }
+  .hole.whacked .mole {
+    bottom: -100%;
+    transition: bottom 0.1s ease-in;
+  }
+  .hole.up {
+    cursor: crosshair;
+    border-color: #65a30d;
+  }
+  .hole.whacked {
+    border-color: #dc2626;
+  }
+  .hit-flash {
+    animation: hitFlash 0.2s ease-out;
+  }
+  @keyframes hitFlash {
+    0% {
+      background: #14532d;
+    }
+    100% {
+      background: #1e293b;
+    }
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.9);
+    gap: 1rem;
+    z-index: 100;
+  }
+  #overlay span:first-child {
+    font-size: 3rem;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 0;
+    max-width: 260px;
+  }
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    gap: 1rem;
+    z-index: 100;
+  }
+  #gameover-overlay span:first-child {
+    font-size: 3rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  .summary-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #16a34a;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #15803d;
+  }
+  #countdown {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fbbf24;
+    font-family: monospace;
+    min-width: 60px;
+    text-align: center;
+  }
+  .lives-display {
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Score", "score") }} {{ statCard("Best", "best-display", "—") }} {{ statCard("Lives", "lives-display",
+    "❤️❤️❤️") }} {{ statCard("Level", "level-display", "1") }}
+  </div>
+
+  <div id="board">
+    <div class="hole" id="hole-0" onclick="whack(0)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-1" onclick="whack(1)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-2" onclick="whack(2)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-3" onclick="whack(3)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-4" onclick="whack(4)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-5" onclick="whack(5)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-6" onclick="whack(6)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-7" onclick="whack(7)"><span class="mole">🦔</span></div>
+    <div class="hole" id="hole-8" onclick="whack(8)"><span class="mole">🦔</span></div>
+  </div>
+
+  <div id="overlay">
+    <span>🦔</span>
+    <h2>Whack-a-Mole</h2>
+    <p>Click moles before they disappear. Miss one and lose a life!</p>
+    <button class="play-btn" onclick="startGame()">Play Game</button>
+  </div>
+
+  <div id="gameover-overlay">
+    <span>💀</span>
+    <h2>Game Over</h2>
+    <div class="summary-row">
+      {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+      "go-level", "1") }}
+    </div>
+    <button class="play-btn" onclick="startGame()">New Game</button>
+  </div>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Whack as many moles as possible before time runs out or you lose all 3 lives!</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Desktop:</strong> Click on a mole when it pops up</li>
+    <li><strong>Mobile:</strong> Tap on a mole when it pops up</li>
+  </ul>
+  <h4>Scoring &amp; Levels</h4>
+  <ul>
+    <li>+1 point for each mole whacked</li>
+    <li>Lose a life when a mole disappears unwhacked</li>
+    <li>Game ends when all 3 lives are lost — no time limit!</li>
+    <li>Level 2 at score 8 — moles speed up</li>
+    <li>Level 3 at score 18 — two moles appear simultaneously</li>
+    <li>Level 4 at score 32 — three moles at once, very fast</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your best score is saved in your browser's local storage and persists between sessions.</p>
+  <h4>Why do moles appear faster over time?</h4>
+  <p>
+    Each level brings faster moles and more of them. Levels unlock at scores 8, 18, and 32 — level 3 and 4 send two or
+    three moles popping at once!
+  </p>
+  <h4>Can I play on mobile?</h4>
+  <p>Yes! Just tap the moles when they appear. The grid scales to fit your screen.</p>
+  <h4>Is there a time limit?</h4>
+  <p>No! You play as long as you can keep your lives. Miss a mole and lose a ❤️ — lose all 3 and it's game over.</p>
+  {% endcall %}
+</div>
+
+<script>
+  const STORAGE_KEY = "mini-whack-a-mole-best";
+  const TOTAL_HOLES = 9;
+  // Level thresholds for score
+  const LEVEL_SCORES = [0, 8, 18, 32];
+
+  let score = 0;
+  let lives = 3;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let level = 1;
+  let running = false;
+  let moleTimers = new Array(TOTAL_HOLES).fill(null);
+  let holeActive = new Array(TOTAL_HOLES).fill(false);
+
+  const holes = Array.from({ length: TOTAL_HOLES }, (_, i) => document.getElementById("hole-" + i));
+
+  document.getElementById("best-display").textContent = best > 0 ? best : "—";
+
+  function getLevel() {
+    for (let i = LEVEL_SCORES.length - 1; i >= 0; i--) {
+      if (score >= LEVEL_SCORES[i]) return i + 1;
+    }
+    return 1;
+  }
+
+  // How many concurrent mole "chains" run at this level
+  function getConcurrentMoles() {
+    if (level >= 4) return 3;
+    if (level >= 3) return 2;
+    return 1;
+  }
+
+  function getMoleDelay() {
+    return Math.max(450, 1300 - (level - 1) * 220);
+  }
+
+  function getMoleDuration() {
+    return Math.max(500, 1100 - (level - 1) * 160);
+  }
+
+  function updateLivesDisplay() {
+    document.getElementById("lives-display").textContent = "❤️".repeat(lives);
+  }
+
+  function checkLevelUp() {
+    const newLvl = getLevel();
+    if (newLvl !== level) {
+      const prevConcurrent = getConcurrentMoles();
+      level = newLvl;
+      document.getElementById("level-display").textContent = level;
+      const newConcurrent = getConcurrentMoles();
+      // Spawn extra chains when concurrent moles increase
+      for (let i = prevConcurrent; i < newConcurrent; i++) {
+        setTimeout(() => scheduleNextMole(), i * 350);
+      }
+    }
+  }
+
+  function popUpMole(index) {
+    if (!running || holeActive[index]) return;
+    holeActive[index] = true;
+    holes[index].classList.add("up");
+
+    const duration = getMoleDuration() + Math.random() * 300;
+    moleTimers[index] = setTimeout(() => {
+      if (holeActive[index]) missedMole(index);
+    }, duration);
+  }
+
+  function missedMole(index) {
+    holeActive[index] = false;
+    holes[index].classList.remove("up");
+    clearTimeout(moleTimers[index]);
+    moleTimers[index] = null;
+
+    if (!running) return;
+    lives = Math.max(0, lives - 1);
+    updateLivesDisplay();
+
+    if (lives === 0) {
+      endGame();
+      return;
+    }
+    scheduleNextMole();
+  }
+
+  function whack(index) {
+    if (!running || !holeActive[index]) return;
+
+    clearTimeout(moleTimers[index]);
+    moleTimers[index] = null;
+    holeActive[index] = false;
+
+    holes[index].classList.remove("up");
+    holes[index].classList.add("whacked", "hit-flash");
+    setTimeout(() => holes[index].classList.remove("whacked", "hit-flash"), 300);
+
+    score++;
+    document.getElementById("score").textContent = score;
+    checkLevelUp();
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+    }
+
+    scheduleNextMole();
+  }
+
+  function scheduleNextMole() {
+    if (!running) return;
+    const idleHoles = [];
+    for (let i = 0; i < TOTAL_HOLES; i++) {
+      if (!holeActive[i]) idleHoles.push(i);
+    }
+    if (idleHoles.length === 0) return;
+
+    const delay = getMoleDelay() * (0.5 + Math.random() * 0.7);
+    const pick = idleHoles[Math.floor(Math.random() * idleHoles.length)];
+    setTimeout(() => popUpMole(pick), delay);
+  }
+
+  function startMoleLoop() {
+    const concurrent = getConcurrentMoles();
+    for (let i = 0; i < concurrent; i++) {
+      setTimeout(() => scheduleNextMole(), i * 500);
+    }
+  }
+
+  function startGame() {
+    score = 0;
+    lives = 3;
+    level = 1;
+    running = true;
+
+    moleTimers.forEach((t) => clearTimeout(t));
+    moleTimers = new Array(TOTAL_HOLES).fill(null);
+    holeActive = new Array(TOTAL_HOLES).fill(false);
+    holes.forEach((h) => h.classList.remove("up", "whacked", "hit-flash"));
+
+    document.getElementById("score").textContent = "0";
+    document.getElementById("level-display").textContent = "1";
+    updateLivesDisplay();
+
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    startMoleLoop();
+  }
+
+  function endGame() {
+    running = false;
+
+    moleTimers.forEach((t, i) => {
+      clearTimeout(t);
+      moleTimers[i] = null;
+      holeActive[i] = false;
+    });
+    holes.forEach((h) => h.classList.remove("up"));
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 3,
+      d: Math.random() * 80,
+      color: `hsl(${Math.random() * 360},90%,60%)`,
+      tilt: Math.random() * 10 - 10,
+      tiltAngle: 0,
+      tiltSpeed: Math.random() * 0.1 + 0.05,
+    }));
+
+    let frame = 0;
+    const maxFrames = 180;
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.ellipse(p.x, p.y, p.r, p.r * 0.4, p.tilt, 0, Math.PI * 2);
+        ctx.fill();
+        p.y += Math.cos(p.d) + 2 + p.r / 10;
+        p.x += Math.sin(frame / 20) * 1.5;
+        p.tiltAngle += p.tiltSpeed;
+        p.tilt = Math.sin(p.tiltAngle) * 12;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+      });
+      frame++;
+      if (frame < maxFrames) requestAnimationFrame(draw);
+      else canvas.remove();
+    }
+    draw();
+  }
+</script>
