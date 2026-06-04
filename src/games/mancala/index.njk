@@ -71,6 +71,23 @@ icon: "🪨"
     color: #e2e8f0;
     font-family: monospace;
   }
+  #start-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  #game-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  #game-panel.active {
+    display: flex;
+  }
   #status-line {
     font-size: 1rem;
     font-weight: 600;
@@ -320,35 +337,40 @@ icon: "🪨"
 </style>
 
 <div id="game-wrapper">
-  <div class="controls-row">
-    <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">VS AI</button>
-    <button class="mode-btn" id="mode-friend" onclick="setMode('friend')">VS Friend</button>
-  </div>
-  <div class="controls-row" id="diff-row">
-    <button class="diff-btn active" id="diff-easy" onclick="setDiff('easy')">Easy</button>
-    <button class="diff-btn" id="diff-medium" onclick="setDiff('medium')">Medium</button>
-    <button class="diff-btn" id="diff-hard" onclick="setDiff('hard')">Hard</button>
-  </div>
-
-  <div class="score-row">
-    {{ statCard("Your Seeds", "p1-store-display", "0", "", "lbl-p1") }} {{ statCard("Best", "best-display", "0") }} {{
-    statCard("AI Seeds", "p2-store-display", "0", "", "lbl-p2") }}
-  </div>
-
-  <div id="status-line">Your turn</div>
-
-  <div id="mancala-board">
-    <div class="store store-p2">
-      <div class="store-count" id="count-13">0</div>
-      <div class="store-lbl" id="store-lbl-p2">AI</div>
+  <div id="start-panel">
+    <div class="controls-row">
+      <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">VS AI</button>
+      <button class="mode-btn" id="mode-friend" onclick="setMode('friend')">VS Friend</button>
     </div>
-    <div class="pits-area">
-      <div class="pits-row" id="p2-row"></div>
-      <div class="pits-row" id="p1-row"></div>
+    <div class="controls-row" id="diff-row">
+      <button class="diff-btn active" id="diff-easy" onclick="setDiff('easy')">Easy</button>
+      <button class="diff-btn" id="diff-medium" onclick="setDiff('medium')">Medium</button>
+      <button class="diff-btn" id="diff-hard" onclick="setDiff('hard')">Hard</button>
     </div>
-    <div class="store store-p1">
-      <div class="store-count" id="count-6">0</div>
-      <div class="store-lbl" id="store-lbl-p1">You</div>
+    <button class="play-btn" onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="game-panel">
+    <div class="score-row">
+      {{ statCard("Your Seeds", "p1-store-display", "0", "", "lbl-p1") }} {{ statCard("Best", "best-display", "0") }} {{
+      statCard("AI Seeds", "p2-store-display", "0", "", "lbl-p2") }}
+    </div>
+
+    <div id="status-line">Your turn</div>
+
+    <div id="mancala-board">
+      <div class="store store-p2">
+        <div class="store-count" id="count-13">0</div>
+        <div class="store-lbl" id="store-lbl-p2">AI</div>
+      </div>
+      <div class="pits-area">
+        <div class="pits-row" id="p2-row"></div>
+        <div class="pits-row" id="p1-row"></div>
+      </div>
+      <div class="store store-p1">
+        <div class="store-count" id="count-6">0</div>
+        <div class="store-lbl" id="store-lbl-p1">You</div>
+      </div>
     </div>
   </div>
 
@@ -370,7 +392,7 @@ icon: "🪨"
       </div>
     </div>
     <p id="go-context"></p>
-    <button class="play-btn" onclick="startGame()">New Game</button>
+    <button class="play-btn" onclick="goToLobby()">New Game</button>
   </div>
 </div>
 
@@ -800,8 +822,15 @@ icon: "🪨"
     document.getElementById("gameover-overlay").style.display = "flex";
   }
 
-  function startGame() {
+  function goToLobby() {
     document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("start-panel").style.display = "flex";
+    document.getElementById("game-panel").classList.remove("active");
+  }
+
+  function startGame() {
+    document.getElementById("start-panel").style.display = "none";
+    document.getElementById("game-panel").classList.add("active");
     board = Array(14).fill(4);
     board[P1_STORE] = 0;
     board[P2_STORE] = 0;
@@ -825,20 +854,16 @@ icon: "🪨"
     document.getElementById("store-lbl-p2").textContent = m === "ai" ? "AI" : "P2";
     document.getElementById("go-lbl-p1").textContent = p1Lbl;
     document.getElementById("go-lbl-p2").textContent = p2Lbl;
-    startGame();
   }
 
   function setDiff(d) {
     difficulty = d;
     document.querySelectorAll(".diff-btn").forEach((b) => b.classList.remove("active"));
     document.getElementById("diff-" + d).classList.add("active");
-    startGame();
   }
 
   best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  document.getElementById("best-display").textContent = best;
   mode = "ai";
   difficulty = "easy";
   buildBoard();
-  startGame();
 </script>
