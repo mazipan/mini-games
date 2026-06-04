@@ -239,13 +239,17 @@ icon: "🏓"
 
 <div id="game-wrapper">
   <div class="score-row">
-    {{ statCard("You (P1)", "p1-score") }} {{ statCard("AI", "p2-score", "0", "", "p2-label") }} {{ statCard("Wins",
-    "best-display") }}
+    {{ statCard("You", "p1-score", "0", "", "p1-label") }} {{ statCard("AI", "p2-score", "0", "", "p2-label") }} {{
+    statCard("Wins", "best-display") }}
   </div>
 
-  <div class="mode-row">
+  <div class="mode-row" id="mode-row">
     <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">vs AI</button>
     <button class="mode-btn" id="mode-pvp" onclick="setMode('pvp')">vs Player</button>
+  </div>
+  <div class="mode-row" id="side-row">
+    <button class="mode-btn active" id="side-left" onclick="setPlayerSide('left')">◀ Left</button>
+    <button class="mode-btn" id="side-right" onclick="setPlayerSide('right')">Right ▶</button>
   </div>
 
   <div class="canvas-wrapper">
@@ -271,7 +275,7 @@ icon: "🏓"
     </div>
   </div>
 
-  <p class="controls-hint">W / S — Player 1 &nbsp;·&nbsp; ↑ / ↓ — Player 2</p>
+  <p class="controls-hint" id="controls-hint">W / S or ↑ / ↓ — you (left) · AI on right</p>
 </div>
 
 <div class="info-section">
@@ -280,15 +284,15 @@ icon: "🏓"
   <p>Score 7 points before your opponent by getting the ball past their paddle.</p>
   <h4>Controls</h4>
   <ul>
-    <li><strong>Player 1 (left):</strong> W (up) / S (down)</li>
-    <li><strong>Player 2 / AI (right):</strong> ↑ (up) / ↓ (down)</li>
-    <li><strong>Mobile — P1:</strong> drag finger on the left half of the court</li>
-    <li><strong>Mobile — P2 (PvP):</strong> second finger on the right half</li>
+    <li><strong>Your paddle:</strong> W / S or ↑ / ↓</li>
+    <li><strong>Mobile:</strong> drag on your chosen side of the court</li>
+    <li><strong>PvP — P1 (left):</strong> W / S &nbsp;·&nbsp; P2 (right): ↑ / ↓</li>
   </ul>
-  <h4>Modes</h4>
+  <h4>Modes &amp; Side</h4>
   <ul>
-    <li><strong>vs AI</strong> — play against the computer; wins count toward your best score</li>
+    <li><strong>vs AI</strong> — play the computer; choose ◀ Left or Right ▶ before starting</li>
     <li><strong>vs Player</strong> — two players share the same keyboard or screen</li>
+    <li>Mode and side can be changed between games but not mid-rally</li>
   </ul>
   <h4>Ball Speed</h4>
   <p>The ball speeds up slightly with each paddle hit, making rallies progressively more intense.</p>
@@ -382,6 +386,7 @@ icon: "🏓"
     p2score = 0;
   let wins = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let gameMode = "ai";
+  let playerSide = "left";
   let paused = false;
   let pauseMsg = "";
   let pauseTimer = null;
@@ -389,11 +394,45 @@ icon: "🏓"
 
   document.getElementById("best-display").textContent = wins;
 
+  function updateLabels() {
+    if (gameMode === "pvp") {
+      document.getElementById("p1-label").textContent = "P1";
+      document.getElementById("p2-label").textContent = "P2";
+    } else if (playerSide === "left") {
+      document.getElementById("p1-label").textContent = "You ◀";
+      document.getElementById("p2-label").textContent = "AI";
+    } else {
+      document.getElementById("p1-label").textContent = "AI";
+      document.getElementById("p2-label").textContent = "You ▶";
+    }
+  }
+
+  function updateControlsHint() {
+    const el = document.getElementById("controls-hint");
+    if (gameMode === "pvp") {
+      el.textContent = "W / S — P1 (left) · ↑ / ↓ — P2 (right)";
+    } else if (playerSide === "left") {
+      el.textContent = "W / S or ↑ / ↓ — you (left) · AI on right";
+    } else {
+      el.textContent = "W / S or ↑ / ↓ — you (right) · AI on left";
+    }
+  }
+
   function setMode(mode) {
     gameMode = mode;
     document.getElementById("mode-ai").classList.toggle("active", mode === "ai");
     document.getElementById("mode-pvp").classList.toggle("active", mode === "pvp");
-    document.getElementById("p2-label").textContent = mode === "pvp" ? "P2" : "AI";
+    document.getElementById("side-row").style.display = mode === "ai" ? "flex" : "none";
+    updateLabels();
+    updateControlsHint();
+  }
+
+  function setPlayerSide(side) {
+    playerSide = side;
+    document.getElementById("side-left").classList.toggle("active", side === "left");
+    document.getElementById("side-right").classList.toggle("active", side === "right");
+    updateLabels();
+    updateControlsHint();
   }
 
   function newBallVelocity(towardRight) {
@@ -421,7 +460,8 @@ icon: "🏓"
 
     document.getElementById("p1-score").textContent = "0";
     document.getElementById("p2-score").textContent = "0";
-    document.getElementById("p2-label").textContent = gameMode === "pvp" ? "P2" : "AI";
+    document.getElementById("mode-row").style.display = "none";
+    document.getElementById("side-row").style.display = "none";
     document.getElementById("demo-label").style.display = "none";
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
@@ -464,16 +504,26 @@ icon: "🏓"
   }
 
   function handleInput() {
-    if (keys["w"] || keys["W"]) p1y = Math.max(0, p1y - PAD_SPEED);
-    if (keys["s"] || keys["S"]) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
+    const up = keys["w"] || keys["W"] || keys["ArrowUp"];
+    const dn = keys["s"] || keys["S"] || keys["ArrowDown"];
 
     if (gameMode === "pvp") {
+      if (keys["w"] || keys["W"]) p1y = Math.max(0, p1y - PAD_SPEED);
+      if (keys["s"] || keys["S"]) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
       if (keys["ArrowUp"]) p2y = Math.max(0, p2y - PAD_SPEED);
       if (keys["ArrowDown"]) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
-    } else {
+    } else if (playerSide === "left") {
+      if (up) p1y = Math.max(0, p1y - PAD_SPEED);
+      if (dn) p1y = Math.min(H - PAD_H, p1y + PAD_SPEED);
       const factor = ball.vx > 0 ? 0.09 : 0.04;
       p2y += (ball.y - PAD_H / 2 - p2y) * factor;
       p2y = Math.max(0, Math.min(H - PAD_H, p2y));
+    } else {
+      if (up) p2y = Math.max(0, p2y - PAD_SPEED);
+      if (dn) p2y = Math.min(H - PAD_H, p2y + PAD_SPEED);
+      const factor = ball.vx < 0 ? 0.09 : 0.04;
+      p1y += (ball.y - PAD_H / 2 - p1y) * factor;
+      p1y = Math.max(0, Math.min(H - PAD_H, p1y));
     }
   }
 
@@ -530,7 +580,7 @@ icon: "🏓"
       }
       clearTimeout(pauseTimer);
       paused = true;
-      pauseMsg = gameMode === "pvp" ? "P2 scores! 🎉" : "AI gets one…";
+      pauseMsg = gameMode === "pvp" ? "P2 scores! 🎉" : playerSide === "right" ? "Nice shot! 🎉" : "AI gets one…";
       pauseTimer = setTimeout(() => {
         paused = false;
         pauseMsg = "";
@@ -549,7 +599,7 @@ icon: "🏓"
       }
       clearTimeout(pauseTimer);
       paused = true;
-      pauseMsg = gameMode === "pvp" ? "P1 scores! 🎉" : "Nice shot! 🎉";
+      pauseMsg = gameMode === "pvp" ? "P1 scores! 🎉" : playerSide === "left" ? "Nice shot! 🎉" : "AI gets one…";
       pauseTimer = setTimeout(() => {
         paused = false;
         pauseMsg = "";
@@ -596,20 +646,35 @@ icon: "🏓"
     cancelAnimationFrame(animId);
     drawScene(p1y, p2y, ball);
 
-    if (p1Won && gameMode === "ai") {
+    const playerWon = gameMode === "pvp" ? p1Won : playerSide === "left" ? p1Won : !p1Won;
+
+    if (playerWon && gameMode === "ai") {
       wins++;
       localStorage.setItem(STORAGE_KEY, wins);
       document.getElementById("best-display").textContent = wins;
       launchConfetti();
     }
 
-    document.getElementById("go-icon").textContent = p1Won ? "🏆" : "💀";
-    document.getElementById("go-title").textContent = p1Won ? "You Win!" : "Game Over";
-    document.getElementById("go-p1").textContent = p1score;
-    document.getElementById("go-p2").textContent = p2score;
+    let icon, title;
+    if (gameMode === "pvp") {
+      icon = "🏆";
+      title = p1Won ? "P1 Wins!" : "P2 Wins!";
+    } else {
+      icon = playerWon ? "🏆" : "💀";
+      title = playerWon ? "You Win!" : "AI Wins!";
+    }
+    document.getElementById("go-icon").textContent = icon;
+    document.getElementById("go-title").textContent = title;
+
+    const showP1 = gameMode === "ai" && playerSide === "right" ? p2score : p1score;
+    const showP2 = gameMode === "ai" && playerSide === "right" ? p1score : p2score;
+    document.getElementById("go-p1").textContent = showP1;
+    document.getElementById("go-p2").textContent = showP2;
     document.getElementById("go-wins").textContent = wins;
     document.getElementById("go-mode").textContent = gameMode === "ai" ? "vs AI" : "vs Player";
 
+    document.getElementById("mode-row").style.display = "flex";
+    document.getElementById("side-row").style.display = gameMode === "ai" ? "flex" : "none";
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "flex";
   }
@@ -697,12 +762,18 @@ icon: "🏓"
       for (const t of e.changedTouches) {
         const cx = t.clientX - rect.left;
         const cy = (t.clientY - rect.top) * (H / rect.height);
-        activeTouches[t.identifier] = cx < rect.width / 2 ? "p1" : "p2";
-        if (activeTouches[t.identifier] === "p1") {
-          p1y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
-        } else if (gameMode === "pvp") {
-          p2y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
+        const isLeft = cx < rect.width / 2;
+        let target = null;
+        if (gameMode === "pvp") {
+          target = isLeft ? "p1" : "p2";
+        } else if (playerSide === "left" && isLeft) {
+          target = "p1";
+        } else if (playerSide === "right" && !isLeft) {
+          target = "p2";
         }
+        activeTouches[t.identifier] = target;
+        if (target === "p1") p1y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
+        else if (target === "p2") p2y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
       }
     },
     { passive: false }
@@ -718,7 +789,7 @@ icon: "🏓"
         const cy = (t.clientY - rect.top) * (H / rect.height);
         if (activeTouches[t.identifier] === "p1") {
           p1y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
-        } else if (activeTouches[t.identifier] === "p2" && gameMode === "pvp") {
+        } else if (activeTouches[t.identifier] === "p2") {
           p2y = Math.max(0, Math.min(H - PAD_H, cy - PAD_H / 2));
         }
       }
@@ -740,5 +811,7 @@ icon: "🏓"
   });
 
   // Start with demo on load
+  updateLabels();
+  updateControlsHint();
   startDemo();
 </script>
