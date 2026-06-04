@@ -52,10 +52,18 @@ description: Shared components, tokens, and patterns used across all mini-games.
     margin-top: 0.75rem;
     white-space: pre;
   }
-  .ds-code .kw  { color: #c084fc; }
-  .ds-code .sel { color: #67e8f9; }
-  .ds-code .val { color: #86efac; }
-  .ds-code .cmt { color: #475569; }
+  .ds-code .kw {
+    color: #c084fc;
+  }
+  .ds-code .sel {
+    color: #67e8f9;
+  }
+  .ds-code .val {
+    color: #86efac;
+  }
+  .ds-code .cmt {
+    color: #475569;
+  }
   .ds-note {
     font-size: 0.8rem;
     color: #64748b;
@@ -164,12 +172,22 @@ description: Shared components, tokens, and patterns used across all mini-games.
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
-  .play-btn:hover { background: #6d28d9; }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
 
-  .play-btn.green  { background: #16a34a; }
-  .play-btn.green:hover { background: #15803d; }
-  .play-btn.orange { background: #ea580c; }
-  .play-btn.orange:hover { background: #c2410c; }
+  .play-btn.green {
+    background: #16a34a;
+  }
+  .play-btn.green:hover {
+    background: #15803d;
+  }
+  .play-btn.orange {
+    background: #ea580c;
+  }
+  .play-btn.orange:hover {
+    background: #c2410c;
+  }
 
   .new-btn {
     padding: 0.4rem 1rem;
@@ -181,7 +199,9 @@ description: Shared components, tokens, and patterns used across all mini-games.
     cursor: pointer;
     touch-action: manipulation;
   }
-  .new-btn:hover { background: #475569; }
+  .new-btn:hover {
+    background: #475569;
+  }
 
   .diff-btn {
     padding: 0.3rem 0.8rem;
@@ -221,7 +241,9 @@ description: Shared components, tokens, and patterns used across all mini-games.
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
-  .dpad-btn:active { background: #334155; }
+  .dpad-btn:active {
+    background: #334155;
+  }
 
   /* ── Overlay (demo card) ────────────────────────────────── */
   .overlay-card {
@@ -267,9 +289,17 @@ description: Shared components, tokens, and patterns used across all mini-games.
     justify-content: space-between;
     user-select: none;
   }
-  .info-details summary::-webkit-details-marker { display: none; }
-  .info-details summary::after { content: "+"; font-size: 1.1rem; color: #64748b; }
-  .info-details[open] summary::after { content: "−"; }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
   .info-body {
     padding: 0.75rem 1rem 1rem;
     color: #94a3b8;
@@ -283,20 +313,26 @@ description: Shared components, tokens, and patterns used across all mini-games.
     margin: 0.75rem 0 0.25rem;
     font-size: 0.875rem;
   }
-  .info-body h4:first-child { margin-top: 0; }
-  .info-body ul { padding-left: 1.25rem; margin: 0.25rem 0; }
-  .info-body li { margin-bottom: 0.25rem; }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
 </style>
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-12">
-
   <!-- Hero -->
   <div class="mb-10">
     <p class="text-xs font-mono text-violet-400 uppercase tracking-widest mb-2">mini-games</p>
     <h1 class="text-4xl font-bold text-white mb-3">Design System</h1>
     <p class="text-slate-400 text-lg max-w-2xl">
-      Shared components, tokens, and patterns used across all games.
-      Copy the CSS snippets directly into each game's <code class="text-violet-300 text-base">&lt;style&gt;</code> block.
+      Shared components, tokens, and patterns used across all games. Copy the CSS snippets directly into each game's
+      <code class="text-violet-300 text-base">&lt;style&gt;</code> block.
     </p>
   </div>
 
@@ -304,77 +340,160 @@ description: Shared components, tokens, and patterns used across all mini-games.
   <nav class="mb-14 bg-slate-800/40 border border-slate-700 rounded-xl p-5">
     <p class="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">On this page</p>
     <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-      <a href="#colors"           class="text-violet-400 hover:text-violet-300 transition-colors">Colors</a>
-      <a href="#typography"       class="text-violet-400 hover:text-violet-300 transition-colors">Typography</a>
-      <a href="#global"           class="text-violet-400 hover:text-violet-300 transition-colors">Global Components</a>
-      <a href="#badges"           class="text-violet-400 hover:text-violet-300 transition-colors">Category &amp; Difficulty</a>
-      <a href="#stat-cards"       class="text-violet-400 hover:text-violet-300 transition-colors">Stat Cards</a>
-      <a href="#buttons"          class="text-violet-400 hover:text-violet-300 transition-colors">Buttons</a>
-      <a href="#dpad"             class="text-violet-400 hover:text-violet-300 transition-colors">D-pad</a>
-      <a href="#overlays"         class="text-violet-400 hover:text-violet-300 transition-colors">Overlays</a>
-      <a href="#info-section"     class="text-violet-400 hover:text-violet-300 transition-colors">Info Section</a>
-      <a href="#game-wrapper"     class="text-violet-400 hover:text-violet-300 transition-colors">Game Wrapper</a>
+      <a href="#colors" class="text-violet-400 hover:text-violet-300 transition-colors">Colors</a>
+      <a href="#typography" class="text-violet-400 hover:text-violet-300 transition-colors">Typography</a>
+      <a href="#global" class="text-violet-400 hover:text-violet-300 transition-colors">Global Components</a>
+      <a href="#badges" class="text-violet-400 hover:text-violet-300 transition-colors">Category &amp; Difficulty</a>
+      <a href="#stat-cards" class="text-violet-400 hover:text-violet-300 transition-colors">Stat Cards</a>
+      <a href="#buttons" class="text-violet-400 hover:text-violet-300 transition-colors">Buttons</a>
+      <a href="#dpad" class="text-violet-400 hover:text-violet-300 transition-colors">D-pad</a>
+      <a href="#overlays" class="text-violet-400 hover:text-violet-300 transition-colors">Overlays</a>
+      <a href="#info-section" class="text-violet-400 hover:text-violet-300 transition-colors">Info Section</a>
+      <a href="#game-wrapper" class="text-violet-400 hover:text-violet-300 transition-colors">Game Wrapper</a>
     </div>
   </nav>
 
   <!-- ─── COLORS ─────────────────────────────────────────── -->
   <section id="colors" class="ds-section">
     <h2 class="ds-section-title">Colors</h2>
-    <p class="text-slate-400 text-sm mb-4">All game UIs are built on this dark slate palette. Use these hex values when writing per-game <code class="text-violet-300">&lt;style&gt;</code> blocks.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      All game UIs are built on this dark slate palette. Use these hex values when writing per-game
+      <code class="text-violet-300">&lt;style&gt;</code> blocks.
+    </p>
 
     <p class="ds-subsection-title">Backgrounds</p>
     <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-color" style="background:#020617"></div><div class="swatch-info"><div class="swatch-name">Deepest</div><div class="swatch-hex">#020617</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#0f172a"></div><div class="swatch-info"><div class="swatch-name">Canvas</div><div class="swatch-hex">#0f172a</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#1e293b"></div><div class="swatch-info"><div class="swatch-name">Card</div><div class="swatch-hex">#1e293b</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#334155"></div><div class="swatch-info"><div class="swatch-name">Border/Hover</div><div class="swatch-hex">#334155</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#475569"></div><div class="swatch-info"><div class="swatch-name">Muted</div><div class="swatch-hex">#475569</div></div></div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #020617"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Deepest</div>
+          <div class="swatch-hex">#020617</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #0f172a"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Canvas</div>
+          <div class="swatch-hex">#0f172a</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #1e293b"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Card</div>
+          <div class="swatch-hex">#1e293b</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #334155"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Border/Hover</div>
+          <div class="swatch-hex">#334155</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #475569"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Muted</div>
+          <div class="swatch-hex">#475569</div>
+        </div>
+      </div>
     </div>
 
     <p class="ds-subsection-title">Text</p>
     <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-color" style="background:#e2e8f0"></div><div class="swatch-info"><div class="swatch-name">Primary</div><div class="swatch-hex">#e2e8f0</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#94a3b8"></div><div class="swatch-info"><div class="swatch-name">Secondary</div><div class="swatch-hex">#94a3b8</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#64748b"></div><div class="swatch-info"><div class="swatch-name">Hint</div><div class="swatch-hex">#64748b</div></div></div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #e2e8f0"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Primary</div>
+          <div class="swatch-hex">#e2e8f0</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #94a3b8"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Secondary</div>
+          <div class="swatch-hex">#94a3b8</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #64748b"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Hint</div>
+          <div class="swatch-hex">#64748b</div>
+        </div>
+      </div>
     </div>
 
     <p class="ds-subsection-title">Accent &amp; Game Colors</p>
     <div class="swatch-grid">
-      <div class="swatch"><div class="swatch-color" style="background:#7c3aed"></div><div class="swatch-info"><div class="swatch-name">Violet (default)</div><div class="swatch-hex">#7c3aed</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#16a34a"></div><div class="swatch-info"><div class="swatch-name">Green (Snake)</div><div class="swatch-hex">#16a34a</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#ea580c"></div><div class="swatch-info"><div class="swatch-name">Orange (Breakout)</div><div class="swatch-hex">#ea580c</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#22c55e"></div><div class="swatch-info"><div class="swatch-name">Success</div><div class="swatch-hex">#22c55e</div></div></div>
-      <div class="swatch"><div class="swatch-color" style="background:#ef4444"></div><div class="swatch-info"><div class="swatch-name">Danger</div><div class="swatch-hex">#ef4444</div></div></div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #7c3aed"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Violet (default)</div>
+          <div class="swatch-hex">#7c3aed</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #16a34a"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Green (Snake)</div>
+          <div class="swatch-hex">#16a34a</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #ea580c"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Orange (Breakout)</div>
+          <div class="swatch-hex">#ea580c</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #22c55e"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Success</div>
+          <div class="swatch-hex">#22c55e</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background: #ef4444"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Danger</div>
+          <div class="swatch-hex">#ef4444</div>
+        </div>
+      </div>
     </div>
   </section>
 
   <!-- ─── TYPOGRAPHY ─────────────────────────────────────── -->
   <section id="typography" class="ds-section">
     <h2 class="ds-section-title">Typography</h2>
-    <div class="ds-preview" style="flex-direction:column; gap:1.25rem;">
+    <div class="ds-preview" style="flex-direction: column; gap: 1.25rem">
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Overlay title · 1.6rem bold</p>
-        <p style="font-size:1.6rem; font-weight:700; color:#e2e8f0;">Game Over</p>
+        <p style="font-size: 1.6rem; font-weight: 700; color: #e2e8f0">Game Over</p>
       </div>
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Section heading · 1.5rem bold</p>
-        <p style="font-size:1.5rem; font-weight:700; color:#e2e8f0;">How to Play</p>
+        <p style="font-size: 1.5rem; font-weight: 700; color: #e2e8f0">How to Play</p>
       </div>
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Stat value · 1.2rem monospace bold</p>
-        <p style="font-size:1.2rem; font-weight:700; color:#e2e8f0; font-family:monospace;">4280</p>
+        <p style="font-size: 1.2rem; font-weight: 700; color: #e2e8f0; font-family: monospace">4280</p>
       </div>
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Stat label · 0.65rem uppercase spaced</p>
-        <p style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8;">Best Score</p>
+        <p style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8">Best Score</p>
       </div>
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Body / info · 0.875rem · color #94a3b8</p>
-        <p style="font-size:0.875rem; color:#94a3b8; line-height:1.6;">Flip cards to find matching pairs. Train your memory and beat the clock.</p>
+        <p style="font-size: 0.875rem; color: #94a3b8; line-height: 1.6">
+          Flip cards to find matching pairs. Train your memory and beat the clock.
+        </p>
       </div>
       <div>
         <p class="text-xs text-slate-500 mb-1 font-mono">Controls hint · 0.75rem · color #64748b</p>
-        <p style="font-size:0.75rem; color:#64748b;">Arrow keys · D-pad · or swipe</p>
+        <p style="font-size: 0.75rem; color: #64748b">Arrow keys · D-pad · or swipe</p>
       </div>
     </div>
   </section>
@@ -382,23 +501,32 @@ description: Shared components, tokens, and patterns used across all mini-games.
   <!-- ─── GLOBAL COMPONENTS ──────────────────────────────── -->
   <section id="global" class="ds-section">
     <h2 class="ds-section-title">Global Components</h2>
-    <p class="text-slate-400 text-sm mb-4">Defined in <code class="text-violet-300">src/css/main.css</code> via Tailwind <code class="text-violet-300">@layer components</code>. Available on all pages without additional CSS.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Defined in <code class="text-violet-300">src/css/main.css</code> via Tailwind
+      <code class="text-violet-300">@layer components</code>. Available on all pages without additional CSS.
+    </p>
 
-    <p class="ds-subsection-title">Buttons — <code class="text-violet-300 normal-case font-mono">.btn-primary</code> / <code class="text-violet-300 normal-case font-mono">.btn-secondary</code></p>
+    <p class="ds-subsection-title">
+      Buttons — <code class="text-violet-300 normal-case font-mono">.btn-primary</code> /
+      <code class="text-violet-300 normal-case font-mono">.btn-secondary</code>
+    </p>
     <div class="ds-preview">
-      <a href="#" class="btn-primary" onclick="return false">Play Now →</a>
-      <a href="#" class="btn-secondary" onclick="return false">View Source</a>
+      <a href="#" class="btn-primary" onclick="return false;">Play Now →</a>
+      <a href="#" class="btn-secondary" onclick="return false;">View Source</a>
     </div>
-    <p class="ds-note">Used for CTAs on the homepage and marketing sections. Not the same as in-game buttons — see <a href="#buttons" class="text-violet-400">Buttons</a> below.</p>
+    <p class="ds-note">
+      Used for CTAs on the homepage and marketing sections. Not the same as in-game buttons — see
+      <a href="#buttons" class="text-violet-400">Buttons</a> below.
+    </p>
 
     <p class="ds-subsection-title">Card — <code class="text-violet-300 normal-case font-mono">.card</code></p>
     <div class="ds-preview">
-      <a href="#" class="card p-5 group flex flex-col gap-3 w-48" onclick="return false">
+      <a href="#" class="card p-5 group flex flex-col gap-3 w-48" onclick="return false;">
         <span class="text-3xl">🐍</span>
         <p class="font-semibold text-white group-hover:text-violet-400 transition-colors">Snake</p>
         <p class="text-xs text-slate-400">Guide the snake to eat food and grow.</p>
       </a>
-      <a href="#" class="card p-5 group flex flex-col gap-3 w-48" onclick="return false">
+      <a href="#" class="card p-5 group flex flex-col gap-3 w-48" onclick="return false;">
         <span class="text-3xl">🟦</span>
         <p class="font-semibold text-white group-hover:text-violet-400 transition-colors">Tetris</p>
         <p class="text-xs text-slate-400">Stack tetrominoes and clear lines.</p>
@@ -413,36 +541,51 @@ description: Shared components, tokens, and patterns used across all mini-games.
       <span class="badge bg-amber-500/20 text-amber-300 border-amber-500/30">Board</span>
       <span class="badge bg-sky-500/20 text-sky-300 border-sky-500/30">Word</span>
     </div>
-    <pre class="ds-code">&lt;span class="badge bg-violet-500/20 text-violet-300 border-violet-500/30"&gt;Arcade&lt;/span&gt;</pre>
+    <pre class="ds-code">
+&lt;span class="badge bg-violet-500/20 text-violet-300 border-violet-500/30"&gt;Arcade&lt;/span&gt;</pre
+    >
   </section>
 
   <!-- ─── CATEGORY & DIFFICULTY ──────────────────────────── -->
   <section id="badges" class="ds-section">
     <h2 class="ds-section-title">Category &amp; Difficulty</h2>
-    <p class="text-slate-400 text-sm mb-4">Applied via Eleventy filters <code class="text-violet-300">categoryColor</code>, <code class="text-violet-300">categoryLabel</code>, and <code class="text-violet-300">difficultyColor</code> defined in <code class="text-violet-300">.eleventy.js</code>.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Applied via Eleventy filters <code class="text-violet-300">categoryColor</code>,
+      <code class="text-violet-300">categoryLabel</code>, and
+      <code class="text-violet-300">difficultyColor</code> defined in <code class="text-violet-300">.eleventy.js</code>.
+    </p>
 
     <p class="ds-subsection-title">Category badges</p>
     <div class="ds-preview">
       <div class="flex flex-col gap-2">
         <div class="flex items-center gap-3">
           <span class="badge bg-violet-500/20 text-violet-300 border-violet-500/30">Arcade</span>
-          <code class="text-xs text-slate-500 font-mono">arcade → bg-violet-500/20 text-violet-300 border-violet-500/30</code>
+          <code class="text-xs text-slate-500 font-mono"
+            >arcade → bg-violet-500/20 text-violet-300 border-violet-500/30</code
+          >
         </div>
         <div class="flex items-center gap-3">
           <span class="badge bg-emerald-500/20 text-emerald-300 border-emerald-500/30">Puzzle</span>
-          <code class="text-xs text-slate-500 font-mono">puzzle → bg-emerald-500/20 text-emerald-300 border-emerald-500/30</code>
+          <code class="text-xs text-slate-500 font-mono"
+            >puzzle → bg-emerald-500/20 text-emerald-300 border-emerald-500/30</code
+          >
         </div>
         <div class="flex items-center gap-3">
           <span class="badge bg-amber-500/20 text-amber-300 border-amber-500/30">Board</span>
-          <code class="text-xs text-slate-500 font-mono">board &nbsp;→ bg-amber-500/20 text-amber-300 border-amber-500/30</code>
+          <code class="text-xs text-slate-500 font-mono"
+            >board &nbsp;→ bg-amber-500/20 text-amber-300 border-amber-500/30</code
+          >
         </div>
         <div class="flex items-center gap-3">
           <span class="badge bg-sky-500/20 text-sky-300 border-sky-500/30">Word</span>
-          <code class="text-xs text-slate-500 font-mono">word &nbsp;&nbsp;→ bg-sky-500/20 text-sky-300 border-sky-500/30</code>
+          <code class="text-xs text-slate-500 font-mono"
+            >word &nbsp;&nbsp;→ bg-sky-500/20 text-sky-300 border-sky-500/30</code
+          >
         </div>
       </div>
     </div>
-    <pre class="ds-code">{{"{{"}}- in Nunjucks templates -{{"}}"}}
+    <pre class="ds-code">
+{{"{{"}}- in Nunjucks templates -{{"}}"}}
 &lt;span class="badge {{ "{{" }} game.category | categoryColor {{ "}}" }}"&gt;
   {{ "{{" }} game.category | categoryLabel {{ "}}" }}
 &lt;/span&gt;
@@ -450,7 +593,8 @@ description: Shared components, tokens, and patterns used across all mini-games.
 {{"{{"}}- in game.njk front matter / layout -{{"}}"}}
 {% if category %}
   &lt;span class="badge {{ "{{" }} category | categoryColor {{ "}}" }}"&gt;{{ "{{" }} category | categoryLabel {{ "}}" }}&lt;/span&gt;
-{% endif %}</pre>
+{% endif %}</pre
+    >
 
     <p class="ds-subsection-title">Difficulty indicators</p>
     <div class="ds-preview">
@@ -460,48 +604,88 @@ description: Shared components, tokens, and patterns used across all mini-games.
         <span class="text-sm font-medium text-red-400 capitalize">hard</span>
       </div>
     </div>
-    <pre class="ds-code">&lt;span class="text-xs {{ "{{" }} game.difficulty | difficultyColor {{ "}}" }} font-medium capitalize"&gt;
+    <pre class="ds-code">
+&lt;span class="text-xs {{ "{{" }} game.difficulty | difficultyColor {{ "}}" }} font-medium capitalize"&gt;
   {{ "{{" }} game.difficulty {{ "}}" }}
-&lt;/span&gt;</pre>
+&lt;/span&gt;</pre
+    >
   </section>
 
   <!-- ─── STAT CARDS ─────────────────────────────────────── -->
   <section id="stat-cards" class="ds-section">
     <h2 class="ds-section-title">Stat Cards</h2>
-    <p class="text-slate-400 text-sm mb-4">Used in score rows during gameplay. Copy the CSS block into each game's <code class="text-violet-300">&lt;style&gt;</code>.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Used in score rows during gameplay. Copy the CSS block into each game's
+      <code class="text-violet-300">&lt;style&gt;</code>.
+    </p>
 
     <p class="ds-subsection-title">Standard — <code class="text-violet-300 normal-case font-mono">.stat</code></p>
     <div class="ds-preview">
-      <div class="stat"><div class="stat-label">Score</div><div class="stat-value">4280</div></div>
-      <div class="stat"><div class="stat-label">Best</div><div class="stat-value">8160</div></div>
-      <div class="stat"><div class="stat-label">Level</div><div class="stat-value">3</div></div>
-      <div class="stat"><div class="stat-label">Time</div><div class="stat-value">42s</div></div>
-    </div>
-    <pre class="ds-code">.stat       { text-align:center; background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0.5rem 1rem; }
-.stat-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; }
-.stat-value { font-size:1.2rem; font-weight:bold; color:#e2e8f0; font-family:monospace; }</pre>
-
-    <p class="ds-subsection-title">Game-over summary — <code class="text-violet-300 normal-case font-mono">.summary-stat</code></p>
-    <div class="ds-preview center">
-      <div class="summary-row">
-        <div class="summary-stat"><div class="summary-label">Score</div><div class="summary-value">4280</div></div>
-        <div class="summary-stat"><div class="summary-label">Best</div><div class="summary-value">8160</div></div>
-        <div class="summary-stat"><div class="summary-label">Level</div><div class="summary-value">3</div></div>
+      <div class="stat">
+        <div class="stat-label">Score</div>
+        <div class="stat-value">4280</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Best</div>
+        <div class="stat-value">8160</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Level</div>
+        <div class="stat-value">3</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Time</div>
+        <div class="stat-value">42s</div>
       </div>
     </div>
-    <pre class="ds-code">.summary-row   { display:flex; gap:0.75rem; flex-wrap:wrap; justify-content:center; }
+    <pre class="ds-code">
+.stat       { text-align:center; background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0.5rem 1rem; }
+.stat-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; }
+.stat-value { font-size:1.2rem; font-weight:bold; color:#e2e8f0; font-family:monospace; }</pre
+    >
+
+    <p class="ds-subsection-title">
+      Game-over summary — <code class="text-violet-300 normal-case font-mono">.summary-stat</code>
+    </p>
+    <div class="ds-preview center">
+      <div class="summary-row">
+        <div class="summary-stat">
+          <div class="summary-label">Score</div>
+          <div class="summary-value">4280</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Best</div>
+          <div class="summary-value">8160</div>
+        </div>
+        <div class="summary-stat">
+          <div class="summary-label">Level</div>
+          <div class="summary-value">3</div>
+        </div>
+      </div>
+    </div>
+    <pre class="ds-code">
+.summary-row   { display:flex; gap:0.75rem; flex-wrap:wrap; justify-content:center; }
 .summary-stat  { text-align:center; background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0.5rem 0.9rem; min-width:72px; }
 .summary-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em; color:#94a3b8; }
-.summary-value { font-size:1.2rem; font-weight:bold; color:#e2e8f0; font-family:monospace; }</pre>
-    <p class="ds-note">Same visual as <code>.stat</code> but with <code>min-width:72px</code> and slightly tighter padding. Used exclusively in the <code>#gameover-overlay</code>.</p>
+.summary-value { font-size:1.2rem; font-weight:bold; color:#e2e8f0; font-family:monospace; }</pre
+    >
+    <p class="ds-note">
+      Same visual as <code>.stat</code> but with <code>min-width:72px</code> and slightly tighter padding. Used
+      exclusively in the <code>#gameover-overlay</code>.
+    </p>
   </section>
 
   <!-- ─── BUTTONS ────────────────────────────────────────── -->
   <section id="buttons" class="ds-section">
     <h2 class="ds-section-title">Buttons</h2>
-    <p class="text-slate-400 text-sm mb-4">In-game buttons defined per-game in each <code class="text-violet-300">&lt;style&gt;</code> block. Three variants with specific roles.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      In-game buttons defined per-game in each <code class="text-violet-300">&lt;style&gt;</code> block. Three variants
+      with specific roles.
+    </p>
 
-    <p class="ds-subsection-title">Primary action — <code class="text-violet-300 normal-case font-mono">.play-btn</code></p>
+    <p class="ds-subsection-title">
+      Primary action — <code class="text-violet-300 normal-case font-mono">.play-btn</code>
+    </p>
     <div class="ds-preview">
       <button class="play-btn">Play Game</button>
       <button class="play-btn">Start Game</button>
@@ -509,122 +693,188 @@ description: Shared components, tokens, and patterns used across all mini-games.
       <button class="play-btn green">Play Game</button>
       <button class="play-btn orange">Play Game</button>
     </div>
-    <pre class="ds-code">.play-btn       { padding:0.5rem 1.5rem; background:#7c3aed; color:white; border:none; border-radius:6px;
+    <pre class="ds-code">
+.play-btn       { padding:0.5rem 1.5rem; background:#7c3aed; color:white; border:none; border-radius:6px;
                   font-size:1rem; font-weight:600; cursor:pointer;
                   touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .play-btn:hover { background:#6d28d9; }
 
 /* Game-specific accent overrides */
 /* Snake   */ .play-btn { background:#16a34a; } .play-btn:hover { background:#15803d; }
-/* Breakout*/ .play-btn { background:#ea580c; } .play-btn:hover { background:#c2410c; }</pre>
-    <p class="ds-note">Always use <code>padding: 0.5rem 1.5rem</code>. Do not increase vertical padding beyond 0.5rem.</p>
+/* Breakout*/ .play-btn { background:#ea580c; } .play-btn:hover { background:#c2410c; }</pre
+    >
+    <p class="ds-note">
+      Always use <code>padding: 0.5rem 1.5rem</code>. Do not increase vertical padding beyond 0.5rem.
+    </p>
 
-    <p class="ds-subsection-title">Secondary action — <code class="text-violet-300 normal-case font-mono">.new-btn</code></p>
+    <p class="ds-subsection-title">
+      Secondary action — <code class="text-violet-300 normal-case font-mono">.new-btn</code>
+    </p>
     <div class="ds-preview">
       <button class="new-btn">New Game</button>
       <button class="new-btn">Reset</button>
     </div>
-    <pre class="ds-code">.new-btn       { padding:0.4rem 1rem; background:#334155; color:#e2e8f0; border:none;
+    <pre class="ds-code">
+.new-btn       { padding:0.4rem 1rem; background:#334155; color:#e2e8f0; border:none;
                  border-radius:6px; font-size:0.85rem; cursor:pointer; touch-action:manipulation; }
-.new-btn:hover { background:#475569; }</pre>
+.new-btn:hover { background:#475569; }</pre
+    >
     <p class="ds-note">Used for non-critical resets below the game board (e.g. 2048 New Game under the d-pad).</p>
 
-    <p class="ds-subsection-title">Selector / toggle — <code class="text-violet-300 normal-case font-mono">.diff-btn</code></p>
+    <p class="ds-subsection-title">
+      Selector / toggle — <code class="text-violet-300 normal-case font-mono">.diff-btn</code>
+    </p>
     <div class="ds-preview">
       <button class="diff-btn active">Easy 9×9</button>
       <button class="diff-btn">Medium 16×9</button>
       <button class="diff-btn">Hard 16×16</button>
     </div>
-    <pre class="ds-code">.diff-btn              { padding:0.3rem 0.8rem; background:#1e293b; color:#94a3b8; border:1px solid #334155;
+    <pre class="ds-code">
+.diff-btn              { padding:0.3rem 0.8rem; background:#1e293b; color:#94a3b8; border:1px solid #334155;
                          border-radius:6px; font-size:0.8rem; cursor:pointer;
                          touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .diff-btn.active,
-.diff-btn:hover        { background:#334155; color:white; border-color:#7c3aed; }</pre>
-    <p class="ds-note">Use the accent color of the game for <code>border-color</code> on the active/hover state (e.g. Breakout uses <code>#ea580c</code> instead of <code>#7c3aed</code>).</p>
+.diff-btn:hover        { background:#334155; color:white; border-color:#7c3aed; }</pre
+    >
+    <p class="ds-note">
+      Use the accent color of the game for <code>border-color</code> on the active/hover state (e.g. Breakout uses
+      <code>#ea580c</code> instead of <code>#7c3aed</code>).
+    </p>
   </section>
 
   <!-- ─── D-PAD ──────────────────────────────────────────── -->
   <section id="dpad" class="ds-section">
     <h2 class="ds-section-title">D-pad</h2>
-    <p class="text-slate-400 text-sm mb-4">Virtual directional controller for touch devices. Required for Snake and Tetris; shown only on small screens via <code class="text-violet-300">@media (max-width: 640px)</code>.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Virtual directional controller for touch devices. Required for Snake and Tetris; shown only on small screens via
+      <code class="text-violet-300">@media (max-width: 640px)</code>.
+    </p>
 
     <div class="ds-preview center">
       <div>
         <p class="text-xs text-slate-500 mb-3 text-center font-mono">2-row layout (2048)</p>
         <div class="dpad">
-          <div></div><button class="dpad-btn">▲</button><div></div>
+          <div></div>
+          <button class="dpad-btn">▲</button>
+          <div></div>
           <button class="dpad-btn">◀</button><button class="dpad-btn">▼</button><button class="dpad-btn">▶</button>
         </div>
       </div>
-      <div style="margin-left:2rem">
+      <div style="margin-left: 2rem">
         <p class="text-xs text-slate-500 mb-3 text-center font-mono">3-row layout (Snake)</p>
-        <div style="display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(3,52px); gap:6px;">
-          <div></div><button class="dpad-btn">▲</button><div></div>
-          <button class="dpad-btn">◀</button><div></div><button class="dpad-btn">▶</button>
-          <div></div><button class="dpad-btn">▼</button><div></div>
+        <div
+          style="display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 6px"
+        >
+          <div></div>
+          <button class="dpad-btn">▲</button>
+          <div></div>
+          <button class="dpad-btn">◀</button>
+          <div></div>
+          <button class="dpad-btn">▶</button>
+          <div></div>
+          <button class="dpad-btn">▼</button>
+          <div></div>
         </div>
       </div>
     </div>
-    <pre class="ds-code">.dpad     { display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(2,52px); gap:6px; }
+    <pre class="ds-code">
+.dpad     { display:grid; grid-template-columns:repeat(3,52px); grid-template-rows:repeat(2,52px); gap:6px; }
 .dpad-btn { background:#1e293b; border:1px solid #334155; border-radius:8px; color:white; font-size:1.3rem;
             cursor:pointer; display:flex; align-items:center; justify-content:center;
             touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
-.dpad-btn:active { background:#334155; }</pre>
+.dpad-btn:active { background:#334155; }</pre
+    >
   </section>
 
   <!-- ─── OVERLAYS ───────────────────────────────────────── -->
   <section id="overlays" class="ds-section">
     <h2 class="ds-section-title">Overlays</h2>
-    <p class="text-slate-400 text-sm mb-4">Two separate overlays per canvas game. See <a href="/design-system/#game-wrapper" class="text-violet-400 hover:underline">Game Wrapper</a> for positioning context.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Two separate overlays per canvas game. See
+      <a href="/design-system/#game-wrapper" class="text-violet-400 hover:underline">Game Wrapper</a> for positioning
+      context.
+    </p>
 
-    <p class="ds-subsection-title">Start overlay — <code class="text-violet-300 normal-case font-mono">#overlay</code></p>
+    <p class="ds-subsection-title">
+      Start overlay — <code class="text-violet-300 normal-case font-mono">#overlay</code>
+    </p>
     <div class="ds-preview center">
       <div class="overlay-card">
         <span class="demo-label">Live Demo</span>
-        <span style="font-size:2.5rem">🐍</span>
+        <span style="font-size: 2.5rem">🐍</span>
         <h3>Snake</h3>
-        <p style="color:#94a3b8; font-size:0.8rem; text-align:center;">Arrow keys or WASD to move</p>
-        <button class="play-btn green" style="background:#16a34a">Play Game</button>
+        <p style="color: #94a3b8; font-size: 0.8rem; text-align: center">Arrow keys or WASD to move</p>
+        <button class="play-btn green" style="background: #16a34a">Play Game</button>
       </div>
     </div>
-    <p class="ds-note">Shown on page load. Background is semi-transparent (<code>rgba(15,23,42,0.82)</code>) so the live demo canvas is visible behind it. The "Live Demo" label is hidden once the real game starts.</p>
+    <p class="ds-note">
+      Shown on page load. Background is semi-transparent (<code>rgba(15,23,42,0.82)</code>) so the live demo canvas is
+      visible behind it. The "Live Demo" label is hidden once the real game starts.
+    </p>
 
-    <p class="ds-subsection-title">Game-over overlay — <code class="text-violet-300 normal-case font-mono">#gameover-overlay</code></p>
+    <p class="ds-subsection-title">
+      Game-over overlay — <code class="text-violet-300 normal-case font-mono">#gameover-overlay</code>
+    </p>
     <div class="ds-preview center">
       <div class="overlay-card">
-        <span style="font-size:2.5rem">💀</span>
+        <span style="font-size: 2.5rem">💀</span>
         <h3>Game Over</h3>
         <div class="summary-row">
-          <div class="summary-stat"><div class="summary-label">Score</div><div class="summary-value">4280</div></div>
-          <div class="summary-stat"><div class="summary-label">Best</div><div class="summary-value">8160</div></div>
-          <div class="summary-stat"><div class="summary-label">Level</div><div class="summary-value">3</div></div>
+          <div class="summary-stat">
+            <div class="summary-label">Score</div>
+            <div class="summary-value">4280</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-label">Best</div>
+            <div class="summary-value">8160</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-label">Level</div>
+            <div class="summary-value">3</div>
+          </div>
         </div>
-        <p style="color:#64748b; font-size:0.8rem">Pattern: Classic</p>
+        <p style="color: #64748b; font-size: 0.8rem">Pattern: Classic</p>
         <button class="play-btn">New Game</button>
       </div>
-      <div class="overlay-card" style="margin-left:1rem">
-        <span style="font-size:2.5rem">🏆</span>
-        <h3 style="color:#fbbf24">You Win!</h3>
+      <div class="overlay-card" style="margin-left: 1rem">
+        <span style="font-size: 2.5rem">🏆</span>
+        <h3 style="color: #fbbf24">You Win!</h3>
         <div class="summary-row">
-          <div class="summary-stat"><div class="summary-label">Score</div><div class="summary-value">9840</div></div>
-          <div class="summary-stat"><div class="summary-label">Best</div><div class="summary-value">9840</div></div>
-          <div class="summary-stat"><div class="summary-label">Level</div><div class="summary-value">8</div></div>
+          <div class="summary-stat">
+            <div class="summary-label">Score</div>
+            <div class="summary-value">9840</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-label">Best</div>
+            <div class="summary-value">9840</div>
+          </div>
+          <div class="summary-stat">
+            <div class="summary-label">Level</div>
+            <div class="summary-value">8</div>
+          </div>
         </div>
         <button class="play-btn">New Game</button>
       </div>
     </div>
-    <pre class="ds-code">#gameover-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
+    <pre class="ds-code">
+#gameover-overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center;
                     justify-content:center; background:rgba(15,23,42,0.96); border-radius:4px; gap:0.75rem; }
-#gameover-overlay h2 { font-size:1.6rem; font-weight:bold; color:white; }</pre>
-    <p class="ds-note">Background is nearly opaque (<code>rgba(15,23,42,0.96)</code>) so the frozen last game frame shows through slightly. Do NOT call <code>startDemo()</code> here. Use icon 💀 for loss, 🏆 for win.</p>
+#gameover-overlay h2 { font-size:1.6rem; font-weight:bold; color:white; }</pre
+    >
+    <p class="ds-note">
+      Background is nearly opaque (<code>rgba(15,23,42,0.96)</code>) so the frozen last game frame shows through
+      slightly. Do NOT call <code>startDemo()</code> here. Use icon 💀 for loss, 🏆 for win.
+    </p>
   </section>
 
   <!-- ─── INFO SECTION ───────────────────────────────────── -->
   <section id="info-section" class="ds-section">
     <h2 class="ds-section-title">Info Section</h2>
-    <p class="text-slate-400 text-sm mb-4">Collapsible How to Play + FAQ placed <em>below</em> the game wrapper. Required in every game.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Collapsible How to Play + FAQ placed <em>below</em> the game wrapper. Required in every game.
+    </p>
 
-    <div class="ds-preview" style="flex-direction:column;">
+    <div class="ds-preview" style="flex-direction: column">
       <details class="info-details">
         <summary>How to Play</summary>
         <div class="info-body">
@@ -647,7 +897,8 @@ description: Shared components, tokens, and patterns used across all mini-games.
         </div>
       </details>
     </div>
-    <pre class="ds-code">.info-details         { background:#1e293b; border:1px solid #334155; border-radius:8px;
+    <pre class="ds-code">
+.info-details         { background:#1e293b; border:1px solid #334155; border-radius:8px;
                         margin-bottom:0.75rem; overflow:hidden; }
 .info-details summary { padding:0.75rem 1rem; font-weight:600; color:#e2e8f0; cursor:pointer;
                         list-style:none; display:flex; align-items:center;
@@ -660,16 +911,24 @@ description: Shared components, tokens, and patterns used across all mini-games.
 .info-body h4 { color:#e2e8f0; font-weight:600; margin:0.75rem 0 0.25rem; font-size:0.875rem; }
 .info-body h4:first-child { margin-top:0; }
 .info-body ul { padding-left:1.25rem; margin:0.25rem 0; }
-.info-body li { margin-bottom:0.25rem; }</pre>
-    <p class="ds-note">Always include two <code>&lt;details&gt;</code> blocks: <strong>How to Play</strong> (Goal, Controls desktop + mobile, Scoring/Levels) and <strong>FAQ</strong> (min. 3 questions).</p>
+.info-body li { margin-bottom:0.25rem; }</pre
+    >
+    <p class="ds-note">
+      Always include two <code>&lt;details&gt;</code> blocks: <strong>How to Play</strong> (Goal, Controls desktop +
+      mobile, Scoring/Levels) and <strong>FAQ</strong> (min. 3 questions).
+    </p>
   </section>
 
   <!-- ─── GAME WRAPPER ───────────────────────────────────── -->
   <section id="game-wrapper" class="ds-section">
     <h2 class="ds-section-title">Game Wrapper</h2>
-    <p class="text-slate-400 text-sm mb-4">Standard layout shell for all game pages. The canvas or grid goes inside a <code class="text-violet-300">.canvas-wrapper</code> which positions overlays.</p>
+    <p class="text-slate-400 text-sm mb-4">
+      Standard layout shell for all game pages. The canvas or grid goes inside a
+      <code class="text-violet-300">.canvas-wrapper</code> which positions overlays.
+    </p>
 
-    <pre class="ds-code">#game-wrapper {
+    <pre class="ds-code">
+#game-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -677,24 +936,117 @@ description: Shared components, tokens, and patterns used across all mini-games.
   min-height: calc(100vh - 60px);
   gap: 1rem;
   padding: 1rem;
-}</pre>
+}</pre
+    >
 
-    <p class="ds-subsection-title">Control layout order inside <code class="text-violet-300 normal-case font-mono">#game-wrapper</code></p>
-    <div class="ds-preview" style="flex-direction:column; gap:0.5rem; align-items:stretch; max-width:300px;">
-      <div style="background:#1e293b; border:1px dashed #334155; border-radius:6px; padding:0.5rem 0.75rem; font-size:0.8rem; color:#94a3b8; text-align:center;">1 · Score / stats row</div>
-      <div style="background:#1e293b; border:1px dashed #7c3aed; border-radius:6px; padding:0.5rem 0.75rem; font-size:0.8rem; color:#e2e8f0; text-align:center;">2 · Selector row (difficulty / pattern)</div>
-      <div style="background:#1e293b; border:2px dashed #7c3aed; border-radius:6px; padding:1rem; font-size:0.8rem; color:#94a3b8; text-align:center; position:relative;">
-        3 · Game board / canvas
-        <span style="position:absolute; inset:0; background:rgba(15,23,42,0.7); border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; color:#64748b;">overlays go here (absolute)</span>
+    <p class="ds-subsection-title">
+      Control layout order inside <code class="text-violet-300 normal-case font-mono">#game-wrapper</code>
+    </p>
+    <div class="ds-preview" style="flex-direction: column; gap: 0.5rem; align-items: stretch; max-width: 300px">
+      <div
+        style="
+          background: #1e293b;
+          border: 1px dashed #334155;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+        "
+      >
+        1 · Score / stats row
       </div>
-      <div style="background:#1e293b; border:1px dashed #334155; border-radius:6px; padding:0.5rem 0.75rem; font-size:0.8rem; color:#94a3b8; text-align:center;">4 · D-pad (touch controls)</div>
-      <div style="background:#1e293b; border:1px dashed #334155; border-radius:6px; padding:0.5rem 0.75rem; font-size:0.8rem; color:#94a3b8; text-align:center;">5 · Controls hint text</div>
-      <div style="background:#1e293b; border:1px dashed #334155; border-radius:6px; padding:0.5rem 0.75rem; font-size:0.8rem; color:#94a3b8; text-align:center;">6 · Secondary buttons (New Game)</div>
+      <div
+        style="
+          background: #1e293b;
+          border: 1px dashed #7c3aed;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+          color: #e2e8f0;
+          text-align: center;
+        "
+      >
+        2 · Selector row (difficulty / pattern)
+      </div>
+      <div
+        style="
+          background: #1e293b;
+          border: 2px dashed #7c3aed;
+          border-radius: 6px;
+          padding: 1rem;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+          position: relative;
+        "
+      >
+        3 · Game board / canvas
+        <span
+          style="
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #64748b;
+          "
+          >overlays go here (absolute)</span
+        >
+      </div>
+      <div
+        style="
+          background: #1e293b;
+          border: 1px dashed #334155;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+        "
+      >
+        4 · D-pad (touch controls)
+      </div>
+      <div
+        style="
+          background: #1e293b;
+          border: 1px dashed #334155;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+        "
+      >
+        5 · Controls hint text
+      </div>
+      <div
+        style="
+          background: #1e293b;
+          border: 1px dashed #334155;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          font-size: 0.8rem;
+          color: #94a3b8;
+          text-align: center;
+        "
+      >
+        6 · Secondary buttons (New Game)
+      </div>
     </div>
-    <p class="ds-note">The d-pad must sit immediately below the board — never put a button between the board and the d-pad, as it creates visual distance on mobile.</p>
+    <p class="ds-note">
+      The d-pad must sit immediately below the board — never put a button between the board and the d-pad, as it creates
+      visual distance on mobile.
+    </p>
 
-    <p class="ds-subsection-title">Canvas wrapper — <code class="text-violet-300 normal-case font-mono">.canvas-wrapper</code></p>
-    <pre class="ds-code">.canvas-wrapper {
+    <p class="ds-subsection-title">
+      Canvas wrapper — <code class="text-violet-300 normal-case font-mono">.canvas-wrapper</code>
+    </p>
+    <pre class="ds-code">
+.canvas-wrapper {
   position: relative;   /* anchors #overlay and #gameover-overlay */
   touch-action: none;
   line-height: 0;       /* removes inline-block gap under canvas */
@@ -704,7 +1056,7 @@ description: Shared components, tokens, and patterns used across all mini-games.
 const SIZE = Math.min(480, window.innerWidth - 32);
 canvas.width  = SIZE;
 canvas.height = SIZE;
-const S = SIZE / 480;  /* scale factor for all game constants */</pre>
+const S = SIZE / 480;  /* scale factor for all game constants */</pre
+    >
   </section>
-
 </div>

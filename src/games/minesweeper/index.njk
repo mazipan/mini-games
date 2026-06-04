@@ -6,6 +6,8 @@ category: puzzle
 icon: "💣"
 ---
 
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
@@ -116,12 +118,12 @@ icon: "💣"
     text-align: center;
   }
   .play-btn {
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.5rem;
     background: #7c3aed;
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 0.85rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     touch-action: manipulation;
@@ -231,18 +233,8 @@ icon: "💣"
     <button class="diff-btn" id="d-hard" onclick="setDiff('hard')">Hard 16×16</button>
   </div>
   <div class="score-row">
-    <div class="stat">
-      <div class="stat-label">Mines</div>
-      <div class="stat-value" id="mine-count">10</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Time</div>
-      <div class="stat-value" id="timer">0s</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best Time</div>
-      <div class="stat-value" id="best-time">—</div>
-    </div>
+    {{ statCard("Mines", "mine-count", "10") }} {{ statCard("Time", "timer", "0s") }} {{ statCard("Best Time",
+    "best-time", "—") }}
     <button class="play-btn" onclick="newGame()">New Game</button>
   </div>
   <div id="status">Left-click to reveal · Right-click to flag</div>
@@ -251,45 +243,38 @@ icon: "💣"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>
-        Reveal all squares that don't contain mines. The number in a revealed square tells you how many mines are in the
-        8 surrounding squares.
-      </p>
-      <h4>Controls — Desktop</h4>
-      <ul>
-        <li><strong>Left-click</strong> — reveal a square</li>
-        <li><strong>Right-click</strong> — place/remove a flag 🚩</li>
-      </ul>
-      <h4>Controls — Mobile</h4>
-      <ul>
-        <li><strong>Tap</strong> — reveal a square</li>
-        <li><strong>Long-press</strong> — place/remove a flag 🚩</li>
-      </ul>
-      <h4>Tips</h4>
-      <ul>
-        <li>The first click is always safe — mines are placed after</li>
-        <li>Clicking an empty square (0) automatically reveals neighbours</li>
-        <li>Use flags to mark squares you're sure are mines</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>Is the first click always safe?</h4>
-      <p>Yes! Mines are placed after your first click, ensuring you can never hit one immediately.</p>
-      <h4>Is my best time saved?</h4>
-      <p>Yes — best completion time per difficulty is saved in your browser's local storage.</p>
-      <h4>What do the numbers mean?</h4>
-      <p>
-        A number shows how many mines are among the 8 squares surrounding it. Use this to deduce which squares are safe.
-      </p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Reveal all squares that don't contain mines. The number in a revealed square tells you how many mines are in the 8
+    surrounding squares.
+  </p>
+  <h4>Controls — Desktop</h4>
+  <ul>
+    <li><strong>Left-click</strong> — reveal a square</li>
+    <li><strong>Right-click</strong> — place/remove a flag 🚩</li>
+  </ul>
+  <h4>Controls — Mobile</h4>
+  <ul>
+    <li><strong>Tap</strong> — reveal a square</li>
+    <li><strong>Long-press</strong> — place/remove a flag 🚩</li>
+  </ul>
+  <h4>Tips</h4>
+  <ul>
+    <li>The first click is always safe — mines are placed after</li>
+    <li>Clicking an empty square (0) automatically reveals neighbours</li>
+    <li>Use flags to mark squares you're sure are mines</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Is the first click always safe?</h4>
+  <p>Yes! Mines are placed after your first click, ensuring you can never hit one immediately.</p>
+  <h4>Is my best time saved?</h4>
+  <p>Yes — best completion time per difficulty is saved in your browser's local storage.</p>
+  <h4>What do the numbers mean?</h4>
+  <p>
+    A number shows how many mines are among the 8 squares surrounding it. Use this to deduce which squares are safe.
+  </p>
+  {% endcall %}
 </div>
 
 <script>

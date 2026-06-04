@@ -6,12 +6,14 @@ category: board
 icon: "🃏"
 ---
 
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1.25rem;
     padding: 1rem;
@@ -235,22 +237,8 @@ icon: "🃏"
     <button class="set-btn" id="s-things" onclick="setEmojiSet('things')">🎮 Things</button>
   </div>
   <div class="score-row">
-    <div class="stat">
-      <div class="stat-label">Moves</div>
-      <div class="stat-value" id="moves">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best</div>
-      <div class="stat-value" id="best-moves">—</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Matched</div>
-      <div class="stat-value" id="matched">0/8</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Time</div>
-      <div class="stat-value" id="timer">0s</div>
-    </div>
+    {{ statCard("Moves", "moves") }} {{ statCard("Best", "best-moves", "—") }} {{ statCard("Matched", "matched", "0/8")
+    }} {{ statCard("Time", "timer", "0s") }}
   </div>
   <div id="grid"></div>
   <div id="win-msg">
@@ -262,48 +250,41 @@ icon: "🃏"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>
-        Flip two cards at a time to find matching emoji pairs. Match all pairs to win! Try to do it in the fewest moves
-        possible.
-      </p>
-      <h4>Emoji Sets</h4>
-      <ul>
-        <li><strong>Animals</strong> — farm &amp; wild animals</li>
-        <li><strong>Food</strong> — fruits, snacks &amp; meals</li>
-        <li><strong>Sports</strong> — sport &amp; activity icons</li>
-        <li><strong>Nature</strong> — flowers, plants &amp; weather</li>
-        <li><strong>Faces</strong> — emoji expressions</li>
-        <li><strong>Things</strong> — objects, music &amp; games</li>
-      </ul>
-      <h4>Difficulty</h4>
-      <ul>
-        <li><strong>Easy</strong> — 4×4 grid, 8 pairs (16 cards)</li>
-        <li><strong>Medium</strong> — 5×4 grid, 10 pairs (20 cards)</li>
-        <li><strong>Hard</strong> — 6×4 grid, 12 pairs (24 cards)</li>
-      </ul>
-      <h4>Scoring</h4>
-      <ul>
-        <li>Each pair of flips = 1 move</li>
-        <li>Fewer moves = better score</li>
-        <li>Best (lowest) moves per difficulty saved automatically</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>What happens when two cards don't match?</h4>
-      <p>Both cards flip face-down again after a short pause. Try to memorise their positions!</p>
-      <h4>Is my best score saved?</h4>
-      <p>Yes — the fewest moves you've used per difficulty is saved in your browser.</p>
-      <h4>Can I play on mobile?</h4>
-      <p>Yes! Just tap the cards to flip them. The grid automatically adjusts to your screen size.</p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Flip two cards at a time to find matching emoji pairs. Match all pairs to win! Try to do it in the fewest moves
+    possible.
+  </p>
+  <h4>Emoji Sets</h4>
+  <ul>
+    <li><strong>Animals</strong> — farm &amp; wild animals</li>
+    <li><strong>Food</strong> — fruits, snacks &amp; meals</li>
+    <li><strong>Sports</strong> — sport &amp; activity icons</li>
+    <li><strong>Nature</strong> — flowers, plants &amp; weather</li>
+    <li><strong>Faces</strong> — emoji expressions</li>
+    <li><strong>Things</strong> — objects, music &amp; games</li>
+  </ul>
+  <h4>Difficulty</h4>
+  <ul>
+    <li><strong>Easy</strong> — 4×4 grid, 8 pairs (16 cards)</li>
+    <li><strong>Medium</strong> — 5×4 grid, 10 pairs (20 cards)</li>
+    <li><strong>Hard</strong> — 6×4 grid, 12 pairs (24 cards)</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>Each pair of flips = 1 move</li>
+    <li>Fewer moves = better score</li>
+    <li>Best (lowest) moves per difficulty saved automatically</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What happens when two cards don't match?</h4>
+  <p>Both cards flip face-down again after a short pause. Try to memorise their positions!</p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — the fewest moves you've used per difficulty is saved in your browser.</p>
+  <h4>Can I play on mobile?</h4>
+  <p>Yes! Just tap the cards to flip them. The grid automatically adjusts to your screen size.</p>
+  {% endcall %}
 </div>
 
 <script>
