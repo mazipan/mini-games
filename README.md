@@ -1,6 +1,6 @@
 # mini-games
 
-A collection of free, browser-based mini games — no ads, no analytics, just fun.
+🎮 A curated collection of classic browser games. Free to play, no account needed, no downloads — just pure fun.
 
 **Live site:** https://games.mazipan.space/
 
@@ -20,6 +20,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 🔴 Connect Four | Board    | Medium     |
 | 🪨 Mancala      | Board    | Medium     |
 | 🔢 Sudoku       | Puzzle   | Hard       |
+| 🦔 Whack-a-Mole | Arcade   | Easy       |
 
 ## Tech Stack
 
