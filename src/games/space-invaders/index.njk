@@ -224,7 +224,7 @@ icon: "👾"
       <span class="demo-label" id="demo-label">Live Demo</span>
       <span style="font-size: 3rem">👾</span>
       <h2>Space Invaders</h2>
-      <p class="controls-hint" style="color: #94a3b8">Arrow keys + Space to shoot</p>
+      <p class="controls-hint" style="color: #94a3b8">Arrow keys to move · cannon auto-fires!</p>
       <button class="play-btn" onclick="startGame()">Play Game</button>
     </div>
     <div id="gameover-overlay" style="display: none">
@@ -239,10 +239,9 @@ icon: "👾"
   </div>
   <div id="dpad">
     <button class="dpad-btn" id="btn-left">◀</button>
-    <button class="dpad-btn" id="btn-fire">🔫</button>
     <button class="dpad-btn" id="btn-right">▶</button>
   </div>
-  <p class="controls-hint">Arrow keys to move · Space to shoot</p>
+  <p class="controls-hint">Arrow keys to move · cannon auto-fires!</p>
 </div>
 
 <div class="info-section">
@@ -252,15 +251,10 @@ icon: "👾"
     Destroy all alien invaders before they reach the bottom. Clear each wave to advance — formations grow larger and
     faster as you progress!
   </p>
-  <h4>Controls — Desktop</h4>
+  <h4>Controls</h4>
   <ul>
-    <li><strong>← → Arrow Keys</strong> — move your cannon left/right</li>
-    <li><strong>Space</strong> — fire a bullet</li>
-  </ul>
-  <h4>Controls — Mobile</h4>
-  <ul>
-    <li><strong>◀ ▶ buttons</strong> — hold to move continuously</li>
-    <li><strong>🔫 button</strong> — tap to fire</li>
+    <li><strong>← → Arrow Keys</strong> (desktop) or <strong>◀ ▶ buttons</strong> (mobile) — move left/right</li>
+    <li>Your cannon fires <strong>automatically</strong> — just focus on dodging and aiming!</li>
   </ul>
   <h4>Wave Progression</h4>
   <ul>
@@ -282,7 +276,7 @@ icon: "👾"
   <h4>Is my best score saved?</h4>
   <p>Yes — your best score is saved automatically in your browser's local storage and persists between sessions.</p>
   <h4>Can I play on mobile?</h4>
-  <p>Yes! The D-pad appears automatically on small screens. Hold ◀ or ▶ to move and tap 🔫 to shoot.</p>
+  <p>Yes! The D-pad appears automatically on small screens. Hold ◀ or ▶ to move — the cannon fires itself.</p>
   <h4>Why do aliens speed up as I kill them?</h4>
   <p>
     As fewer aliens remain they move faster — a classic Space Invaders mechanic. Clearing a wave also raises the base
@@ -375,7 +369,8 @@ icon: "👾"
   ];
 
   // 5 alien types, ordered top-row → bottom-row (hardest → easiest)
-  const ALIEN_TYPE_COLORS = ["#7c3aed", "#3b82f6", "#06b6d4", "#10b981", "#f59e0b"];
+  // Each type gets a distinct emoji so new variants are visually obvious when unlocked
+  const ALIEN_TYPE_EMOJIS = ["👾", "🛸", "👽", "🤖", "🐛"];
   const ALIEN_TYPE_POINTS = [30, 25, 20, 15, 10];
   const MAX_ROWS = 5;
 
@@ -404,9 +399,8 @@ icon: "👾"
   let waveAnnounce = 0; // frames remaining to show wave announcement
   let keys = {};
   let dpadLeft = false,
-    dpadRight = false,
-    dpadFire = false,
-    dpadFireUsed = false;
+    dpadRight = false;
+  const AUTO_FIRE_RATE = 22; // frames between auto-shots
 
   // ── Alien grid ────────────────────────────────────────────────────────────
   function makeAliens(cfg) {
@@ -424,7 +418,7 @@ icon: "👾"
           x: startX + col * (alienW + alienPadX),
           y: alienOffsetY + row * (alienH + alienPadY),
           alive: true,
-          color: ALIEN_TYPE_COLORS[typeIdx],
+          emoji: ALIEN_TYPE_EMOJIS[typeIdx],
           points: ALIEN_TYPE_POINTS[typeIdx],
         });
       }
@@ -494,15 +488,17 @@ icon: "👾"
     ctx.fillRect(player.x - playerW / 2, player.y - playerH, playerW, playerH);
     ctx.fillRect(player.x - 4 * S, player.y - playerH - 8 * S, 8 * S, 8 * S);
 
-    // Aliens
+    // Aliens — rendered as emoji
+    const emojiSize = Math.round(Math.min(alienW, alienH) * 0.88);
+    ctx.font = `${emojiSize}px serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     for (const a of aliens) {
       if (!a.alive) continue;
-      ctx.fillStyle = a.color;
-      ctx.fillRect(a.x, a.y, alienW, alienH);
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.fillRect(a.x + alienW * 0.18, a.y + alienH * 0.25, alienW * 0.22, alienH * 0.32);
-      ctx.fillRect(a.x + alienW * 0.6, a.y + alienH * 0.25, alienW * 0.22, alienH * 0.32);
+      ctx.fillText(a.emoji, a.x + alienW / 2, a.y + alienH / 2);
     }
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
 
     // Player bullets
     ctx.fillStyle = "#86efac";
@@ -539,13 +535,12 @@ icon: "👾"
     if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
     if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
 
-    // Player fire
-    if (playerBullets.length < 2 && (keys[" "] || (dpadFire && !dpadFireUsed))) {
+    // Auto-fire every AUTO_FIRE_RATE frames
+    if (!demo && frameCount % AUTO_FIRE_RATE === 0 && playerBullets.length < 3) {
       playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
-      if (dpadFire) dpadFireUsed = true;
     }
 
-    // Demo AI: track the lowest alive alien, fire every 30 frames
+    // Demo AI: track the lowest alive alien; auto-fire handles shooting
     if (demo) {
       const alive = liveAliens();
       if (alive.length > 0) {
@@ -553,7 +548,7 @@ icon: "👾"
         const cx = target.x + alienW / 2;
         if (Math.abs(player.x - cx) > 4 * S) player.x += player.x < cx ? spd : -spd;
         player.x = Math.max(playerW / 2, Math.min(gameCanvas.width - playerW / 2, player.x));
-        if (frameCount % 30 === 0 && playerBullets.length < 2)
+        if (frameCount % AUTO_FIRE_RATE === 0 && playerBullets.length < 3)
           playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
       }
     }
@@ -726,16 +721,12 @@ icon: "👾"
 
   // ── Input ─────────────────────────────────────────────────────────────────
   document.addEventListener("keydown", (e) => {
-    if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
+    if (["ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault();
     keys[e.key] = true;
   });
   document.addEventListener("keyup", (e) => {
     keys[e.key] = false;
   });
-
-  const btnLeft = document.getElementById("btn-left");
-  const btnRight = document.getElementById("btn-right");
-  const btnFire = document.getElementById("btn-fire");
 
   function wire(btn, downFn, upFn) {
     btn.addEventListener(
@@ -768,7 +759,7 @@ icon: "👾"
   }
 
   wire(
-    btnLeft,
+    document.getElementById("btn-left"),
     () => {
       dpadLeft = true;
     },
@@ -777,23 +768,12 @@ icon: "👾"
     }
   );
   wire(
-    btnRight,
+    document.getElementById("btn-right"),
     () => {
       dpadRight = true;
     },
     () => {
       dpadRight = false;
-    }
-  );
-  wire(
-    btnFire,
-    () => {
-      dpadFire = true;
-      dpadFireUsed = false;
-    },
-    () => {
-      dpadFire = false;
-      dpadFireUsed = false;
     }
   );
 
