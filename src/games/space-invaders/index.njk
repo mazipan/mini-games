@@ -266,12 +266,12 @@ icon: "👾"
   </ul>
   <h4>Power-up: Rapid Fire ⚡</h4>
   <p>
-    A 🌟 mystery star flies across the top of the screen every ~12 seconds. Shoot it to drop a ⚡ power-up token — move
+    A 🛸 mystery UFO flies across the top of the screen every ~12 seconds. Shoot it to drop a ⚡ power-up token — move
     into it to collect 8 seconds of rapid fire (and +100 bonus points)!
   </p>
   <h4>Scoring</h4>
   <ul>
-    <li>Higher-row aliens are worth more points (🦑 10 → 👾 30)</li>
+    <li>Higher-row aliens are worth more points (🦠 10 → 👾 30)</li>
     <li>Remaining aliens speed up as their numbers dwindle</li>
     <li>You have <strong>3 lives</strong> — getting hit costs one</li>
   </ul>
@@ -292,10 +292,10 @@ icon: "👾"
     Aliens don't shoot in waves 1 and 2 — perfect for learning. From wave 3 onward they'll fire back, with increasing
     frequency each wave.
   </p>
-  <h4>What is the 🌟 mystery star?</h4>
+  <h4>What is the 🛸 mystery UFO?</h4>
   <p>
-    It's a secret UFO that flies across the top of the screen roughly every 12 seconds. Shoot it and a ⚡ power-up drops
-    — fly into it to activate 8 seconds of rapid fire!
+    A secret UFO that flies across the top of the screen roughly every 12 seconds. Shoot it and a ⚡ power-up drops —
+    move into it to activate 8 seconds of rapid fire!
   </p>
   {% endcall %}
 </div>
@@ -380,7 +380,7 @@ icon: "👾"
 
   // 5 alien types, ordered top-row → bottom-row (hardest → easiest)
   // Each type gets a distinct emoji so new variants are visually obvious when unlocked
-  const ALIEN_TYPE_EMOJIS = ["👾", "👿", "👽", "🤖", "🦑"];
+  const ALIEN_TYPE_EMOJIS = ["👾", "👽", "🧟", "👻", "🦠"];
   const ALIEN_TYPE_POINTS = [30, 25, 20, 15, 10];
   const MAX_ROWS = 5;
 
@@ -550,7 +550,7 @@ icon: "👾"
       ctx.font = `${Math.round(alienH * 0.9)}px serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("🌟", ufo.x, ufo.y);
+      ctx.fillText("🛸", ufo.x, ufo.y);
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
     }
