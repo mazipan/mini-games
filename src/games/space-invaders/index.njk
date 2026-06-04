@@ -264,9 +264,14 @@ icon: "👾"
     <li><strong>Waves 7–8:</strong> 3-row formations, another new type</li>
     <li><strong>Waves 9–10:</strong> 4–5 rows — the full invasion!</li>
   </ul>
+  <h4>Power-up: Rapid Fire ⚡</h4>
+  <p>
+    A 🌟 mystery star flies across the top of the screen every ~12 seconds. Shoot it to drop a ⚡ power-up token — move
+    into it to collect 8 seconds of rapid fire (and +100 bonus points)!
+  </p>
   <h4>Scoring</h4>
   <ul>
-    <li>Higher-row aliens are worth more points</li>
+    <li>Higher-row aliens are worth more points (🦑 10 → 👾 30)</li>
     <li>Remaining aliens speed up as their numbers dwindle</li>
     <li>You have <strong>3 lives</strong> — getting hit costs one</li>
   </ul>
@@ -286,6 +291,11 @@ icon: "👾"
   <p>
     Aliens don't shoot in waves 1 and 2 — perfect for learning. From wave 3 onward they'll fire back, with increasing
     frequency each wave.
+  </p>
+  <h4>What is the 🌟 mystery star?</h4>
+  <p>
+    It's a secret UFO that flies across the top of the screen roughly every 12 seconds. Shoot it and a ⚡ power-up drops
+    — fly into it to activate 8 seconds of rapid fire!
   </p>
   {% endcall %}
 </div>
@@ -370,7 +380,7 @@ icon: "👾"
 
   // 5 alien types, ordered top-row → bottom-row (hardest → easiest)
   // Each type gets a distinct emoji so new variants are visually obvious when unlocked
-  const ALIEN_TYPE_EMOJIS = ["👾", "🛸", "👽", "🤖", "🐛"];
+  const ALIEN_TYPE_EMOJIS = ["👾", "👿", "👽", "🤖", "🦑"];
   const ALIEN_TYPE_POINTS = [30, 25, 20, 15, 10];
   const MAX_ROWS = 5;
 
@@ -400,7 +410,26 @@ icon: "👾"
   let keys = {};
   let dpadLeft = false,
     dpadRight = false;
-  const AUTO_FIRE_RATE = 22; // frames between auto-shots
+
+  // ── Auto-fire & power-ups ─────────────────────────────────────────────────
+  const FIRE_RATE_NORMAL = 12; // frames between shots (normal)
+  const FIRE_RATE_RAPID = 4; // frames between shots (rapid-fire buff)
+  const RAPID_DURATION = 8000; // ms the rapid-fire buff lasts
+  let rapidFireUntil = 0; // performance.now() deadline; 0 = inactive
+
+  // Mystery UFO — flies across the top, dropping a power-up when shot
+  const UFO_INTERVAL = 720; // frames between UFO appearances (~12 s at 60 fps)
+  const UFO_SPEED = 1.8 * S;
+  let ufo = null; // { x, y, dir } or null when absent
+  let ufoTimer = 0;
+
+  // Falling power-up tokens
+  let powerUps = []; // { x, y, type }  type = 'rapid'
+  let powerUpMsg = 0; // frames remaining to show the "⚡ RAPID FIRE!" banner
+
+  function getFireRate() {
+    return performance.now() < rapidFireUntil ? FIRE_RATE_RAPID : FIRE_RATE_NORMAL;
+  }
 
   // ── Alien grid ────────────────────────────────────────────────────────────
   function makeAliens(cfg) {
@@ -452,6 +481,11 @@ icon: "👾"
     alienShootTimer = 0;
     frameCount = 0;
     waveAnnounce = 90;
+    ufo = null;
+    ufoTimer = 0;
+    powerUps = [];
+    rapidFireUntil = 0;
+    powerUpMsg = 0;
     player = { x: gameCanvas.width / 2, y: gameCanvas.height - 30 * S };
     updateHUD();
   }
@@ -466,6 +500,9 @@ icon: "👾"
     alienSpeedX = waveCfg.speed;
     alienShootTimer = 0;
     waveAnnounce = 100;
+    ufo = null;
+    ufoTimer = 0;
+    powerUps = [];
     player.x = gameCanvas.width / 2;
     updateHUD();
   }
@@ -500,13 +537,52 @@ icon: "👾"
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // Player bullets
-    ctx.fillStyle = "#86efac";
+    // Player bullets — yellow when rapid-fire active
+    ctx.fillStyle = performance.now() < rapidFireUntil ? "#fde047" : "#86efac";
     for (const b of playerBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
     // Alien bullets
     ctx.fillStyle = "#f87171";
     for (const b of alienBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
+
+    // Mystery UFO
+    if (ufo) {
+      ctx.font = `${Math.round(alienH * 0.9)}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🌟", ufo.x, ufo.y);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    }
+
+    // Falling power-ups
+    if (powerUps.length > 0) {
+      ctx.font = `${Math.round(alienH * 0.85)}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      for (const p of powerUps) ctx.fillText("⚡", p.x, p.y);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+    }
+
+    // Rapid-fire timer bar (shows while buff is active)
+    const rfRemaining = rapidFireUntil - performance.now();
+    if (rfRemaining > 0) {
+      const barW = gameCanvas.width * 0.4;
+      const barH = 5 * S;
+      const barX = (gameCanvas.width - barW) / 2;
+      const barY = gameCanvas.height - 22 * S;
+      const fill = (rfRemaining / RAPID_DURATION) * barW;
+      ctx.fillStyle = "#1e293b";
+      ctx.fillRect(barX, barY, barW, barH);
+      ctx.fillStyle = "#fde047";
+      ctx.fillRect(barX, barY, fill, barH);
+      ctx.font = `${Math.round(9 * S)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#fde047";
+      ctx.fillText("⚡ RAPID FIRE", gameCanvas.width / 2, barY - 4 * S);
+      ctx.textAlign = "left";
+    }
 
     // Wave announcement banner
     if (waveAnnounce > 0) {
@@ -535,12 +611,14 @@ icon: "👾"
     if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
     if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
 
-    // Auto-fire every AUTO_FIRE_RATE frames
-    if (!demo && frameCount % AUTO_FIRE_RATE === 0 && playerBullets.length < 3) {
+    // Auto-fire (rate depends on buff)
+    const fireRate = getFireRate();
+    const maxBullets = performance.now() < rapidFireUntil ? 5 : 3;
+    if (frameCount % fireRate === 0 && playerBullets.length < maxBullets) {
       playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
     }
 
-    // Demo AI: track the lowest alive alien; auto-fire handles shooting
+    // Demo AI: track the lowest alive alien
     if (demo) {
       const alive = liveAliens();
       if (alive.length > 0) {
@@ -548,9 +626,36 @@ icon: "👾"
         const cx = target.x + alienW / 2;
         if (Math.abs(player.x - cx) > 4 * S) player.x += player.x < cx ? spd : -spd;
         player.x = Math.max(playerW / 2, Math.min(gameCanvas.width - playerW / 2, player.x));
-        if (frameCount % AUTO_FIRE_RATE === 0 && playerBullets.length < 3)
-          playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
       }
+    }
+
+    // Mystery UFO
+    if (!demo) {
+      ufoTimer++;
+      if (!ufo && ufoTimer >= UFO_INTERVAL) {
+        ufoTimer = 0;
+        // Alternate direction each appearance
+        const goRight = frameCount % 2 === 0;
+        ufo = { x: goRight ? -alienW : gameCanvas.width + alienW, y: 14 * S, dir: goRight ? 1 : -1 };
+      }
+      if (ufo) {
+        ufo.x += UFO_SPEED * ufo.dir;
+        if (ufo.x < -alienW * 2 || ufo.x > gameCanvas.width + alienW * 2) ufo = null;
+      }
+    }
+
+    // Falling power-ups
+    if (!demo) {
+      powerUps = powerUps.filter((p) => {
+        p.y += 1.5 * S;
+        // Collect: player touches it
+        if (Math.abs(p.x - player.x) < playerW && p.y >= player.y - playerH && p.y <= player.y) {
+          rapidFireUntil = performance.now() + RAPID_DURATION;
+          powerUpMsg = 120;
+          return false;
+        }
+        return p.y < gameCanvas.height;
+      });
     }
 
     // Move player bullets
@@ -602,6 +707,27 @@ icon: "👾"
     }
 
     if (demo) return;
+
+    // Collision: player bullet ↔ UFO
+    if (ufo) {
+      for (let bi = playerBullets.length - 1; bi >= 0; bi--) {
+        const b = playerBullets[bi];
+        if (Math.abs(b.x - ufo.x) < alienW / 2 && Math.abs(b.y - ufo.y) < alienH / 2) {
+          powerUps.push({ x: ufo.x, y: ufo.y });
+          score += 100;
+          updateHUD();
+          if (score > best) {
+            best = score;
+            localStorage.setItem(STORAGE_KEY, best);
+            launchConfetti();
+            updateHUD();
+          }
+          ufo = null;
+          playerBullets.splice(bi, 1);
+          break;
+        }
+      }
+    }
 
     // Collision: player bullet ↔ alien
     outer: for (let bi = playerBullets.length - 1; bi >= 0; bi--) {
