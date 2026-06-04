@@ -1,0 +1,629 @@
+---
+layout: layouts/game.njk
+title: Flappy Bird
+description: Tap to flap — guide the bird through the pipes without crashing!
+category: arcade
+icon: "🐦"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .canvas-wrapper {
+    position: relative;
+    touch-action: none;
+    line-height: 0;
+  }
+  canvas {
+    border: 2px solid #1e3a5f;
+    border-radius: 4px;
+    display: block;
+    cursor: pointer;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #overlay span:first-child {
+    font-size: 3rem;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-align: center;
+    margin: 0;
+  }
+  .demo-label {
+    font-size: 0.7rem;
+    color: #22d3ee;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  #gameover-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.96);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #gameover-overlay span:first-child {
+    font-size: 2.5rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 68px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #0891b2;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #0e7490;
+  }
+  .controls-hint {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: center;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Score", "score") }} {{ statCard("Best", "best-display") }} {{ statCard("Level", "level-display", "1")
+    }}
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="flappy"></canvas>
+
+    <div id="overlay">
+      <span class="demo-label" id="demo-label">Live Demo</span>
+      <span style="font-size: 3rem">🐦</span>
+      <h2>Flappy Bird</h2>
+      <p>Tap or press Space to flap!</p>
+      <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+
+    <div id="gameover-overlay" style="display: none">
+      <span>💀</span>
+      <h2>Game Over</h2>
+      <div class="summary-row">
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+        "go-level", "1") }}
+      </div>
+      <button class="play-btn" onclick="startGame()">New Game</button>
+    </div>
+  </div>
+
+  <p class="controls-hint">Space / tap to flap</p>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Guide the bird through as many pipe gaps as possible without crashing.</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Desktop:</strong> Press Space or click the canvas to flap</li>
+    <li><strong>Mobile:</strong> Tap anywhere on the canvas to flap</li>
+  </ul>
+  <h4>Levels &amp; Scoring</h4>
+  <ul>
+    <li>+1 point per pipe pair cleared</li>
+    <li>Level 2 at score 5, Level 3 at score 10, Level 4 at score 20</li>
+    <li>Each level increases pipe speed and reduces the gap slightly</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your best score is saved in your browser's local storage and persists between sessions.</p>
+  <h4>Why does the game get harder?</h4>
+  <p>Pipes speed up and gaps narrow as your score increases, keeping the challenge alive through 4 levels.</p>
+  <h4>What kills the bird?</h4>
+  <p>Hitting a pipe (top or bottom), touching the ground, or flying into the ceiling all end the game.</p>
+  <h4>Can I play on mobile?</h4>
+  <p>Yes! Just tap anywhere on the game canvas to make the bird flap.</p>
+  {% endcall %}
+</div>
+
+<script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const particles = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height - canvas.height,
+      r: Math.random() * 6 + 3,
+      d: Math.random() * 80,
+      color: `hsl(${Math.random() * 360},90%,60%)`,
+      tilt: Math.random() * 10 - 10,
+      tiltAngle: 0,
+      tiltSpeed: Math.random() * 0.1 + 0.05,
+    }));
+    let frame = 0;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((p) => {
+        ctx.beginPath();
+        ctx.fillStyle = p.color;
+        ctx.ellipse(p.x, p.y, p.r, p.r * 0.4, p.tilt, 0, Math.PI * 2);
+        ctx.fill();
+        p.y += Math.cos(p.d) + 2 + p.r / 10;
+        p.x += Math.sin(frame / 20) * 1.5;
+        p.tiltAngle += p.tiltSpeed;
+        p.tilt = Math.sin(p.tiltAngle) * 12;
+        if (p.y > canvas.height) {
+          p.y = -10;
+          p.x = Math.random() * canvas.width;
+        }
+      });
+      frame++;
+      if (frame < 180) requestAnimationFrame(draw);
+      else canvas.remove();
+    }
+    draw();
+  }
+
+  const canvas = document.getElementById("flappy");
+  const ctx = canvas.getContext("2d");
+  const STORAGE_KEY = "mini-flappy-bird-best";
+
+  const W = Math.min(360, window.innerWidth - 32);
+  const H = Math.round(W * 1.45);
+  canvas.width = W;
+  canvas.height = H;
+  const S = W / 360;
+
+  // Geometry constants
+  const BIRD_X = Math.round(W * 0.22);
+  const BIRD_RX = Math.round(14 * S);
+  const BIRD_RY = Math.round(11 * S);
+  const GRAVITY = 0.36 * S;
+  const FLAP_V = -7.0 * S;
+  const MAX_FALL = 9 * S;
+  const PIPE_W = Math.round(52 * S);
+  const PIPE_CAP = Math.round(10 * S);
+  const PIPE_MIN_H = Math.round(45 * S);
+  const GAP_INIT = Math.round(162 * S);
+  const GAP_MIN = Math.round(108 * S);
+  const GAP_STEP = Math.round(13 * S);
+  const GROUND_H = Math.round(42 * S);
+  const SPD_INIT = 2.6 * S;
+  const SPD_MAX = 4.8 * S;
+  const SPD_STEP = 0.55 * S;
+  const SPAWN_DIST = Math.round(215 * S);
+
+  // Level thresholds
+  const LEVEL_SCORES = [0, 5, 10, 20];
+
+  let birdY, birdVY, pipes, score, level, distSinceSpawn, running, animId, demoAnimId;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+  document.getElementById("best-display").textContent = best;
+
+  // Pre-build sky gradient
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, "#0c4a6e");
+  skyGrad.addColorStop(1, "#0284c7");
+
+  function getLevel(s) {
+    for (let i = LEVEL_SCORES.length - 1; i >= 0; i--) {
+      if (s >= LEVEL_SCORES[i]) return i + 1;
+    }
+    return 1;
+  }
+
+  function getSpeed(lvl) {
+    return Math.min(SPD_MAX, SPD_INIT + (lvl - 1) * SPD_STEP);
+  }
+
+  function getGap(lvl) {
+    return Math.max(GAP_MIN, GAP_INIT - (lvl - 1) * GAP_STEP);
+  }
+
+  function spawnPipe() {
+    const gap = getGap(level);
+    const topH = Math.round(PIPE_MIN_H + Math.random() * (H - GROUND_H - PIPE_MIN_H * 2 - gap));
+    pipes.push({ x: W, topH, bottomY: topH + gap, scored: false });
+  }
+
+  function startGame() {
+    cancelAnimationFrame(demoAnimId);
+    demoAnimId = null;
+    birdY = H * 0.38;
+    birdVY = 0;
+    pipes = [];
+    score = 0;
+    level = 1;
+    distSinceSpawn = SPAWN_DIST * 0.55;
+    running = true;
+
+    document.getElementById("score").textContent = "0";
+    document.getElementById("level-display").textContent = "1";
+    document.getElementById("demo-label").style.display = "none";
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(gameLoop);
+  }
+
+  function flap() {
+    if (!running) return;
+    birdVY = FLAP_V;
+  }
+
+  function gameLoop() {
+    if (!running) return;
+    updateGame();
+    drawScene(birdY, birdVY, pipes);
+    if (running) animId = requestAnimationFrame(gameLoop);
+  }
+
+  function updateGame() {
+    birdVY = Math.min(birdVY + GRAVITY, MAX_FALL);
+    birdY += birdVY;
+
+    // Ceiling kill
+    if (birdY - BIRD_RY < 0) {
+      showEnd();
+      return;
+    }
+    // Ground kill
+    if (birdY + BIRD_RY > H - GROUND_H) {
+      showEnd();
+      return;
+    }
+
+    const spd = getSpeed(level);
+    distSinceSpawn += spd;
+    if (distSinceSpawn >= SPAWN_DIST) {
+      distSinceSpawn = 0;
+      spawnPipe();
+    }
+
+    for (const p of pipes) {
+      p.x -= spd;
+
+      // Score when cleared
+      if (!p.scored && p.x + PIPE_W < BIRD_X - BIRD_RX) {
+        p.scored = true;
+        score++;
+        document.getElementById("score").textContent = score;
+
+        const newLevel = getLevel(score);
+        if (newLevel !== level) {
+          level = newLevel;
+          document.getElementById("level-display").textContent = level;
+          launchConfetti();
+        }
+
+        if (score > best) {
+          best = score;
+          localStorage.setItem(STORAGE_KEY, best);
+          document.getElementById("best-display").textContent = best;
+        }
+      }
+
+      // Pipe collision (AABB)
+      const bL = BIRD_X - BIRD_RX + 2;
+      const bR = BIRD_X + BIRD_RX - 2;
+      const bT = birdY - BIRD_RY + 2;
+      const bB = birdY + BIRD_RY - 2;
+      if (bR > p.x && bL < p.x + PIPE_W) {
+        if (bT < p.topH || bB > p.bottomY) {
+          showEnd();
+          return;
+        }
+      }
+    }
+
+    pipes = pipes.filter((p) => p.x + PIPE_W > 0);
+  }
+
+  function drawScene(by, bvy, ps) {
+    // Sky
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Pipes
+    for (const p of ps) {
+      // Top pipe shaft
+      ctx.fillStyle = "#16a34a";
+      ctx.fillRect(p.x, 0, PIPE_W, Math.max(0, p.topH - PIPE_CAP));
+      // Top pipe cap
+      ctx.fillStyle = "#15803d";
+      ctx.beginPath();
+      ctx.roundRect(p.x - 4 * S, p.topH - PIPE_CAP, PIPE_W + 8 * S, PIPE_CAP, [0, 0, 4, 4]);
+      ctx.fill();
+      // Bottom pipe cap
+      ctx.fillStyle = "#15803d";
+      ctx.beginPath();
+      ctx.roundRect(p.x - 4 * S, p.bottomY, PIPE_W + 8 * S, PIPE_CAP, [4, 4, 0, 0]);
+      ctx.fill();
+      // Bottom pipe shaft
+      ctx.fillStyle = "#16a34a";
+      const shaftY = p.bottomY + PIPE_CAP;
+      ctx.fillRect(p.x, shaftY, PIPE_W, H - shaftY);
+    }
+
+    // Ground
+    ctx.fillStyle = "#92400e";
+    ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+    ctx.fillStyle = "#16a34a";
+    ctx.fillRect(0, H - GROUND_H, W, Math.round(7 * S));
+
+    // Bird (with tilt)
+    const angle = Math.max(-0.5, Math.min(1.3, bvy / (8 * S)));
+    ctx.save();
+    ctx.translate(BIRD_X, by);
+    ctx.rotate(angle);
+
+    // Body
+    ctx.fillStyle = "#fbbf24";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, BIRD_RX, BIRD_RY, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Wing (darker stripe)
+    ctx.fillStyle = "#f59e0b";
+    ctx.beginPath();
+    ctx.ellipse(-BIRD_RX * 0.1, BIRD_RY * 0.3, BIRD_RX * 0.55, BIRD_RY * 0.38, 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eye white
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.arc(BIRD_RX * 0.42, -BIRD_RY * 0.28, BIRD_RY * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    // Pupil
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(BIRD_RX * 0.52, -BIRD_RY * 0.22, BIRD_RY * 0.17, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Beak
+    ctx.fillStyle = "#f97316";
+    ctx.beginPath();
+    ctx.moveTo(BIRD_RX * 0.65, -BIRD_RY * 0.1);
+    ctx.lineTo(BIRD_RX * 1.05, BIRD_RY * 0.08);
+    ctx.lineTo(BIRD_RX * 0.65, BIRD_RY * 0.28);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function showEnd() {
+    running = false;
+    cancelAnimationFrame(animId);
+    drawScene(birdY, birdVY, pipes);
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  // Demo: AI-controlled bird navigates pipes
+  function startDemo() {
+    let dBy = H * 0.38;
+    let dBvy = 0;
+    let dPipes = [];
+    let dDist = SPAWN_DIST * 0.55;
+    const dSpd = SPD_INIT;
+
+    function demoLoop() {
+      dBvy = Math.min(dBvy + GRAVITY, MAX_FALL);
+
+      const nextPipe = dPipes.find((p) => p.x + PIPE_W > BIRD_X);
+      if (nextPipe) {
+        const mid = nextPipe.topH + (nextPipe.bottomY - nextPipe.topH) / 2;
+        if (dBy > mid - BIRD_RY && dBvy > -2 * S) dBvy = FLAP_V * 0.9;
+      } else {
+        if (dBy > H * 0.42 && dBvy > 0) dBvy = FLAP_V * 0.85;
+      }
+
+      dBy = Math.max(BIRD_RY, Math.min(H - GROUND_H - BIRD_RY, dBy + dBvy));
+
+      dDist += dSpd;
+      if (dDist >= SPAWN_DIST) {
+        dDist = 0;
+        const gap = GAP_INIT;
+        const topH = Math.round(PIPE_MIN_H + Math.random() * (H - GROUND_H - PIPE_MIN_H * 2 - gap));
+        dPipes.push({ x: W, topH, bottomY: topH + gap });
+      }
+      dPipes.forEach((p) => (p.x -= dSpd));
+      dPipes = dPipes.filter((p) => p.x + PIPE_W > 0);
+
+      drawScene(dBy, dBvy, dPipes);
+      demoAnimId = requestAnimationFrame(demoLoop);
+    }
+
+    drawScene(dBy, dBvy, dPipes);
+    demoAnimId = requestAnimationFrame(demoLoop);
+  }
+
+  // Input
+  canvas.addEventListener("click", () => {
+    if (running) flap();
+  });
+  canvas.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      if (running) flap();
+    },
+    { passive: false }
+  );
+  document.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "ArrowUp") {
+      e.preventDefault();
+      flap();
+    }
+  });
+
+  // Start with demo
+  startDemo();
+</script>

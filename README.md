@@ -12,6 +12,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | --------------- | -------- | ---------- |
 | 🟦 Tetris       | Arcade   | Medium     |
 | 🏓 Pong         | Arcade   | Easy       |
+| 🐦 Flappy Bird  | Arcade   | Easy       |
 | 🐍 Snake        | Arcade   | Easy       |
 | 🧱 Breakout     | Arcade   | Medium     |
 | 🔢 2048         | Puzzle   | Medium     |

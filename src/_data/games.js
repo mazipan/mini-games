@@ -27,6 +27,15 @@ module.exports = [
     tags: ["strategy", "two-player", "grid"],
   },
   {
+    slug: "flappy-bird",
+    name: "Flappy Bird",
+    description: "Tap to flap — guide the bird through the pipes without crashing!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🐦",
+    tags: ["flying", "tap", "canvas"],
+  },
+  {
     slug: "mancala",
     name: "Mancala",
     description:
