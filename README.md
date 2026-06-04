@@ -11,6 +11,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game            | Category | Difficulty |
 | --------------- | -------- | ---------- |
 | 🟦 Tetris       | Arcade   | Medium     |
+| 🏓 Pong         | Arcade   | Easy       |
 | 🐍 Snake        | Arcade   | Easy       |
 | 🧱 Breakout     | Arcade   | Medium     |
 | 🔢 2048         | Puzzle   | Medium     |

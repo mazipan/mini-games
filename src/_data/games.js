@@ -55,6 +55,15 @@ module.exports = [
     tags: ["mines", "logic", "classic"],
   },
   {
+    slug: "pong",
+    name: "Pong",
+    description: "Two paddles, one ball — first to 7 points wins. Play vs AI or a friend!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🏓",
+    tags: ["ball", "classic", "canvas", "two-player"],
+  },
+  {
     slug: "snake",
     name: "Snake",
     description: "Guide the snake to eat food and grow — but don't hit the walls or yourself!",
