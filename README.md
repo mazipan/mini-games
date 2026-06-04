@@ -17,6 +17,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 💣 Minesweeper  | Puzzle   | Hard       |
 | ⭕ Tic-Tac-Toe  | Board    | Easy       |
 | 🃏 Memory Match | Board    | Easy       |
+| 🔴 Connect Four | Board    | Medium     |
 | 🪨 Mancala      | Board    | Medium     |
 | 🔢 Sudoku       | Puzzle   | Hard       |
 

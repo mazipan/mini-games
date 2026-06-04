@@ -322,7 +322,7 @@ function startGame() {
 
 ## Adding a New Game — Checklist
 
-- [ ] Entry added to `src/_data/games.js` (slug, name, description, category, difficulty, icon, tags)
+- [ ] Entry added to `src/_data/games.js` (slug, name, description, category, difficulty, icon, tags) — keep the array sorted alphabetically by `name`
 - [ ] File created at `src/games/<slug>/index.njk`
 - [ ] `localStorage` best score implemented and displayed
 - [ ] Level/difficulty progression implemented
