@@ -1,0 +1,512 @@
+---
+layout: layouts/game.njk
+title: Sliding Puzzle
+description: Slide numbered tiles into order — arrange 1–15 with the empty space in the bottom-right corner to win!
+category: puzzle
+icon: "🔲"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .diff-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .diff-btn {
+    padding: 0.4rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+  .diff-btn.active {
+    background: #4c1d95;
+    color: #e9d5ff;
+    border-color: #7c3aed;
+  }
+  .diff-btn:hover:not(.active) {
+    background: #273449;
+    border-color: #7c3aed;
+  }
+  .board-wrapper {
+    position: relative;
+  }
+  #puzzle-board {
+    display: grid;
+    gap: 4px;
+  }
+  .tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e293b;
+    border: 2px solid #7c3aed;
+    border-radius: 8px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.1s,
+      transform 0.1s;
+    font-family: monospace;
+  }
+  .tile:hover:not(.empty) {
+    background: #2d1b4e;
+    transform: scale(1.04);
+  }
+  .tile.empty {
+    background: #0f172a;
+    border-color: #1e293b;
+    cursor: default;
+  }
+  #win-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 8px;
+    gap: 0.75rem;
+  }
+  #win-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Moves", "moves-display") }} {{ statCard("Time", "timer-display", "0s") }} {{ statCard("Best",
+    "best-display", "—") }}
+  </div>
+  <div class="diff-row">
+    <button class="diff-btn" id="btn-easy" onclick="setDifficulty('easy')">Easy (3×3)</button>
+    <button class="diff-btn active" id="btn-medium" onclick="setDifficulty('medium')">Medium (4×4)</button>
+  </div>
+  <div class="board-wrapper">
+    <div id="puzzle-board"></div>
+    <div id="win-overlay" style="display: none">
+      <span style="font-size: 2.5rem">🏆</span>
+      <h2>You Win!</h2>
+      <div class="summary-row">
+        {{ summaryStatCard("Moves", "go-moves") }} {{ summaryStatCard("Time", "go-time") }} {{ summaryStatCard("Best",
+        "go-best") }}
+      </div>
+      <button class="play-btn" onclick="newGame()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Arrange all numbered tiles in order from 1 to the last number, with the empty space in the bottom-right corner.</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click or tap</strong> any tile adjacent to the empty space to slide it in</li>
+    <li>Only tiles directly above, below, left, or right of the empty space can move</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>Your score is the <strong>number of moves</strong> used — fewer is better!</li>
+    <li>A timer tracks how long you take</li>
+    <li>Your best (lowest move count) is saved per difficulty</li>
+  </ul>
+  <h4>Difficulty</h4>
+  <ul>
+    <li><strong>Easy (3×3)</strong> — 8 tiles, simpler puzzle</li>
+    <li><strong>Medium (4×4)</strong> — 15 tiles, the classic challenge</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Is every shuffle solvable?</h4>
+  <p>
+    Yes! The game uses a mathematical solvability check and keeps reshuffling until a valid (solvable) board is
+    generated. You will never get a puzzle that is impossible to solve.
+  </p>
+  <h4>Is my best score saved?</h4>
+  <p>
+    Yes — your best move count is saved separately for Easy and Medium in your browser's local storage. It persists
+    between sessions on the same device.
+  </p>
+  <h4>Does switching difficulty reset my best?</h4>
+  <p>No — each difficulty has its own independent best score stored separately.</p>
+  <h4>Why can some tiles not move?</h4>
+  <p>
+    Only tiles that are directly adjacent (horizontally or vertically) to the empty space can slide. Diagonal moves are
+    not allowed.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  function isSolvable(tiles, cols) {
+    const n = tiles.length;
+    let inv = 0;
+    for (let i = 0; i < n - 1; i++)
+      for (let j = i + 1; j < n; j++) if (tiles[i] && tiles[j] && tiles[i] > tiles[j]) inv++;
+    if (cols % 2 === 1) return inv % 2 === 0;
+    const emptyRow = Math.floor(tiles.indexOf(0) / cols);
+    const fromBottom = cols - emptyRow;
+    return (inv + fromBottom) % 2 === 0;
+  }
+
+  const STORAGE_KEYS = {
+    easy: "mini-sliding-puzzle-best-easy",
+    medium: "mini-sliding-puzzle-best-medium",
+  };
+
+  let difficulty = "medium";
+  let cols = 4;
+  let tiles = [];
+  let moves = 0;
+  let timerInterval = null;
+  let elapsedSeconds = 0;
+  let timerStarted = false;
+  let gameWon = false;
+  let bests = {
+    easy: parseInt(localStorage.getItem(STORAGE_KEYS.easy) || "0", 10) || null,
+    medium: parseInt(localStorage.getItem(STORAGE_KEYS.medium) || "0", 10) || null,
+  };
+
+  function getBestDisplay(diff) {
+    return bests[diff] !== null ? String(bests[diff]) : "—";
+  }
+
+  function updateBestDisplay() {
+    document.getElementById("best-display").textContent = getBestDisplay(difficulty);
+  }
+
+  function getTileSize() {
+    return Math.min(80, Math.floor((window.innerWidth - 64) / cols));
+  }
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function generateSolvableBoard() {
+    const n = cols * cols;
+    const base = Array.from({ length: n }, (_, i) => i);
+    let result;
+    do {
+      result = shuffle(base);
+    } while (!isSolvable(result, cols));
+    return result;
+  }
+
+  function startTimer() {
+    if (timerStarted) return;
+    timerStarted = true;
+    timerInterval = setInterval(() => {
+      elapsedSeconds++;
+      document.getElementById("timer-display").textContent = elapsedSeconds + "s";
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function resetTimer() {
+    stopTimer();
+    elapsedSeconds = 0;
+    timerStarted = false;
+    document.getElementById("timer-display").textContent = "0s";
+  }
+
+  function checkWin() {
+    const n = cols * cols;
+    for (let i = 0; i < n - 1; i++) {
+      if (tiles[i] !== i + 1) return false;
+    }
+    return tiles[n - 1] === 0;
+  }
+
+  function handleWin() {
+    gameWon = true;
+    stopTimer();
+
+    const isNewBest = bests[difficulty] === null || moves < bests[difficulty];
+    if (isNewBest) {
+      bests[difficulty] = moves;
+      localStorage.setItem(STORAGE_KEYS[difficulty], moves);
+      document.getElementById("best-display").textContent = String(moves);
+      launchConfetti();
+    }
+
+    document.getElementById("go-moves").textContent = moves;
+    document.getElementById("go-time").textContent = elapsedSeconds + "s";
+    document.getElementById("go-best").textContent = getBestDisplay(difficulty);
+
+    const overlay = document.getElementById("win-overlay");
+    overlay.style.display = "flex";
+  }
+
+  function handleTileClick(idx) {
+    if (gameWon) return;
+    const emptyIdx = tiles.indexOf(0);
+    const row = Math.floor(idx / cols);
+    const col = idx % cols;
+    const emptyRow = Math.floor(emptyIdx / cols);
+    const emptyCol = emptyIdx % cols;
+
+    const isAdjacent =
+      (row === emptyRow && Math.abs(col - emptyCol) === 1) || (col === emptyCol && Math.abs(row - emptyRow) === 1);
+
+    if (!isAdjacent) return;
+
+    startTimer();
+    [tiles[idx], tiles[emptyIdx]] = [tiles[emptyIdx], tiles[idx]];
+    moves++;
+    document.getElementById("moves-display").textContent = moves;
+    renderBoard();
+
+    if (checkWin()) {
+      handleWin();
+    }
+  }
+
+  function renderBoard() {
+    const board = document.getElementById("puzzle-board");
+    const tileSize = getTileSize();
+    board.style.gridTemplateColumns = `repeat(${cols}, ${tileSize}px)`;
+    board.innerHTML = "";
+
+    tiles.forEach((val, idx) => {
+      const div = document.createElement("div");
+      div.className = "tile" + (val === 0 ? " empty" : "");
+      div.style.width = tileSize + "px";
+      div.style.height = tileSize + "px";
+      div.style.fontSize = Math.max(14, Math.floor(tileSize * 0.4)) + "px";
+      if (val !== 0) {
+        div.textContent = val;
+        div.addEventListener("click", () => handleTileClick(idx));
+      }
+      board.appendChild(div);
+    });
+  }
+
+  function newGame() {
+    gameWon = false;
+    moves = 0;
+    document.getElementById("moves-display").textContent = "0";
+    resetTimer();
+    document.getElementById("win-overlay").style.display = "none";
+    tiles = generateSolvableBoard();
+    updateBestDisplay();
+    renderBoard();
+  }
+
+  function setDifficulty(diff) {
+    difficulty = diff;
+    cols = diff === "easy" ? 3 : 4;
+    document.getElementById("btn-easy").classList.toggle("active", diff === "easy");
+    document.getElementById("btn-medium").classList.toggle("active", diff === "medium");
+    newGame();
+  }
+
+  // Init: start with medium (4×4)
+  updateBestDisplay();
+  tiles = generateSolvableBoard();
+  renderBoard();
+</script>
