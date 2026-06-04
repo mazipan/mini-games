@@ -418,7 +418,7 @@ icon: "🔴"
     <button class="mode-btn" id="lobby-player" onclick="selectLobbyMode('player')">VS Friend</button>
   </div>
   <button class="hint-btn" id="lobby-hint-btn" onclick="toggleHints()">Hints: Off</button>
-  <button class="play-btn" onclick="startGame(lobbyMode)">New Game</button>
+  <button class="play-btn" onclick="startGame()">New Game</button>
 </div>
 
 <div class="info-section">
@@ -530,6 +530,7 @@ icon: "🔴"
   }
 
   function startGame(m) {
+    m = m !== undefined ? m : lobbyMode;
     mode = m;
     document.getElementById("lobby-overlay").style.display = "none";
     document.getElementById("mode-row").style.display = "none";
