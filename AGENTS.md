@@ -114,6 +114,47 @@ Every game in this project must implement the following features.
 - All code must be formatted with Prettier before committing (`npm run format`)
 - **Always add a `launchConfetti()` reward animation** when a player wins a game or advances a level. Paste the standard implementation (fixed canvas overlay, 80 particles, 3s duration, pointer-events:none) directly into the game's `<script>` block since each game is self-contained. Call it at: game-win moments (all pairs matched, 2048 tile reached, board cleared, match won) and level-advance moments (Tetris line-clear level up, Breakout level clear, Snake level up).
 
+## Layout & Spacing Conventions
+
+**`#game-wrapper` standard:**
+
+```css
+#game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* always flex-start — never center */
+  min-height: calc(100vh - 60px);
+  gap: 1rem;
+  padding: 1rem;
+}
+```
+
+- Always use `justify-content: flex-start`. Using `center` makes games with small/short content (e.g. small Minesweeper boards) appear to have excessive top padding because the content gets pushed to the middle of the viewport.
+
+**Button standard (`.play-btn` in overlays):**
+
+```css
+.play-btn {
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+```
+
+- Use `padding: 0.5rem 1.5rem` — do not increase vertical padding beyond `0.5rem`.
+
+**Control layout order** (for games with a d-pad below the board):
+
+1. Score/stats row
+2. Game board / canvas
+3. D-pad (immediately below the board — nothing between them)
+4. Controls hint text
+5. Secondary buttons (e.g. New Game)
+
 ## localStorage Key Convention
 
 | Game         | Key(s)                                                                                     |
