@@ -264,10 +264,15 @@ icon: "👾"
     <li><strong>Waves 7–8:</strong> 3-row formations, another new type</li>
     <li><strong>Waves 9–10:</strong> 4–5 rows — the full invasion!</li>
   </ul>
-  <h4>Power-up: Rapid Fire ⚡</h4>
+  <h4>Secret alien 👀</h4>
   <p>
-    A 🛸 mystery UFO flies across the top of the screen every ~12 seconds. Shoot it to drop a ⚡ power-up token — move
-    into it to collect 8 seconds of rapid fire (and +100 bonus points)!
+    Each wave hides one impostor — a different emoji that slowly pulses. Shoot it for +75 bonus points and a ⚡ rapid
+    fire power-up drop! The impostor emoji changes every wave.
+  </p>
+  <h4>Mystery UFO ⚡</h4>
+  <p>
+    A 🛸 UFO flies across the top every ~12 seconds. Shoot it to drop another ⚡ token — move into it for 8 seconds of
+    rapid fire (+100 bonus points).
   </p>
   <h4>Scoring</h4>
   <ul>
@@ -424,8 +429,12 @@ icon: "👾"
   let ufoTimer = 0;
 
   // Falling power-up tokens
-  let powerUps = []; // { x, y, type }  type = 'rapid'
+  let powerUps = []; // { x, y }
   let powerUpMsg = 0; // frames remaining to show the "⚡ RAPID FIRE!" banner
+
+  // Secret aliens — one per wave, different emoji each wave, pulses to hint at its presence
+  const SECRET_EMOJIS = ["💀", "🤡", "👹", "😈", "🎃", "🦹", "🤑", "💥"];
+  const SECRET_BONUS = 75;
 
   function getFireRate() {
     return performance.now() < rapidFireUntil ? FIRE_RATE_RAPID : FIRE_RATE_NORMAL;
@@ -436,20 +445,26 @@ icon: "👾"
     const grid = [];
     const formationW = cfg.cols * alienW + (cfg.cols - 1) * alienPadX;
     const startX = (gameCanvas.width - formationW) / 2;
+    const total = cfg.rows * cfg.cols;
+    // Pick one random slot as the secret alien (changes every wave)
+    const secretSlot = Math.floor(Math.random() * total);
+    const secretEmoji = SECRET_EMOJIS[(wave - 1) % SECRET_EMOJIS.length];
+    let idx = 0;
     for (let row = 0; row < cfg.rows; row++) {
-      // Map row to alien type: bottom row of MAX_ROWS array = easiest (orange/10pts)
-      // When cfg.rows < MAX_ROWS, only the bottom cfg.rows types are used
       const typeIdx = MAX_ROWS - cfg.rows + row;
       for (let col = 0; col < cfg.cols; col++) {
+        const isSecret = idx === secretSlot;
         grid.push({
           row,
           col,
           x: startX + col * (alienW + alienPadX),
           y: alienOffsetY + row * (alienH + alienPadY),
           alive: true,
-          emoji: ALIEN_TYPE_EMOJIS[typeIdx],
+          emoji: isSecret ? secretEmoji : ALIEN_TYPE_EMOJIS[typeIdx],
           points: ALIEN_TYPE_POINTS[typeIdx],
+          isSecret,
         });
+        idx++;
       }
     }
     return grid;
@@ -525,14 +540,24 @@ icon: "👾"
     ctx.fillRect(player.x - playerW / 2, player.y - playerH, playerW, playerH);
     ctx.fillRect(player.x - 4 * S, player.y - playerH - 8 * S, 8 * S, 8 * S);
 
-    // Aliens — rendered as emoji
+    // Aliens — rendered as emoji; secret alien pulses in size
     const emojiSize = Math.round(Math.min(alienW, alienH) * 0.88);
-    ctx.font = `${emojiSize}px serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const a of aliens) {
       if (!a.alive) continue;
-      ctx.fillText(a.emoji, a.x + alienW / 2, a.y + alienH / 2);
+      if (a.isSecret) {
+        const pulse = 1 + Math.sin(frameCount * 0.1) * 0.18;
+        ctx.save();
+        ctx.translate(a.x + alienW / 2, a.y + alienH / 2);
+        ctx.scale(pulse, pulse);
+        ctx.font = `${emojiSize}px serif`;
+        ctx.fillText(a.emoji, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.font = `${emojiSize}px serif`;
+        ctx.fillText(a.emoji, a.x + alienW / 2, a.y + alienH / 2);
+      }
     }
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
@@ -737,7 +762,8 @@ icon: "👾"
         if (b.x >= a.x && b.x <= a.x + alienW && b.y >= a.y && b.y <= a.y + alienH) {
           a.alive = false;
           playerBullets.splice(bi, 1);
-          score += a.points;
+          score += a.isSecret ? a.points + SECRET_BONUS : a.points;
+          if (a.isSecret) powerUps.push({ x: a.x + alienW / 2, y: a.y + alienH / 2 });
           if (score > best) {
             best = score;
             localStorage.setItem(STORAGE_KEY, best);
