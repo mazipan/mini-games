@@ -72,4 +72,13 @@ module.exports = [
     icon: "🪨",
     tags: ["strategy", "classic", "board", "two-player"],
   },
+  {
+    slug: "sudoku",
+    name: "Sudoku",
+    description: "Fill the 9×9 grid so every row, column, and 3×3 box contains digits 1–9.",
+    category: "puzzle",
+    difficulty: "hard",
+    icon: "🔢",
+    tags: ["numbers", "logic", "classic"],
+  },
 ];
