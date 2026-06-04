@@ -11,7 +11,7 @@ icon: "🧱"
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1rem;
     padding: 1rem;
@@ -99,6 +99,30 @@ icon: "🧱"
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+  .pattern-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: min(480px, calc(100vw - 2rem));
+  }
+  .pattern-btn {
+    padding: 0.3rem 0.8rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pattern-btn.active,
+  .pattern-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #ea580c;
+  }
   .info-section {
     width: 100%;
     max-width: 500px;
@@ -182,6 +206,17 @@ icon: "🧱"
       <div class="stat-label">Level</div>
       <div class="stat-value" id="level">1</div>
     </div>
+  </div>
+  <div class="pattern-row">
+    <button class="pattern-btn active" id="pat-random" onclick="setPattern(-1)">🔀 Random</button>
+    <button class="pattern-btn" id="pat-0" onclick="setPattern(0)">Classic</button>
+    <button class="pattern-btn" id="pat-1" onclick="setPattern(1)">Pyramid</button>
+    <button class="pattern-btn" id="pat-2" onclick="setPattern(2)">Diamond</button>
+    <button class="pattern-btn" id="pat-3" onclick="setPattern(3)">Checkerboard</button>
+    <button class="pattern-btn" id="pat-4" onclick="setPattern(4)">Cross</button>
+    <button class="pattern-btn" id="pat-5" onclick="setPattern(5)">Fortress</button>
+    <button class="pattern-btn" id="pat-6" onclick="setPattern(6)">Arrow</button>
+    <button class="pattern-btn" id="pat-7" onclick="setPattern(7)">Wave</button>
   </div>
   <div class="canvas-wrapper">
     <canvas id="breakout"></canvas>
@@ -389,9 +424,16 @@ icon: "🧱"
     level,
     running = false,
     animId,
-    demoAnimId;
+    demoAnimId,
+    chosenPattern = -1;
   let bestScore = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   const keys = {};
+
+  function setPattern(idx) {
+    chosenPattern = idx;
+    document.querySelectorAll(".pattern-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById(idx === -1 ? "pat-random" : "pat-" + idx).classList.add("active");
+  }
 
   document.getElementById("best-score").textContent = bestScore;
 
@@ -433,7 +475,7 @@ icon: "🧱"
     score = 0;
     lives = 3;
     paddle = { x: W / 2 - PADDLE_W / 2, y: PADDLE_Y };
-    bricks = createBricks(0);
+    bricks = createBricks(chosenPattern === -1 ? 0 : chosenPattern);
     resetBall(1);
     updateUI();
     document.getElementById("overlay").style.display = "none";
@@ -520,7 +562,7 @@ icon: "🧱"
       }
       running = false;
       updateUI();
-      bricks = createBricks(level - 1);
+      bricks = createBricks(chosenPattern === -1 ? level - 1 : chosenPattern);
       resetBall(level);
       setTimeout(() => {
         running = true;
