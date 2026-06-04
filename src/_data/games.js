@@ -62,4 +62,14 @@ module.exports = [
     icon: "🃏",
     tags: ["memory", "cards", "pairs"],
   },
+  {
+    slug: "mancala",
+    name: "Mancala",
+    description:
+      "Sow seeds around the ancient board, capture your opponent's, and collect the most to win.",
+    category: "board",
+    difficulty: "medium",
+    icon: "🪨",
+    tags: ["strategy", "classic", "board", "two-player"],
+  },
 ];

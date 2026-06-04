@@ -1,0 +1,869 @@
+---
+layout: layouts/game.njk
+title: Mancala
+description: Sow seeds around the ancient board, capture your opponent's, and collect the most to win.
+category: board
+icon: "🪨"
+---
+
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .controls-row {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mode-btn,
+  .diff-btn {
+    padding: 0.3rem 0.9rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-btn.active,
+  .mode-btn:hover,
+  .diff-btn.active,
+  .diff-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #7c3aed;
+  }
+  .score-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 70px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #start-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  #game-panel {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  #game-panel.active {
+    display: flex;
+  }
+  #status-line {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-height: 1.5rem;
+    text-align: center;
+  }
+  #mancala-board {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.4rem;
+    width: min(520px, calc(100vw - 2rem));
+    align-items: stretch;
+  }
+  .store {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: clamp(36px, 10vw, 52px);
+    border-radius: 26px;
+    padding: 0.35rem 0.2rem;
+    gap: 0.25rem;
+  }
+  .store-p1 {
+    background: #2d1b69;
+    border: 2px solid #7c3aed;
+    order: 3;
+  }
+  .store-p2 {
+    background: #134e4a;
+    border: 2px solid #0d9488;
+    order: 1;
+  }
+  .store-count {
+    font-size: clamp(1rem, 3.5vw, 1.5rem);
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+    line-height: 1;
+  }
+  .store-lbl {
+    font-size: 0.5rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+  .pits-area {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    order: 2;
+  }
+  .pits-row {
+    display: flex;
+    gap: 0.25rem;
+  }
+  .pit {
+    flex: 1;
+    aspect-ratio: 1;
+    min-width: 0;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 2px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.12s,
+      border-color 0.12s,
+      transform 0.1s,
+      box-shadow 0.12s;
+  }
+  .pit-count {
+    font-size: clamp(0.65rem, 2.4vw, 1rem);
+    font-weight: bold;
+    color: #e2e8f0;
+    line-height: 1;
+    font-family: monospace;
+  }
+  .pit.p1-valid {
+    cursor: pointer;
+    border-color: #7c3aed;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+  }
+  .pit.p1-valid:hover {
+    background: #2d1b69;
+    transform: scale(1.1);
+  }
+  .pit.p2-valid {
+    cursor: pointer;
+    border-color: #0d9488;
+    box-shadow: 0 0 8px rgba(13, 148, 136, 0.4);
+  }
+  .pit.p2-valid:hover {
+    background: #134e4a;
+    transform: scale(1.1);
+  }
+  .pit.drop-flash {
+    background: rgba(251, 191, 36, 0.25);
+    border-color: #f59e0b;
+    transform: scale(1.12);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.55);
+  }
+  .pit.capture-flash {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.55);
+  }
+  .pit.empty {
+    opacity: 0.38;
+  }
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  #gameover-overlay #go-icon {
+    font-size: 3rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    margin: 0;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 80px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #go-context {
+    color: #94a3b8;
+    font-size: 0.875rem;
+    text-align: center;
+    margin: 0;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 520px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div id="start-panel">
+    <div class="controls-row">
+      <button class="mode-btn active" id="mode-ai" onclick="setMode('ai')">VS AI</button>
+      <button class="mode-btn" id="mode-friend" onclick="setMode('friend')">VS Friend</button>
+    </div>
+    <div class="controls-row" id="diff-row">
+      <button class="diff-btn active" id="diff-easy" onclick="setDiff('easy')">Easy</button>
+      <button class="diff-btn" id="diff-medium" onclick="setDiff('medium')">Medium</button>
+      <button class="diff-btn" id="diff-hard" onclick="setDiff('hard')">Hard</button>
+    </div>
+    <button class="play-btn" onclick="startGame()">Start Game</button>
+  </div>
+
+  <div id="game-panel">
+    <div class="score-row">
+      {{ statCard("Your Seeds", "p1-store-display", "0", "", "lbl-p1") }} {{ statCard("Best", "best-display", "0") }} {{
+      statCard("AI Seeds", "p2-store-display", "0", "", "lbl-p2") }}
+    </div>
+
+    <div id="status-line">Your turn</div>
+
+    <div id="mancala-board">
+      <div class="store store-p2">
+        <div class="store-count" id="count-13">0</div>
+        <div class="store-lbl" id="store-lbl-p2">AI</div>
+      </div>
+      <div class="pits-area">
+        <div class="pits-row" id="p2-row"></div>
+        <div class="pits-row" id="p1-row"></div>
+      </div>
+      <div class="store store-p1">
+        <div class="store-count" id="count-6">0</div>
+        <div class="store-lbl" id="store-lbl-p1">You</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="gameover-overlay" style="display: none">
+    <span id="go-icon">💀</span>
+    <h2 id="go-title">Game Over</h2>
+    <div class="summary-row">
+      <div class="summary-stat">
+        <div class="summary-label" id="go-lbl-p1">Your Seeds</div>
+        <div class="summary-value" id="go-p1">0</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-label">Best</div>
+        <div class="summary-value" id="go-best">0</div>
+      </div>
+      <div class="summary-stat">
+        <div class="summary-label" id="go-lbl-p2">AI Seeds</div>
+        <div class="summary-value" id="go-p2">0</div>
+      </div>
+    </div>
+    <p id="go-context"></p>
+    <button class="play-btn" onclick="goToLobby()">New Game</button>
+  </div>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Collect more seeds in your store (right side) than your opponent by the end of the game. The board starts with 4
+    seeds in each of the 12 pits.
+  </p>
+  <h4>Taking a Turn</h4>
+  <ul>
+    <li>Click any <strong>highlighted pit</strong> on your side (bottom row)</li>
+    <li>All seeds from that pit are picked up and distributed one-by-one counterclockwise</li>
+    <li>Seeds go into your store but skip the opponent's store</li>
+  </ul>
+  <h4>Special Rules</h4>
+  <ul>
+    <li><strong>Extra turn</strong> — if your last seed lands in your store, play again immediately</li>
+    <li>
+      <strong>Capture</strong> — if your last seed lands in an empty pit on your side, you capture all seeds from the
+      directly opposite pit plus your landing seed → moved to your store
+    </li>
+  </ul>
+  <h4>End of Game</h4>
+  <p>
+    When all pits on one side are empty, the game ends. Any remaining seeds on the other side go to that player's store.
+    Most seeds wins!
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click / tap</strong> a glowing pit on your side to sow seeds</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Which direction do seeds travel?</h4>
+  <p>
+    Counterclockwise: right along your row → into your store → left along the opponent's top row → back around. Your
+    store is on the right; the opponent's store is on the left.
+  </p>
+  <h4>What is an "extra turn"?</h4>
+  <p>
+    If your last seed lands exactly in your store, you get to pick any pit and go again — plan your moves to chain extra
+    turns!
+  </p>
+  <h4>What does "capture" mean?</h4>
+  <p>
+    If your last seed drops into an empty pit on your side and the directly opposite pit has seeds, you take all of them
+    plus your seed into your store.
+  </p>
+  <h4>How does AI difficulty work?</h4>
+  <ul>
+    <li><strong>Easy</strong> — picks random valid moves</li>
+    <li><strong>Medium</strong> — greedy strategy: prioritises extra turns then captures</li>
+    <li><strong>Hard</strong> — minimax search with alpha-beta pruning</li>
+  </ul>
+  <h4>Is my best score saved?</h4>
+  <p>
+    Yes — your highest seed count at game end is saved in your browser's local storage and persists between sessions.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  const TOTAL = 14;
+  const P1_STORE = 6;
+  const P2_STORE = 13;
+  const P1_PITS = [0, 1, 2, 3, 4, 5];
+  const P2_PITS = [7, 8, 9, 10, 11, 12];
+  const STORAGE_KEY = "mini-mancala-best";
+
+  let board, currentPlayer, gameOver, animating, mode, difficulty, best;
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  function applyMove(b, pit, player) {
+    const nb = [...b];
+    let seeds = nb[pit];
+    nb[pit] = 0;
+    let pos = pit;
+    const skip = player === 0 ? P2_STORE : P1_STORE;
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % TOTAL;
+      if (pos === skip) pos = (pos + 1) % TOTAL;
+      nb[pos]++;
+    }
+    const myStore = player === 0 ? P1_STORE : P2_STORE;
+    const myPits = player === 0 ? P1_PITS : P2_PITS;
+    const extraTurn = pos === myStore;
+    if (!extraTurn && myPits.includes(pos) && nb[pos] === 1) {
+      const opp = 12 - pos;
+      if (nb[opp] > 0) {
+        nb[myStore] += nb[opp] + nb[pos];
+        nb[opp] = 0;
+        nb[pos] = 0;
+      }
+    }
+    return { board: nb, lastPit: pos, extraTurn };
+  }
+
+  function isGameOver(b) {
+    return P1_PITS.every((i) => b[i] === 0) || P2_PITS.every((i) => b[i] === 0);
+  }
+
+  function collectRemaining(b) {
+    const nb = [...b];
+    for (const i of P1_PITS) {
+      nb[P1_STORE] += nb[i];
+      nb[i] = 0;
+    }
+    for (const i of P2_PITS) {
+      nb[P2_STORE] += nb[i];
+      nb[i] = 0;
+    }
+    return nb;
+  }
+
+  function getValidMoves(b, player) {
+    return (player === 0 ? P1_PITS : P2_PITS).filter((i) => b[i] > 0);
+  }
+
+  function evaluate(b) {
+    return b[P1_STORE] - b[P2_STORE];
+  }
+
+  function minimax(b, player, depth, alpha, beta) {
+    if (depth === 0 || isGameOver(b)) {
+      return evaluate(isGameOver(b) ? collectRemaining([...b]) : b);
+    }
+    const moves = getValidMoves(b, player);
+    if (moves.length === 0) return evaluate(collectRemaining([...b]));
+    if (player === 0) {
+      let best = -Infinity;
+      for (const mv of moves) {
+        const { board: nb, extraTurn } = applyMove(b, mv, 0);
+        const val = minimax(nb, extraTurn ? 0 : 1, depth - 1, alpha, beta);
+        if (val > best) best = val;
+        if (best > alpha) alpha = best;
+        if (alpha >= beta) break;
+      }
+      return best;
+    } else {
+      let worst = Infinity;
+      for (const mv of moves) {
+        const { board: nb, extraTurn } = applyMove(b, mv, 1);
+        const val = minimax(nb, extraTurn ? 1 : 0, depth - 1, alpha, beta);
+        if (val < worst) worst = val;
+        if (worst < beta) beta = worst;
+        if (alpha >= beta) break;
+      }
+      return worst;
+    }
+  }
+
+  function getAiMove() {
+    const moves = getValidMoves(board, 1);
+    if (moves.length === 0) return -1;
+    if (difficulty === "easy") return moves[Math.floor(Math.random() * moves.length)];
+    if (difficulty === "medium") {
+      let bestMv = moves[0],
+        bestScore = -Infinity;
+      for (const mv of moves) {
+        const { board: nb, extraTurn } = applyMove(board, mv, 1);
+        let score = nb[P2_STORE];
+        if (extraTurn) score += 50;
+        if (score > bestScore) {
+          bestScore = score;
+          bestMv = mv;
+        }
+      }
+      return bestMv;
+    }
+    let bestMv = moves[0],
+      bestScore = Infinity;
+    for (const mv of moves) {
+      const { board: nb, extraTurn } = applyMove(board, mv, 1);
+      const val = minimax(nb, extraTurn ? 1 : 0, 6, -Infinity, Infinity);
+      if (val < bestScore) {
+        bestScore = val;
+        bestMv = mv;
+      }
+    }
+    return bestMv;
+  }
+
+  function setStatus(msg) {
+    document.getElementById("status-line").textContent = msg;
+  }
+
+  function renderBoard(flashPit) {
+    for (const i of P1_PITS) {
+      const el = document.getElementById("pit-" + i);
+      if (!el) continue;
+      el.querySelector(".pit-count").textContent = board[i];
+      const valid = !animating && !gameOver && currentPlayer === 0 && board[i] > 0;
+      el.className =
+        "pit" + (board[i] === 0 ? " empty" : "") + (valid ? " p1-valid" : "") + (flashPit === i ? " drop-flash" : "");
+    }
+    for (const i of P2_PITS) {
+      const el = document.getElementById("pit-" + i);
+      if (!el) continue;
+      el.querySelector(".pit-count").textContent = board[i];
+      const valid = !animating && !gameOver && currentPlayer === 1 && board[i] > 0 && mode === "friend";
+      el.className =
+        "pit" + (board[i] === 0 ? " empty" : "") + (valid ? " p2-valid" : "") + (flashPit === i ? " drop-flash" : "");
+    }
+    document.getElementById("count-6").textContent = board[P1_STORE];
+    document.getElementById("count-13").textContent = board[P2_STORE];
+    document.getElementById("p1-store-display").textContent = board[P1_STORE];
+    document.getElementById("p2-store-display").textContent = board[P2_STORE];
+  }
+
+  function buildBoard() {
+    const p2Row = document.getElementById("p2-row");
+    p2Row.innerHTML = "";
+    for (const i of [12, 11, 10, 9, 8, 7]) {
+      const div = document.createElement("div");
+      div.className = "pit";
+      div.id = "pit-" + i;
+      div.innerHTML = '<span class="pit-count">4</span>';
+      div.addEventListener("click", () => handlePitClick(i));
+      p2Row.appendChild(div);
+    }
+    const p1Row = document.getElementById("p1-row");
+    p1Row.innerHTML = "";
+    for (const i of [0, 1, 2, 3, 4, 5]) {
+      const div = document.createElement("div");
+      div.className = "pit";
+      div.id = "pit-" + i;
+      div.innerHTML = '<span class="pit-count">4</span>';
+      div.addEventListener("click", () => handlePitClick(i));
+      p1Row.appendChild(div);
+    }
+  }
+
+  function handlePitClick(pit) {
+    if (animating || gameOver) return;
+    if (mode === "ai" && currentPlayer !== 0) return;
+    const pits = currentPlayer === 0 ? P1_PITS : P2_PITS;
+    if (!pits.includes(pit) || board[pit] === 0) return;
+    doMove(pit);
+  }
+
+  async function doMove(pit) {
+    if (animating || gameOver) return;
+    const player = currentPlayer;
+    const pits = player === 0 ? P1_PITS : P2_PITS;
+    if (!pits.includes(pit) || board[pit] === 0) return;
+
+    animating = true;
+
+    let seeds = board[pit];
+    board[pit] = 0;
+    renderBoard();
+    await sleep(100);
+
+    let pos = pit;
+    const skip = player === 0 ? P2_STORE : P1_STORE;
+    for (let i = 0; i < seeds; i++) {
+      pos = (pos + 1) % TOTAL;
+      if (pos === skip) pos = (pos + 1) % TOTAL;
+      board[pos]++;
+      renderBoard(pos);
+      await sleep(150);
+    }
+
+    renderBoard();
+
+    const myStore = player === 0 ? P1_STORE : P2_STORE;
+    const myPits = player === 0 ? P1_PITS : P2_PITS;
+    const lastPos = pos;
+    const extraTurn = lastPos === myStore;
+
+    if (!extraTurn && myPits.includes(lastPos) && board[lastPos] === 1) {
+      const opp = 12 - lastPos;
+      if (board[opp] > 0) {
+        const elA = document.getElementById("pit-" + lastPos);
+        const elB = document.getElementById("pit-" + opp);
+        if (elA) elA.classList.add("capture-flash");
+        if (elB) elB.classList.add("capture-flash");
+        await sleep(350);
+        board[myStore] += board[opp] + board[lastPos];
+        board[opp] = 0;
+        board[lastPos] = 0;
+        renderBoard();
+        await sleep(200);
+      }
+    }
+
+    if (isGameOver(board)) {
+      board = collectRemaining([...board]);
+      renderBoard();
+      animating = false;
+      await sleep(400);
+      endGame();
+      return;
+    }
+
+    if (extraTurn) {
+      animating = false;
+      renderBoard();
+      if (mode === "ai") {
+        setStatus(player === 0 ? "Extra turn! Go again." : "AI gets an extra turn…");
+        if (player === 1) setTimeout(() => triggerAiMove(), 650);
+      } else {
+        setStatus("Player " + (player + 1) + " gets an extra turn!");
+      }
+      return;
+    }
+
+    currentPlayer = 1 - player;
+    animating = false;
+    renderBoard();
+
+    if (currentPlayer === 0) {
+      setStatus(mode === "friend" ? "Player 1’s turn" : "Your turn");
+    } else if (mode === "friend") {
+      setStatus("Player 2’s turn");
+    } else {
+      setStatus("AI is thinking…");
+      setTimeout(() => triggerAiMove(), 700);
+    }
+  }
+
+  function triggerAiMove() {
+    if (gameOver || animating || currentPlayer !== 1) return;
+    const mv = getAiMove();
+    if (mv !== -1) doMove(mv);
+  }
+
+  function endGame() {
+    gameOver = true;
+    const p1 = board[P1_STORE];
+    const p2 = board[P2_STORE];
+
+    if (p1 > best) {
+      best = p1;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+    }
+
+    let icon, title, context, doConfetti;
+    if (mode === "ai") {
+      if (p1 > p2) {
+        icon = "🏆";
+        title = "You Win!";
+        context = "You collected " + p1 + " seeds vs AI’s " + p2 + ".";
+        doConfetti = true;
+      } else if (p2 > p1) {
+        icon = "💀";
+        title = "Game Over";
+        context = "AI collected " + p2 + " seeds vs your " + p1 + ".";
+        doConfetti = false;
+      } else {
+        icon = "🤝";
+        title = "It’s a Draw!";
+        context = "Both collected " + p1 + " seeds.";
+        doConfetti = false;
+      }
+    } else {
+      if (p1 > p2) {
+        icon = "🏆";
+        title = "Player 1 Wins!";
+        context = "P1: " + p1 + " seeds · P2: " + p2 + " seeds.";
+      } else if (p2 > p1) {
+        icon = "🏆";
+        title = "Player 2 Wins!";
+        context = "P2: " + p2 + " seeds · P1: " + p1 + " seeds.";
+      } else {
+        icon = "🤝";
+        title = "It’s a Draw!";
+        context = "Both collected " + p1 + " seeds.";
+      }
+      doConfetti = p1 !== p2;
+    }
+
+    if (doConfetti) launchConfetti();
+
+    document.getElementById("go-icon").textContent = icon;
+    document.getElementById("go-title").textContent = title;
+    document.getElementById("go-p1").textContent = p1;
+    document.getElementById("go-p2").textContent = p2;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-context").textContent = context;
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  function goToLobby() {
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("start-panel").style.display = "flex";
+    document.getElementById("game-panel").classList.remove("active");
+  }
+
+  function startGame() {
+    document.getElementById("start-panel").style.display = "none";
+    document.getElementById("game-panel").classList.add("active");
+    board = Array(14).fill(4);
+    board[P1_STORE] = 0;
+    board[P2_STORE] = 0;
+    currentPlayer = 0;
+    gameOver = false;
+    animating = false;
+    setStatus(mode === "friend" ? "Player 1’s turn" : "Your turn");
+    renderBoard();
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("mode-ai").classList.toggle("active", m === "ai");
+    document.getElementById("mode-friend").classList.toggle("active", m === "friend");
+    document.getElementById("diff-row").style.display = m === "ai" ? "flex" : "none";
+    const p1Lbl = m === "ai" ? "Your Seeds" : "P1 Seeds";
+    const p2Lbl = m === "ai" ? "AI Seeds" : "P2 Seeds";
+    document.getElementById("lbl-p1").textContent = p1Lbl;
+    document.getElementById("lbl-p2").textContent = p2Lbl;
+    document.getElementById("store-lbl-p1").textContent = m === "ai" ? "You" : "P1";
+    document.getElementById("store-lbl-p2").textContent = m === "ai" ? "AI" : "P2";
+    document.getElementById("go-lbl-p1").textContent = p1Lbl;
+    document.getElementById("go-lbl-p2").textContent = p2Lbl;
+  }
+
+  function setDiff(d) {
+    difficulty = d;
+    document.querySelectorAll(".diff-btn").forEach((b) => b.classList.remove("active"));
+    document.getElementById("diff-" + d).classList.add("active");
+  }
+
+  best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  mode = "ai";
+  difficulty = "easy";
+  buildBoard();
+</script>
