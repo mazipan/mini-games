@@ -164,6 +164,40 @@ icon: "🔲"
   .play-btn:hover {
     background: #6d28d9;
   }
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 4px;
+  }
+  .dpad-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    font-size: 1.2rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.1s;
+  }
+  .dpad-btn:hover,
+  .dpad-btn:active {
+    background: #334155;
+    border-color: #7c3aed;
+  }
+  .dpad-center {
+    background: transparent;
+    border: none;
+    cursor: default;
+  }
+  .dpad-center:hover {
+    background: transparent;
+    border-color: transparent;
+  }
   .info-section {
     width: 100%;
     max-width: 420px;
@@ -247,6 +281,17 @@ icon: "🔲"
       </div>
       <button class="play-btn" onclick="newGame()">New Game</button>
     </div>
+  </div>
+  <div class="dpad" aria-label="Directional controls">
+    <div class="dpad-btn dpad-center"></div>
+    <button class="dpad-btn" onclick="moveInDirection('up')" aria-label="Up">↑</button>
+    <div class="dpad-btn dpad-center"></div>
+    <button class="dpad-btn" onclick="moveInDirection('left')" aria-label="Left">←</button>
+    <div class="dpad-btn dpad-center"></div>
+    <button class="dpad-btn" onclick="moveInDirection('right')" aria-label="Right">→</button>
+    <div class="dpad-btn dpad-center"></div>
+    <button class="dpad-btn" onclick="moveInDirection('down')" aria-label="Down">↓</button>
+    <div class="dpad-btn dpad-center"></div>
   </div>
 </div>
 
@@ -504,6 +549,31 @@ icon: "🔲"
     document.getElementById("btn-medium").classList.toggle("active", diff === "medium");
     newGame();
   }
+
+  // Move the tile adjacent to the empty space in the given direction.
+  // "up" means the tile below the empty space slides up, etc.
+  function moveInDirection(dir) {
+    if (gameWon) return;
+    const emptyIdx = tiles.indexOf(0);
+    const emptyRow = Math.floor(emptyIdx / cols);
+    const emptyCol = emptyIdx % cols;
+    let targetRow = emptyRow,
+      targetCol = emptyCol;
+    if (dir === "up") targetRow = emptyRow + 1;
+    else if (dir === "down") targetRow = emptyRow - 1;
+    else if (dir === "left") targetCol = emptyCol + 1;
+    else if (dir === "right") targetCol = emptyCol - 1;
+    if (targetRow < 0 || targetRow >= cols || targetCol < 0 || targetCol >= cols) return;
+    handleTileClick(targetRow * cols + targetCol);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    const map = { ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right" };
+    if (map[e.key]) {
+      e.preventDefault();
+      moveInDirection(map[e.key]);
+    }
+  });
 
   // Init: start with medium (4×4)
   updateBestDisplay();
