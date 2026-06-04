@@ -414,10 +414,11 @@ icon: "🔴"
   <h2>Connect Four</h2>
   <p>Connect 4 in a row — horizontally, vertically, or diagonally!</p>
   <div class="mode-row">
-    <button class="mode-btn active" id="lobby-ai" onclick="startGame('machine')">VS AI</button>
-    <button class="mode-btn" id="lobby-player" onclick="startGame('player')">VS Friend</button>
+    <button class="mode-btn active" id="lobby-ai" onclick="selectLobbyMode('machine')">VS AI</button>
+    <button class="mode-btn" id="lobby-player" onclick="selectLobbyMode('player')">VS Friend</button>
   </div>
   <button class="hint-btn" id="lobby-hint-btn" onclick="toggleHints()">Hints: Off</button>
+  <button class="play-btn" onclick="startGame(lobbyMode)">New Game</button>
 </div>
 
 <div class="info-section">
@@ -498,6 +499,7 @@ icon: "🔴"
 
   let board, currentPlayer, gameOver, mode, hoverCol, winCells;
   let hintsEnabled = false;
+  let lobbyMode = "machine";
   let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"P1":0,"D":0,"P2":0}');
 
   function toggleHints() {
@@ -515,11 +517,16 @@ icon: "🔴"
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
   }
 
+  function selectLobbyMode(m) {
+    lobbyMode = m;
+    document.getElementById("lobby-ai").classList.toggle("active", m === "machine");
+    document.getElementById("lobby-player").classList.toggle("active", m === "player");
+  }
+
   function showLobby() {
     document.getElementById("gameover-overlay").style.display = "none";
     document.getElementById("lobby-overlay").style.display = "flex";
-    document.getElementById("lobby-ai").classList.toggle("active", mode === "machine");
-    document.getElementById("lobby-player").classList.toggle("active", mode === "player");
+    selectLobbyMode(mode || "machine");
   }
 
   function startGame(m) {
