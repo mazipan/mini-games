@@ -90,4 +90,13 @@ module.exports = [
     icon: "⭕",
     tags: ["strategy", "classic", "two-player"],
   },
+  {
+    slug: "whack-a-mole",
+    name: "Whack-a-Mole",
+    description: "Moles pop up from holes at random — click them before they disappear!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🦔",
+    tags: ["reflex", "clicking", "casual", "classic"],
+  },
 ];
