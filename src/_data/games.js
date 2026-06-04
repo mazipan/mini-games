@@ -37,6 +37,15 @@ module.exports = [
     tags: ["strategy", "classic", "board", "two-player"],
   },
   {
+    slug: "hangman",
+    name: "Hangman",
+    description: "Guess the hidden word letter by letter before the hangman is complete!",
+    category: "word",
+    difficulty: "easy",
+    icon: "🪢",
+    tags: ["word", "guessing", "classic"],
+  },
+  {
     slug: "memory-match",
     name: "Memory Match",
     description: "Flip cards to find matching pairs. Train your memory and beat the clock.",

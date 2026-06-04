@@ -22,6 +22,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 🪨 Mancala      | Board    | Medium     |
 | 🔢 Sudoku       | Puzzle   | Hard       |
 | 🦔 Whack-a-Mole | Arcade   | Easy       |
+| 🪢 Hangman      | Word     | Easy       |
 
 ## Tech Stack
 
