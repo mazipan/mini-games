@@ -63,6 +63,15 @@ module.exports = [
     tags: ["memory", "cards", "pairs"],
   },
   {
+    slug: "connect-four",
+    name: "Connect Four",
+    description: "Drop colored discs into a 7×6 grid and connect four in a row to win.",
+    category: "board",
+    difficulty: "medium",
+    icon: "🔴",
+    tags: ["strategy", "two-player", "grid"],
+  },
+  {
     slug: "mancala",
     name: "Mancala",
     description:
