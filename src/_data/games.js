@@ -9,6 +9,15 @@ module.exports = [
     tags: ["numbers", "merge", "tiles"],
   },
   {
+    slug: "blackjack",
+    name: "Blackjack",
+    description: "Beat the dealer — get as close to 21 as possible without going bust!",
+    category: "board",
+    difficulty: "medium",
+    icon: "🂾",
+    tags: ["cards", "casino", "classic"],
+  },
+  {
     slug: "breakout",
     name: "Breakout",
     description: "Break all the bricks by bouncing the ball with your paddle.",
@@ -82,6 +91,16 @@ module.exports = [
     tags: ["ball", "classic", "canvas", "two-player"],
   },
   {
+    slug: "sliding-puzzle",
+    name: "Sliding Puzzle",
+    description:
+      "Slide numbered tiles into order — arrange 1–15 with the empty space in the bottom-right corner to win!",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🔲",
+    tags: ["tiles", "logic", "classic", "sliding"],
+  },
+  {
     slug: "snake",
     name: "Snake",
     description: "Guide the snake to eat food and grow — but don't hit the walls or yourself!",
@@ -89,6 +108,16 @@ module.exports = [
     difficulty: "easy",
     icon: "🐍",
     tags: ["snake", "classic", "canvas"],
+  },
+  {
+    slug: "space-invaders",
+    name: "Space Invaders",
+    description:
+      "Defend Earth from waves of alien invaders — shoot them all before they reach you!",
+    category: "arcade",
+    difficulty: "hard",
+    icon: "👾",
+    tags: ["shooter", "classic", "canvas"],
   },
   {
     slug: "sudoku",

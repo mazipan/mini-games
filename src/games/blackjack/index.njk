@@ -1,0 +1,767 @@
+---
+layout: layouts/game.njk
+title: Blackjack
+description: Beat the dealer — get as close to 21 as possible without going bust!
+category: board
+icon: "🂾"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .play-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .chip-btn {
+    padding: 0.4rem 0.8rem;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chip-btn:hover {
+    background: #334155;
+  }
+  .chip-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .card {
+    width: 52px;
+    height: 76px;
+    background: white;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #1e293b;
+    padding: 4px;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .card.red {
+    color: #dc2626;
+  }
+  .card.hidden {
+    background: #1e40af;
+    color: white;
+    font-size: 1.5rem;
+  }
+  .hand {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 80px;
+    align-items: center;
+  }
+  .bet-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Chips", "chips-display", "1000") }} {{ statCard("Bet", "bet-display", "0") }} {{ statCard("Best",
+    "best-display", "1000") }}
+  </div>
+
+  <div id="game-area" style="max-width: 400px; width: 100%">
+    <div style="margin-bottom: 1rem">
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem">
+        DEALER <span id="dealer-total"></span>
+      </div>
+      <div class="hand" id="dealer-hand"></div>
+    </div>
+    <div style="margin-bottom: 1rem">
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 0.5rem">YOU <span id="player-total"></span></div>
+      <div class="hand" id="player-hand"></div>
+    </div>
+
+    <div id="bet-area">
+      <p style="color: #94a3b8; font-size: 0.875rem">Place your bet:</p>
+      <div class="bet-chips">
+        <button class="chip-btn" onclick="placeBet(25)">25</button>
+        <button class="chip-btn" onclick="placeBet(50)">50</button>
+        <button class="chip-btn" onclick="placeBet(100)">100</button>
+        <button class="chip-btn" onclick="placeBet(200)">200</button>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem">
+        <button class="chip-btn" onclick="clearBet()">Clear</button>
+        <button class="play-btn" onclick="deal()" id="deal-btn">Deal</button>
+      </div>
+    </div>
+
+    <div id="action-area" style="display: none; gap: 0.5rem; flex-wrap: wrap">
+      <button class="play-btn" onclick="hit()">Hit</button>
+      <button class="play-btn" onclick="stand()">Stand</button>
+      <button class="play-btn" id="double-btn" onclick="doubleDown()">Double Down</button>
+    </div>
+
+    <div
+      id="round-overlay"
+      style="
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: #1e293b;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        margin-top: 0.5rem;
+      "
+    >
+      <span id="go-icon" style="font-size: 2rem">💀</span>
+      <h2 id="go-title" style="font-size: 1.4rem; font-weight: bold; color: white; margin: 0">You Lose</h2>
+      <p id="go-msg" style="color: #94a3b8; font-size: 0.9rem; margin: 0; text-align: center"></p>
+      <div class="summary-row">{{ summaryStatCard("Chips", "go-chips") }} {{ summaryStatCard("Best", "go-best") }}</div>
+      <button class="play-btn" id="next-btn" onclick="nextRound()">Next Round</button>
+    </div>
+
+    <div
+      id="gameover-overlay"
+      style="
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        background: #1e293b;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        margin-top: 0.5rem;
+      "
+    >
+      <span style="font-size: 2rem">💀</span>
+      <h2 style="font-size: 1.4rem; font-weight: bold; color: white; margin: 0">Broke!</h2>
+      <p style="color: #94a3b8; margin: 0">You ran out of chips.</p>
+      <div class="summary-row">{{ summaryStatCard("Best", "final-best") }}</div>
+      <button class="play-btn" onclick="resetGame()">New Game</button>
+    </div>
+  </div>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Beat the dealer by getting a hand total as close to 21 as possible without going over (busting).</p>
+  <h4>Setup</h4>
+  <ul>
+    <li>You start with <strong>1000 chips</strong></li>
+    <li>Place your bet before each round using the chip buttons</li>
+    <li>You and the dealer each receive 2 cards — one dealer card stays face-down</li>
+  </ul>
+  <h4>Card Values</h4>
+  <ul>
+    <li>Number cards (2–10) = face value</li>
+    <li>Jack, Queen, King = 10</li>
+    <li>Ace = 11 or 1 (whichever keeps your total ≤ 21)</li>
+  </ul>
+  <h4>Actions</h4>
+  <ul>
+    <li><strong>Hit</strong> — take another card</li>
+    <li><strong>Stand</strong> — end your turn, let the dealer play</li>
+    <li><strong>Double Down</strong> — double your bet and take exactly one more card</li>
+  </ul>
+  <h4>Winning</h4>
+  <ul>
+    <li>Win: your total beats the dealer → earn your bet</li>
+    <li>Blackjack (Ace + 10-value on first 2 cards) → 1.5× payout</li>
+    <li>Bust (over 21) → lose your bet immediately</li>
+    <li>Push (tie) → bet returned unchanged</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What is Double Down?</h4>
+  <p>
+    Double Down doubles your current bet and deals you exactly one more card, then your turn ends. It's best used when
+    your total is 10 or 11 and you're likely to draw a 10-value card.
+  </p>
+  <h4>What happens on a tie?</h4>
+  <p>
+    A tie (push) means both you and the dealer have the same total. Your bet is returned — you neither win nor lose
+    chips.
+  </p>
+  <h4>Is my best chip count saved?</h4>
+  <p>
+    Yes — your highest chip count is saved automatically in your browser's local storage and persists between sessions.
+  </p>
+  <h4>What is a natural Blackjack?</h4>
+  <p>
+    A natural Blackjack is when your first two cards are an Ace and any 10-value card (10, J, Q, K). It pays 1.5×, so a
+    100-chip bet wins 150 chips. The dealer also wins automatically with a natural Blackjack.
+  </p>
+  <h4>When does the dealer stop drawing?</h4>
+  <p>The dealer must draw cards until their total reaches 17 or higher, then they must stand.</p>
+  {% endcall %}
+</div>
+
+<script>
+  const STORAGE_KEY = "mini-blackjack-best";
+
+  const SUITS = ["♠", "♥", "♦", "♣"];
+  const RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
+
+  let chips = 1000;
+  let bet = 0;
+  let best = 1000;
+  let playerHand = [];
+  let dealerHand = [];
+  let gamePhase = "betting"; // 'betting' | 'playing' | 'dealer' | 'result'
+
+  function initGame() {
+    const stored = parseInt(localStorage.getItem(STORAGE_KEY), 10);
+    if (!isNaN(stored) && stored > 0) {
+      best = stored;
+    }
+    document.getElementById("best-display").textContent = best;
+    document.getElementById("chips-display").textContent = chips;
+    document.getElementById("bet-display").textContent = bet;
+    showBettingUI();
+  }
+
+  // ── Deck helpers ──────────────────────────────────────────────────────────
+  function buildDeck() {
+    const deck = [];
+    for (const suit of SUITS) {
+      for (const rank of RANKS) {
+        deck.push({ rank, suit });
+      }
+    }
+    // Shuffle (Fisher-Yates)
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+  }
+
+  function cardValue(rank) {
+    if (rank === "A") return 11;
+    if (["J", "Q", "K"].includes(rank)) return 10;
+    return parseInt(rank, 10);
+  }
+
+  function handTotal(hand) {
+    let total = 0;
+    let aces = 0;
+    for (const card of hand) {
+      if (card.hidden) continue;
+      total += cardValue(card.rank);
+      if (card.rank === "A") aces++;
+    }
+    while (total > 21 && aces > 0) {
+      total -= 10;
+      aces--;
+    }
+    return total;
+  }
+
+  function isRedSuit(suit) {
+    return suit === "♥" || suit === "♦";
+  }
+
+  function isBlackjack(hand) {
+    if (hand.length !== 2) return false;
+    const ranks = hand.map((c) => c.rank);
+    const hasAce = ranks.includes("A");
+    const hasTen = ranks.some((r) => ["10", "J", "Q", "K"].includes(r));
+    return hasAce && hasTen;
+  }
+
+  // ── Rendering ─────────────────────────────────────────────────────────────
+  function renderCard(card) {
+    const div = document.createElement("div");
+    if (card.hidden) {
+      div.className = "card hidden";
+      div.textContent = "🂠";
+      return div;
+    }
+    div.className = "card" + (isRedSuit(card.suit) ? " red" : "");
+    const top = document.createElement("div");
+    top.style.cssText = "font-size:0.75rem;align-self:flex-start;line-height:1";
+    top.textContent = card.rank;
+    const suit = document.createElement("div");
+    suit.style.cssText = "font-size:1.1rem;line-height:1";
+    suit.textContent = card.suit;
+    const bottom = document.createElement("div");
+    bottom.style.cssText = "font-size:0.75rem;align-self:flex-end;line-height:1;transform:rotate(180deg)";
+    bottom.textContent = card.rank;
+    div.appendChild(top);
+    div.appendChild(suit);
+    div.appendChild(bottom);
+    return div;
+  }
+
+  function renderHand(handEl, hand) {
+    handEl.innerHTML = "";
+    for (const card of hand) {
+      handEl.appendChild(renderCard(card));
+    }
+  }
+
+  function updateTotals(revealDealer) {
+    const playerEl = document.getElementById("player-total");
+    const dealerEl = document.getElementById("dealer-total");
+    const pTotal = handTotal(playerHand);
+    playerEl.textContent = pTotal > 0 ? pTotal : "";
+
+    if (revealDealer) {
+      const dTotal = handTotal(dealerHand);
+      dealerEl.textContent = dTotal > 0 ? dTotal : "";
+    } else {
+      // Show only visible card total
+      const visibleHand = dealerHand.filter((c) => !c.hidden);
+      const vTotal = handTotal(visibleHand);
+      dealerEl.textContent = vTotal > 0 ? vTotal : "";
+    }
+  }
+
+  // ── UI visibility ─────────────────────────────────────────────────────────
+  function showBettingUI() {
+    gamePhase = "betting";
+    document.getElementById("bet-area").style.display = "block";
+    document.getElementById("action-area").style.display = "none";
+    document.getElementById("round-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("dealer-hand").innerHTML = "";
+    document.getElementById("player-hand").innerHTML = "";
+    document.getElementById("dealer-total").textContent = "";
+    document.getElementById("player-total").textContent = "";
+    updateChipButtons();
+  }
+
+  function updateChipButtons() {
+    const btns = document.querySelectorAll(".chip-btn");
+    btns.forEach((btn) => {
+      const val = parseInt(btn.textContent, 10);
+      if (!isNaN(val)) {
+        btn.disabled = val > chips;
+      }
+    });
+    document.getElementById("deal-btn").disabled = bet === 0 || bet > chips;
+  }
+
+  function updateDoubleBtn() {
+    const btn = document.getElementById("double-btn");
+    btn.disabled = playerHand.length > 2 || chips < bet;
+  }
+
+  // ── Betting ───────────────────────────────────────────────────────────────
+  function placeBet(amount) {
+    if (amount > chips) return;
+    bet += amount;
+    if (bet > chips) bet = chips;
+    document.getElementById("bet-display").textContent = bet;
+    updateChipButtons();
+  }
+
+  function clearBet() {
+    bet = 0;
+    document.getElementById("bet-display").textContent = 0;
+    updateChipButtons();
+  }
+
+  // ── Deal ──────────────────────────────────────────────────────────────────
+  let deck = [];
+
+  function ensureDeck() {
+    if (deck.length < 15) {
+      deck = buildDeck();
+    }
+  }
+
+  function drawCard(hidden = false) {
+    ensureDeck();
+    const card = deck.pop();
+    card.hidden = hidden;
+    return card;
+  }
+
+  function deal() {
+    if (bet === 0 || bet > chips) return;
+    gamePhase = "playing";
+    document.getElementById("bet-area").style.display = "none";
+    document.getElementById("round-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    playerHand = [drawCard(), drawCard()];
+    dealerHand = [drawCard(), drawCard(true)]; // second card hidden
+
+    renderHand(document.getElementById("player-hand"), playerHand);
+    renderHand(document.getElementById("dealer-hand"), dealerHand);
+    updateTotals(false);
+
+    document.getElementById("action-area").style.display = "flex";
+    updateDoubleBtn();
+
+    // Check for player blackjack immediately
+    if (isBlackjack(playerHand)) {
+      // Reveal dealer card to check for dealer blackjack too
+      dealerHand[1].hidden = false;
+      renderHand(document.getElementById("dealer-hand"), dealerHand);
+      updateTotals(true);
+      if (isBlackjack(dealerHand)) {
+        endRound("push", "Both have Blackjack — Push!");
+      } else {
+        endRound("blackjack", "Blackjack! You win 1.5×!");
+      }
+    }
+  }
+
+  // ── Player actions ────────────────────────────────────────────────────────
+  function hit() {
+    if (gamePhase !== "playing") return;
+    playerHand.push(drawCard());
+    renderHand(document.getElementById("player-hand"), playerHand);
+    updateTotals(false);
+    updateDoubleBtn();
+    if (handTotal(playerHand) > 21) {
+      revealAndRunDealer(true);
+    }
+  }
+
+  function stand() {
+    if (gamePhase !== "playing") return;
+    revealAndRunDealer(false);
+  }
+
+  function doubleDown() {
+    if (gamePhase !== "playing") return;
+    if (playerHand.length > 2 || chips < bet) return;
+    bet *= 2;
+    document.getElementById("bet-display").textContent = bet;
+    playerHand.push(drawCard());
+    renderHand(document.getElementById("player-hand"), playerHand);
+    updateTotals(false);
+    document.getElementById("action-area").style.display = "none";
+    const busted = handTotal(playerHand) > 21;
+    revealAndRunDealer(busted);
+  }
+
+  // ── Dealer sequence ───────────────────────────────────────────────────────
+  function revealAndRunDealer(playerBusted) {
+    gamePhase = "dealer";
+    document.getElementById("action-area").style.display = "none";
+
+    // Reveal hidden card
+    dealerHand[1].hidden = false;
+    renderHand(document.getElementById("dealer-hand"), dealerHand);
+    updateTotals(true);
+
+    if (playerBusted) {
+      // If player busted, just show bust result immediately
+      setTimeout(() => endRound("lose", "Bust! You went over 21."), 400);
+      return;
+    }
+
+    // Dealer draws until >= 17
+    function dealerDraw() {
+      const dTotal = handTotal(dealerHand);
+      if (dTotal < 17) {
+        setTimeout(() => {
+          dealerHand.push(drawCard());
+          renderHand(document.getElementById("dealer-hand"), dealerHand);
+          updateTotals(true);
+          dealerDraw();
+        }, 300);
+      } else {
+        setTimeout(() => resolveRound(), 300);
+      }
+    }
+    dealerDraw();
+  }
+
+  function resolveRound() {
+    const pTotal = handTotal(playerHand);
+    const dTotal = handTotal(dealerHand);
+
+    if (dTotal > 21) {
+      endRound("win", "Dealer busts! You win!");
+    } else if (pTotal > dTotal) {
+      endRound("win", "You win!");
+    } else if (pTotal < dTotal) {
+      endRound("lose", "Dealer wins.");
+    } else {
+      endRound("push", "Push — it's a tie.");
+    }
+  }
+
+  // ── End round ─────────────────────────────────────────────────────────────
+  function endRound(outcome, message) {
+    gamePhase = "result";
+    document.getElementById("action-area").style.display = "none";
+
+    if (outcome === "blackjack") {
+      // Natural blackjack: bet pays 1.5×, total return = bet * 2.5
+      chips += Math.floor(bet * 1.5);
+      launchConfetti();
+    } else if (outcome === "win") {
+      chips += bet;
+      launchConfetti();
+    } else if (outcome === "lose") {
+      chips -= bet;
+    }
+    // push: chips unchanged
+
+    // Update best
+    if (chips > best) {
+      best = chips;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    document.getElementById("chips-display").textContent = chips;
+
+    if (chips <= 0) {
+      chips = 0;
+      document.getElementById("chips-display").textContent = 0;
+      document.getElementById("final-best").textContent = best;
+      document.getElementById("gameover-overlay").style.display = "flex";
+      return;
+    }
+
+    // Round overlay
+    const icon = outcome === "blackjack" || outcome === "win" ? "🏆" : outcome === "push" ? "🤝" : "💀";
+    const title =
+      outcome === "blackjack"
+        ? "Blackjack!"
+        : outcome === "win"
+          ? "You Win!"
+          : outcome === "push"
+            ? "Push"
+            : "You Lose";
+
+    document.getElementById("go-icon").textContent = icon;
+    document.getElementById("go-title").textContent = title;
+    document.getElementById("go-msg").textContent = message;
+    document.getElementById("go-chips").textContent = chips;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("round-overlay").style.display = "flex";
+
+    // Reset bet for next round (keep bet value for convenience — player can clear if desired)
+    bet = Math.min(bet, chips);
+    document.getElementById("bet-display").textContent = bet;
+  }
+
+  // ── Next round / reset ────────────────────────────────────────────────────
+  function nextRound() {
+    document.getElementById("round-overlay").style.display = "none";
+    playerHand = [];
+    dealerHand = [];
+    // Clamp bet to available chips
+    if (bet > chips) {
+      bet = chips;
+      document.getElementById("bet-display").textContent = bet;
+    }
+    showBettingUI();
+  }
+
+  function resetGame() {
+    chips = 1000;
+    bet = 0;
+    playerHand = [];
+    dealerHand = [];
+    deck = [];
+    document.getElementById("chips-display").textContent = chips;
+    document.getElementById("bet-display").textContent = 0;
+    document.getElementById("gameover-overlay").style.display = "none";
+    showBettingUI();
+  }
+
+  // ── Confetti ──────────────────────────────────────────────────────────────
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  initGame();
+</script>
