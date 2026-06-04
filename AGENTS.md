@@ -1,4 +1,61 @@
-# mini-games — Agent & Contributor Standards
+# mini-games — AI Coding Guide
+
+## Project Overview
+
+A collection of free, browser-based mini games built with Eleventy (SSG), Tailwind CSS, and Nunjucks templates. Each game is a self-contained page.
+
+## Tech Stack
+
+- **Eleventy 2.x** — static site generator, config in `.eleventy.js`
+- **Nunjucks** — template engine for layouts and partials
+- **Tailwind CSS v3** — utility-first CSS, config in `tailwind.config.js`
+- **PostCSS + autoprefixer** — CSS pipeline, config in `postcss.config.js`
+- **Prettier** — code formatter, config in `.prettierrc`
+- **Husky + lint-staged** — pre-commit hooks
+- **Commitlint** — conventional commit enforcement
+
+## Development Commands
+
+```bash
+npm run dev          # start dev server (Eleventy + Tailwind watch)
+npm run build        # production build
+npm run format       # format all files with Prettier
+npm run format:check # check formatting without writing
+```
+
+## Project Structure
+
+```
+src/
+  _data/
+    site.js         # site-wide metadata (title, description, url)
+    games.js        # array of all games with metadata
+  _includes/
+    layouts/
+      base.njk      # base HTML wrapper (head, meta, CSS)
+      game.njk      # game page layout (minimal nav + back button)
+    partials/
+      header.njk    # site header with nav
+      footer.njk    # site footer
+      hero.njk      # landing page hero section
+      features.njk  # USP/features section
+      games-list.njk # games grouped by category
+  css/
+    main.css        # Tailwind entry point (@tailwind directives)
+  games/
+    [slug]/
+      index.njk     # individual game page
+  index.njk         # homepage
+```
+
+## Categories
+
+- `arcade` — action games (Tetris, Snake, Breakout)
+- `puzzle` — logic/thinking games (2048, Minesweeper)
+- `board` — turn-based/board games (Tic-Tac-Toe, Memory Match)
+- `word` — word/text games
+
+---
 
 ## Game Feature Requirements
 
@@ -55,6 +112,7 @@ Every game in this project must implement the following features.
 - Use canvas for games requiring pixel-level rendering (Snake, Breakout, Tetris); DOM manipulation for grid games (2048, Memory Match, Minesweeper, Tic-Tac-Toe)
 - Commit new games with the `game:` commit type (e.g. `game: add Pong`)
 - All code must be formatted with Prettier before committing (`npm run format`)
+- **Always add a `launchConfetti()` reward animation** when a player wins a game or advances a level. Paste the standard implementation (fixed canvas overlay, 80 particles, 3s duration, pointer-events:none) directly into the game's `<script>` block since each game is self-contained. Call it at: game-win moments (all pairs matched, 2048 tile reached, board cleared, match won) and level-advance moments (Tetris line-clear level up, Breakout level clear, Snake level up).
 
 ## localStorage Key Convention
 
