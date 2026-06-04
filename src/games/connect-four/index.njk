@@ -201,10 +201,10 @@ icon: "🔴"
       inset 0 -4px 10px rgba(0, 0, 0, 0.35);
   }
   .cell.hover-r {
-    background: rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.55);
   }
   .cell.hover-y {
-    background: rgba(251, 191, 36, 0.28);
+    background: rgba(251, 191, 36, 0.55);
   }
   .play-btn {
     padding: 0.5rem 1.5rem;
@@ -750,13 +750,13 @@ icon: "🔴"
       btn.onmouseenter = () => {
         if (isHumanTurn) {
           hoverCol = c;
-          renderBoard();
+          requestAnimationFrame(renderBoard);
         }
       };
       btn.onmouseleave = () => {
         if (isHumanTurn) {
           hoverCol = -1;
-          renderBoard();
+          requestAnimationFrame(renderBoard);
         }
       };
       colBtns.appendChild(btn);
@@ -781,11 +781,11 @@ icon: "🔴"
           div.onclick = () => playCol(c);
           div.onmouseenter = () => {
             hoverCol = c;
-            renderBoard();
+            requestAnimationFrame(renderBoard);
           };
           div.onmouseleave = () => {
             hoverCol = -1;
-            renderBoard();
+            requestAnimationFrame(renderBoard);
           };
         }
         boardEl.appendChild(div);
