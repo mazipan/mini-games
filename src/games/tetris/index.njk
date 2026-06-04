@@ -6,12 +6,14 @@ category: arcade
 icon: "🟦"
 ---
 
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 0.75rem;
     padding: 1rem;
@@ -34,7 +36,7 @@ icon: "🟦"
     width: 100%;
     max-width: 500px;
   }
-  .stat-box {
+  .stat {
     text-align: center;
     background: #1e293b;
     border: 1px solid #334155;
@@ -61,6 +63,32 @@ icon: "🟦"
     align-items: center;
   }
 
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
   #start-screen,
   #gameover-screen {
     position: absolute;
@@ -145,7 +173,7 @@ icon: "🟦"
     #stats-row {
       gap: 5px;
     }
-    .stat-box {
+    .stat {
       padding: 0.35rem 0.4rem;
       min-width: 48px;
     }
@@ -220,23 +248,9 @@ icon: "🟦"
 
 <div id="game-wrapper">
   <div id="stats-row">
-    <div class="stat-box">
-      <div class="stat-label">Score</div>
-      <div class="stat-value" id="score-display">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Best</div>
-      <div class="stat-value" id="best-display">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Lines</div>
-      <div class="stat-value" id="lines-display">0</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-label">Level</div>
-      <div class="stat-value" id="level-display">1</div>
-    </div>
-    <div class="stat-box next-box">
+    {{ statCard("Score", "score-display") }} {{ statCard("Best", "best-display") }} {{ statCard("Lines",
+    "lines-display") }} {{ statCard("Level", "level-display", "1") }}
+    <div class="stat next-box">
       <div class="stat-label">Next</div>
       <canvas id="next-piece" width="60" height="60"></canvas>
     </div>
@@ -253,9 +267,13 @@ icon: "🟦"
       <button class="play-btn" onclick="startGame()">Play Game</button>
     </div>
     <div id="gameover-screen" style="display: none">
+      <span style="font-size: 2.5rem">💀</span>
       <h2>Game Over</h2>
-      <p id="final-score" style="color: #a78bfa; font-size: 1.1rem"></p>
-      <button class="play-btn" onclick="startGame()">Play Again</button>
+      <div class="summary-row">
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Lines",
+        "go-lines") }} {{ summaryStatCard("Level", "go-level", "1") }}
+      </div>
+      <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
 
@@ -273,52 +291,45 @@ icon: "🟦"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>
-        Stack falling tetrominoes (shaped blocks) to form complete horizontal lines. Completed lines are cleared and you
-        earn points. The game ends when pieces reach the top.
-      </p>
-      <h4>Controls — Desktop</h4>
-      <ul>
-        <li><strong>← →</strong> — move piece left/right</li>
-        <li><strong>↑</strong> — rotate piece</li>
-        <li><strong>↓</strong> — soft drop (move down faster)</li>
-        <li><strong>Space</strong> — hard drop (instant drop)</li>
-      </ul>
-      <h4>Controls — Mobile</h4>
-      <ul>
-        <li>Use the <strong>D-pad buttons</strong> that appear below the board</li>
-        <li>↻ = rotate · ▼ = soft drop · ⬇ Hard Drop = instant drop</li>
-      </ul>
-      <h4>Levels &amp; Scoring</h4>
-      <ul>
-        <li>Level increases every <strong>10 lines cleared</strong></li>
-        <li>Pieces fall faster each level</li>
-        <li>Clearing multiple lines at once earns bonus points</li>
-        <li>The ghost piece (transparent) shows where the piece will land</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>What is the ghost piece?</h4>
-      <p>
-        The transparent/faded piece shows exactly where your current piece will land if you drop it now. Use it to plan
-        placements accurately.
-      </p>
-      <h4>How do I score more points?</h4>
-      <p>
-        Clear multiple lines at once — a Tetris (4 lines at once) gives the most points. Higher levels also multiply
-        your score.
-      </p>
-      <h4>Is my best score saved?</h4>
-      <p>Yes — your best score is saved in your browser's local storage.</p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Stack falling tetrominoes (shaped blocks) to form complete horizontal lines. Completed lines are cleared and you
+    earn points. The game ends when pieces reach the top.
+  </p>
+  <h4>Controls — Desktop</h4>
+  <ul>
+    <li><strong>← →</strong> — move piece left/right</li>
+    <li><strong>↑</strong> — rotate piece</li>
+    <li><strong>↓</strong> — soft drop (move down faster)</li>
+    <li><strong>Space</strong> — hard drop (instant drop)</li>
+  </ul>
+  <h4>Controls — Mobile</h4>
+  <ul>
+    <li>Use the <strong>D-pad buttons</strong> that appear below the board</li>
+    <li>↻ = rotate · ▼ = soft drop · ⬇ Hard Drop = instant drop</li>
+  </ul>
+  <h4>Levels &amp; Scoring</h4>
+  <ul>
+    <li>Level increases every <strong>10 lines cleared</strong></li>
+    <li>Pieces fall faster each level</li>
+    <li>Clearing multiple lines at once earns bonus points</li>
+    <li>The ghost piece (transparent) shows where the piece will land</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What is the ghost piece?</h4>
+  <p>
+    The transparent/faded piece shows exactly where your current piece will land if you drop it now. Use it to plan
+    placements accurately.
+  </p>
+  <h4>How do I score more points?</h4>
+  <p>
+    Clear multiple lines at once — a Tetris (4 lines at once) gives the most points. Higher levels also multiply your
+    score.
+  </p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your best score is saved in your browser's local storage.</p>
+  {% endcall %}
 </div>
 
 <script>
@@ -647,7 +658,10 @@ icon: "🟦"
       document.getElementById("best-display").textContent = best;
       launchConfetti();
     }
-    document.getElementById("final-score").textContent = `Score: ${score} · Lines: ${lines} · Level: ${level}`;
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-lines").textContent = lines;
+    document.getElementById("go-level").textContent = level;
     document.getElementById("gameover-screen").style.display = "flex";
   }
 

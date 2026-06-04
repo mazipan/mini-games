@@ -6,12 +6,14 @@ category: board
 icon: "⭕"
 ---
 
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1.5rem;
     padding: 1rem;
@@ -82,7 +84,7 @@ icon: "⭕"
     color: #94a3b8;
   }
   .stat-value {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #e2e8f0;
     font-family: monospace;
@@ -193,18 +195,8 @@ icon: "⭕"
     <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
   </div>
   <div class="score-row">
-    <div class="stat">
-      <div class="stat-label" id="x-label">You (X)</div>
-      <div class="stat-value" id="p-score">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Draws</div>
-      <div class="stat-value" id="d-score">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label" id="o-label">AI (O)</div>
-      <div class="stat-value" id="ai-score">0</div>
-    </div>
+    {{ statCard("You (X)", "p-score", "0", "", "x-label") }} {{ statCard("Draws", "d-score") }} {{ statCard("AI (O)",
+    "ai-score", "0", "", "o-label") }}
   </div>
   <div id="status">Your turn (X)</div>
   <div id="board"></div>
@@ -213,40 +205,31 @@ icon: "⭕"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>Get three of your marks in a row — horizontally, vertically, or diagonally — before your opponent does.</p>
-      <h4>VS Machine</h4>
-      <p>
-        Play as X against the AI (O). The AI uses the <strong>minimax algorithm</strong> and plays perfectly — your best
-        result is a draw!
-      </p>
-      <h4>VS Friend</h4>
-      <p>Two players take turns on the same device. X goes first, then O, alternating each turn.</p>
-      <h4>Controls</h4>
-      <ul>
-        <li><strong>Click / tap</strong> any empty square to place your mark</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>Can I beat the AI?</h4>
-      <p>
-        No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw.
-      </p>
-      <h4>Are scores saved?</h4>
-      <p>Yes — wins, draws, and losses are saved in your browser and persist between sessions.</p>
-      <h4>What is minimax?</h4>
-      <p>
-        Minimax is a game-theory algorithm that evaluates all possible future moves and picks the one most likely to
-        win. It guarantees optimal play.
-      </p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Get three of your marks in a row — horizontally, vertically, or diagonally — before your opponent does.</p>
+  <h4>VS Machine</h4>
+  <p>
+    Play as X against the AI (O). The AI uses the <strong>minimax algorithm</strong> and plays perfectly — your best
+    result is a draw!
+  </p>
+  <h4>VS Friend</h4>
+  <p>Two players take turns on the same device. X goes first, then O, alternating each turn.</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click / tap</strong> any empty square to place your mark</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Can I beat the AI?</h4>
+  <p>No — the AI plays perfectly using minimax and will never make a mistake. The best you can achieve is a draw.</p>
+  <h4>Are scores saved?</h4>
+  <p>Yes — wins, draws, and losses are saved in your browser and persist between sessions.</p>
+  <h4>What is minimax?</h4>
+  <p>
+    Minimax is a game-theory algorithm that evaluates all possible future moves and picks the one most likely to win. It
+    guarantees optimal play.
+  </p>
+  {% endcall %}
 </div>
 
 <script>

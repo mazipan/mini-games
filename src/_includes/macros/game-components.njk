@@ -1,0 +1,25 @@
+{# game-components.njk — reusable macros for in-game UI components. Import into any game file: {% from
+"macros/game-components.njk" import statCard, summaryStatCard, infoDetails %} Usage: {{ statCard("Score", "score") }} {{
+statCard("Lives", "lives", "❤️❤️❤️", "lives") }} {{ summaryStatCard("Best", "go-best") }} {% call infoDetails("How to
+Play") %}
+<h4>Goal</h4>
+<p>...</p>
+{% endcall %} #} {# Stat card for the live score row during gameplay. labelId is optional — use when JS needs to update
+the label text at runtime. #} {% macro statCard(label, id, value="0", valueClass="", labelId="") %}
+<div class="stat">
+  <div class="stat-label" {% if labelId %} id="{{ labelId }}" {% endif %}>{{ label }}</div>
+  <div class="stat-value{{ (' ' + valueClass) if valueClass }}" id="{{ id }}">{{ value }}</div>
+</div>
+{% endmacro %} {# Smaller stat card used inside the game-over / win overlay summary row #} {% macro
+summaryStatCard(label, id, value="0") %}
+<div class="summary-stat">
+  <div class="summary-label">{{ label }}</div>
+  <div class="summary-value" id="{{ id }}">{{ value }}</div>
+</div>
+{% endmacro %} {# Collapsible info block — wrap body content with {%% call %%} ... {%% endcall %%} #} {% macro
+infoDetails(title) %}
+<details class="info-details">
+  <summary>{{ title }}</summary>
+  <div class="info-body">{{ caller() }}</div>
+</details>
+{% endmacro %}

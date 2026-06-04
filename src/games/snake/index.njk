@@ -6,6 +6,8 @@ category: arcade
 icon: "🐍"
 ---
 
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
@@ -224,18 +226,7 @@ icon: "🐍"
 
 <div id="game-wrapper">
   <div class="score-row">
-    <div class="stat">
-      <div class="stat-label">Score</div>
-      <div class="stat-value" id="score">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Level</div>
-      <div class="stat-value" id="level-display">1</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best</div>
-      <div class="stat-value" id="high-score">0</div>
-    </div>
+    {{ statCard("Score", "score") }} {{ statCard("Level", "level-display", "1") }} {{ statCard("Best", "high-score") }}
   </div>
   <div class="canvas-wrapper">
     <canvas id="snake-canvas" width="400" height="400"></canvas>
@@ -250,18 +241,8 @@ icon: "🐍"
       <span style="font-size: 2.5rem">💀</span>
       <h2>Game Over</h2>
       <div class="summary-row">
-        <div class="summary-stat">
-          <div class="summary-label">Score</div>
-          <div class="summary-value" id="go-score">0</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-label">Best</div>
-          <div class="summary-value" id="go-best">0</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-label">Level</div>
-          <div class="summary-value" id="go-level">1</div>
-        </div>
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+        "go-level", "1") }}
       </div>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
@@ -281,43 +262,36 @@ icon: "🐍"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>
-        Guide the snake to eat the red food dots. Each food makes the snake grow longer. Avoid hitting the walls or your
-        own tail!
-      </p>
-      <h4>Controls</h4>
-      <ul>
-        <li><strong>Arrow keys</strong> or <strong>WASD</strong> — change direction (desktop)</li>
-        <li><strong>D-pad buttons</strong> — tap to change direction (mobile)</li>
-      </ul>
-      <h4>Levels &amp; Speed</h4>
-      <ul>
-        <li>Starts at <strong>Level 1</strong> with a comfortable pace</li>
-        <li>Every <strong>5 foods eaten</strong> = level up &amp; speed increase</li>
-        <li>Maximum speed is reached at Level 8</li>
-      </ul>
-      <h4>Scoring</h4>
-      <ul>
-        <li>Each food eaten = <strong>10 points</strong></li>
-        <li>Your best score is saved in your browser</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>What is the Live Demo?</h4>
-      <p>Before you start, an AI snake plays automatically in the background so you can see how the game works.</p>
-      <h4>Is my best score saved?</h4>
-      <p>Yes — saved automatically in your browser's local storage, persisting between sessions on the same device.</p>
-      <h4>Can I play on mobile?</h4>
-      <p>Yes! The D-pad appears automatically on small screens. Tap the direction buttons to move.</p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Guide the snake to eat the red food dots. Each food makes the snake grow longer. Avoid hitting the walls or your own
+    tail!
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Arrow keys</strong> or <strong>WASD</strong> — change direction (desktop)</li>
+    <li><strong>D-pad buttons</strong> — tap to change direction (mobile)</li>
+  </ul>
+  <h4>Levels &amp; Speed</h4>
+  <ul>
+    <li>Starts at <strong>Level 1</strong> with a comfortable pace</li>
+    <li>Every <strong>5 foods eaten</strong> = level up &amp; speed increase</li>
+    <li>Maximum speed is reached at Level 8</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>Each food eaten = <strong>10 points</strong></li>
+    <li>Your best score is saved in your browser</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What is the Live Demo?</h4>
+  <p>Before you start, an AI snake plays automatically in the background so you can see how the game works.</p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — saved automatically in your browser's local storage, persisting between sessions on the same device.</p>
+  <h4>Can I play on mobile?</h4>
+  <p>Yes! The D-pad appears automatically on small screens. Tap the direction buttons to move.</p>
+  {% endcall %}
 </div>
 
 <script>

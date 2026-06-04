@@ -6,6 +6,8 @@ category: arcade
 icon: "🧱"
 ---
 
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
@@ -230,26 +232,10 @@ icon: "🧱"
 
 <div id="game-wrapper">
   <div class="score-row">
-    <div class="stat">
-      <div class="stat-label">Score</div>
-      <div class="stat-value" id="score">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Best</div>
-      <div class="stat-value" id="best-score">0</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Lives</div>
-      <div class="stat-value lives" id="lives">
-        <span class="life">❤️</span><span class="life">❤️</span><span class="life">❤️</span>
-      </div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Level</div>
-      <div class="stat-value" id="level">1</div>
-    </div>
+    {{ statCard("Score", "score") }} {{ statCard("Best", "best-score") }} {{ statCard("Lives", "lives", "❤️❤️❤️",
+    "lives") }} {{ statCard("Level", "level", "1") }}
   </div>
-  <div class="pattern-row">
+  <div class="pattern-row" id="pattern-row">
     <button class="pattern-btn active" id="pat-random" onclick="setPattern(-1)">🔀 Random</button>
     <button class="pattern-btn" id="pat-0" onclick="setPattern(0)">Classic</button>
     <button class="pattern-btn" id="pat-1" onclick="setPattern(1)">Pyramid</button>
@@ -275,18 +261,8 @@ icon: "🧱"
       <span id="go-icon" style="font-size: 2.5rem">💀</span>
       <h2 id="go-title">Game Over</h2>
       <div class="summary-row">
-        <div class="summary-stat">
-          <div class="summary-label">Score</div>
-          <div class="summary-value" id="go-score">0</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-label">Best</div>
-          <div class="summary-value" id="go-best">0</div>
-        </div>
-        <div class="summary-stat">
-          <div class="summary-label">Level</div>
-          <div class="summary-value" id="go-level">1</div>
-        </div>
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+        "go-level", "1") }}
       </div>
       <p id="go-pattern" style="color: #64748b; font-size: 0.8rem"></p>
       <button class="play-btn" onclick="startGame()">New Game</button>
@@ -296,48 +272,41 @@ icon: "🧱"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>Bounce the ball with your paddle to break all the bricks. Clear all 5 levels to win!</p>
-      <h4>Controls</h4>
-      <ul>
-        <li><strong>Mouse</strong> — move cursor over canvas to position paddle (desktop)</li>
-        <li><strong>Finger drag</strong> — drag left/right on the canvas (mobile)</li>
-        <li><strong>Hold ← →</strong> — hold arrow keys for continuous paddle movement</li>
-      </ul>
-      <h4>Levels &amp; Patterns</h4>
-      <ul>
-        <li>8 levels — each uses a unique brick layout</li>
-        <li>Patterns: Classic, Pyramid, Diamond, Checkerboard, Cross, Fortress, Arrow, Wave</li>
-        <li>Ball speeds up each level</li>
-        <li>Darker bricks take <strong>2 hits</strong> to break</li>
-      </ul>
-      <h4>Scoring</h4>
-      <ul>
-        <li>Each brick = <strong>10 × level</strong> points</li>
-        <li>3 lives — ball resets when it falls</li>
-        <li>Best score saved in your browser</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>Why does the ball angle change when hitting the paddle?</h4>
-      <p>
-        The ball reflects based on where it hits the paddle — hitting the edge sends it at a sharp angle, hitting the
-        centre bounces it straight up.
-      </p>
-      <h4>Do bricks reset when I lose a life?</h4>
-      <p>No — your brick progress is saved between lives. Only the ball and paddle reset position.</p>
-      <h4>Is my best score saved?</h4>
-      <p>Yes — automatically saved in your browser's local storage.</p>
-      <h4>Can I play on mobile?</h4>
-      <p>Yes! The game scales to fit your screen. Drag your finger across the canvas to move the paddle.</p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Bounce the ball with your paddle to break all the bricks. Clear all 8 levels to win!</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Mouse</strong> — move cursor over canvas to position paddle (desktop)</li>
+    <li><strong>Finger drag</strong> — drag left/right on the canvas (mobile)</li>
+    <li><strong>Hold ← →</strong> — hold arrow keys for continuous paddle movement</li>
+  </ul>
+  <h4>Levels &amp; Patterns</h4>
+  <ul>
+    <li>8 levels — each uses a unique brick layout</li>
+    <li>Patterns: Classic, Pyramid, Diamond, Checkerboard, Cross, Fortress, Arrow, Wave</li>
+    <li>Ball speeds up each level</li>
+    <li>Darker bricks take <strong>2 hits</strong> to break</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>Each brick = <strong>10 × level</strong> points</li>
+    <li>3 lives — ball resets when it falls</li>
+    <li>Best score saved in your browser</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Why does the ball angle change when hitting the paddle?</h4>
+  <p>
+    The ball reflects based on where it hits the paddle — hitting the edge sends it at a sharp angle, hitting the centre
+    bounces it straight up.
+  </p>
+  <h4>Do bricks reset when I lose a life?</h4>
+  <p>No — your brick progress is saved between lives. Only the ball and paddle reset position.</p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — automatically saved in your browser's local storage.</p>
+  <h4>Can I play on mobile?</h4>
+  <p>Yes! The game scales to fit your screen. Drag your finger across the canvas to move the paddle.</p>
+  {% endcall %}
 </div>
 
 <script>
@@ -534,6 +503,7 @@ icon: "🧱"
     cancelAnimationFrame(demoAnimId);
     document.getElementById("demo-label").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("pattern-row").style.display = "none";
     level = 1;
     score = 0;
     lives = 3;
@@ -673,6 +643,7 @@ icon: "🧱"
       "Pattern: " + (chosenPattern === -1 ? "Random" : PATTERNS[chosenPattern].name);
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "flex";
+    document.getElementById("pattern-row").style.display = "flex";
   }
 
   // Demo: auto-track ball with paddle

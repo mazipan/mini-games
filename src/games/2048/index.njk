@@ -6,12 +6,14 @@ category: puzzle
 icon: "🔢"
 ---
 
+{% from "macros/game-components.njk" import infoDetails %}
+
 <style>
   #game-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: calc(100vh - 60px);
     gap: 1.5rem;
     padding: 1rem;
@@ -145,7 +147,7 @@ icon: "🔢"
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 0.95rem;
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     touch-action: manipulation;
@@ -288,38 +290,31 @@ icon: "🔢"
 </div>
 
 <div class="info-section">
-  <details class="info-details">
-    <summary>How to Play</summary>
-    <div class="info-body">
-      <h4>Goal</h4>
-      <p>
-        Slide all tiles in one direction. Tiles with the same number <strong>merge</strong> into one tile with their
-        sum. Reach the <strong>2048 tile</strong> to win!
-      </p>
-      <h4>Controls</h4>
-      <ul>
-        <li><strong>Arrow keys</strong> — slide all tiles in that direction (desktop)</li>
-        <li><strong>Swipe</strong> — swipe left/right/up/down on the board (mobile)</li>
-      </ul>
-      <h4>Strategy Tips</h4>
-      <ul>
-        <li>Keep your highest tile in a corner</li>
-        <li>Build a chain of decreasing values towards that corner</li>
-        <li>Avoid filling the board — plan ahead!</li>
-      </ul>
-    </div>
-  </details>
-  <details class="info-details">
-    <summary>FAQ</summary>
-    <div class="info-body">
-      <h4>What happens after reaching 2048?</h4>
-      <p>You win, but the game continues! You can keep merging tiles to reach 4096, 8192, and beyond.</p>
-      <h4>Is my best score saved?</h4>
-      <p>Yes — your best score is automatically saved in your browser's local storage.</p>
-      <h4>Can I undo a move?</h4>
-      <p>Not currently. Think carefully before each swipe!</p>
-    </div>
-  </details>
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Slide all tiles in one direction. Tiles with the same number <strong>merge</strong> into one tile with their sum.
+    Reach the <strong>2048 tile</strong> to win!
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Arrow keys</strong> — slide all tiles in that direction (desktop)</li>
+    <li><strong>Swipe</strong> — swipe left/right/up/down on the board (mobile)</li>
+  </ul>
+  <h4>Strategy Tips</h4>
+  <ul>
+    <li>Keep your highest tile in a corner</li>
+    <li>Build a chain of decreasing values towards that corner</li>
+    <li>Avoid filling the board — plan ahead!</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What happens after reaching 2048?</h4>
+  <p>You win, but the game continues! You can keep merging tiles to reach 4096, 8192, and beyond.</p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your best score is automatically saved in your browser's local storage.</p>
+  <h4>Can I undo a move?</h4>
+  <p>Not currently. Think carefully before each swipe!</p>
+  {% endcall %}
 </div>
 
 <script>
