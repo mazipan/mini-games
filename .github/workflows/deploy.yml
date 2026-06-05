@@ -11,10 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
-      deployments: write
-      statuses: write
 
     steps:
       - name: Checkout repository
@@ -35,12 +33,28 @@ jobs:
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
       - name: Deploy to Netlify
-        uses: nwtgck/actions-netlify@v4.0.0
-        with:
-          publish-dir: './_site'
-          production-branch: 'main'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          deploy-message: "Deploy from GitHub Actions (${{ env.SHORT_SHA }})"
+        id: netlify
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            RESULT=$(bunx netlify-cli deploy --prod --dir=./_site \
+              --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
+          else
+            RESULT=$(bunx netlify-cli deploy --dir=./_site \
+              --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
+          fi
+          echo "deploy_url=$(echo $RESULT | jq -r '.deploy_url')" >> $GITHUB_OUTPUT
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Comment deploy URL on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployed: ${{ steps.netlify.outputs.deploy_url }}`
+            })
