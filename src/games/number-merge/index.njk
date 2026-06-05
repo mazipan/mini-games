@@ -72,50 +72,57 @@ icon: "🔢"
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 0;
     user-select: none;
   }
-  #col-btns {
+  /* Falling tile row — sits directly above the grid */
+  #falling-row {
     display: grid;
     grid-template-columns: repeat(7, var(--tile));
     gap: 3px;
     padding: 0 6px;
+    height: calc(var(--tile) + 3px);
+    align-items: end;
   }
-  .col-btn {
+  .falling-cell {
     width: var(--tile);
-    height: calc(var(--tile) * 0.58);
-    background: #1e293b;
-    border: 1px solid #334155;
-    color: #475569;
-    font-size: calc(var(--tile) * 0.28);
-    cursor: pointer;
+    height: var(--tile);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    transition:
-      color 0.1s,
-      background 0.1s,
-      border-color 0.1s;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: calc(var(--tile) * 0.3);
+    background: transparent;
+    transition: transform 0.08s ease-out;
   }
-  .col-btn:not(:disabled):hover {
-    background: #293548;
-    border-color: #475569;
-    color: #94a3b8;
+  .falling-cell.active {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    animation: bobble 1.4s ease-in-out infinite;
   }
-  .col-btn.selected {
-    color: #a78bfa;
-    border-color: rgba(167, 139, 250, 0.5);
-    background: rgba(49, 46, 129, 0.35);
+  @keyframes bobble {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-4px);
+    }
   }
-  .col-btn.selected:hover {
-    background: rgba(49, 46, 129, 0.5);
+  .falling-cell.active.dropping {
+    animation: drop-in 0.22s ease-in forwards;
   }
-  .col-btn:disabled {
-    cursor: default;
-    opacity: 0.3;
+  @keyframes drop-in {
+    0% {
+      transform: translateY(0) scale(1);
+    }
+    60% {
+      transform: translateY(8px) scale(1.06);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+    }
   }
   #grid {
     display: grid;
@@ -126,6 +133,7 @@ icon: "🔢"
     border-radius: 8px;
     padding: 6px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
   }
   .grid-cell {
     width: var(--tile);
@@ -145,6 +153,14 @@ icon: "🔢"
   }
   .grid-cell.filled {
     color: inherit;
+  }
+  .grid-cell.ghost {
+    opacity: 0.28;
+    color: inherit;
+  }
+  /* Col hover highlight */
+  .grid-cell.col-hover {
+    background: #263348;
   }
   /* Tile value colors */
   .grid-cell[data-v="2"] {
@@ -384,18 +400,18 @@ icon: "🔢"
   </div>
 
   <div id="board-area">
-    <div id="col-btns"></div>
+    <div id="falling-row"></div>
     <div id="grid"></div>
   </div>
 
-  <p class="controls-hint">Click ▼ to drop · ←/→ select column · ↓ / Space drop</p>
+  <p class="controls-hint">← → to aim · ↓ / Space to drop · click column to drop</p>
   <button class="new-btn" onclick="startGame()">New Game</button>
 </div>
 
 <div id="start-overlay" class="full-overlay">
   <span style="font-size: 3rem">🔢</span>
   <h2>Number Merge</h2>
-  <p>Drop tiles into columns — equal neighbors merge!</p>
+  <p>Aim with ← → and drop tiles — equal neighbors merge!</p>
   <button class="play-btn" onclick="startGame()">Play Game</button>
 </div>
 
@@ -424,14 +440,14 @@ icon: "🔢"
   {% call infoDetails("How to Play") %}
   <h4>Goal</h4>
   <p>
-    Drop numbered tiles into columns. When two equal tiles sit at the top of adjacent columns, they
+    Aim numbered tiles and drop them into columns. When two equal tiles sit at the top of adjacent columns, they
     <strong>merge</strong> into their sum. Score as many points as you can before any column fills up!
   </p>
   <h4>Controls</h4>
   <ul>
-    <li><strong>Click ▼</strong> above a column to drop the current tile into that column</li>
-    <li><strong>← → arrow keys</strong> to move the column selection left or right</li>
-    <li><strong>↓ / Space / Enter</strong> to drop the tile into the selected column</li>
+    <li><strong>← → arrow keys</strong> — move the falling tile left or right</li>
+    <li><strong>↓ / Space / Enter</strong> — drop the tile into the selected column</li>
+    <li><strong>Click a grid column</strong> — aim and drop into that column</li>
   </ul>
   <h4>Scoring</h4>
   <p>
@@ -440,15 +456,14 @@ icon: "🔢"
   </p>
   <h4>Levels</h4>
   <p>
-    Every 10 merges you advance a level. Higher levels introduce 8-value tiles into the mix, making combos more
+    Every 10 merges you advance a level. Higher levels introduce larger-value tiles into the mix, making combos more
     achievable but the board harder to manage.
   </p>
   {% endcall %} {% call infoDetails("FAQ") %}
   <h4>How do merges work?</h4>
   <p>
     After a tile lands in a column, the game checks if the tile on top of the <em>left</em> neighbor column has the same
-    value. If so, they merge (left column's top tile is consumed, current column's top tile doubles). The check then
-    repeats — potentially chaining multiple merges from a single drop.
+    value. If so, they merge. The check then repeats — potentially chaining multiple merges from a single drop.
   </p>
   <h4>What is a combo?</h4>
   <p>
@@ -456,20 +471,14 @@ icon: "🔢"
     can trigger several merges back-to-back, scoring all of them.
   </p>
   <h4>Is my best score saved?</h4>
-  <p>
-    Yes — your all-time best score is automatically saved in your browser's local storage and displayed in the score
-    row.
-  </p>
+  <p>Yes — your all-time best score is automatically saved in your browser's local storage.</p>
   <h4>When does the game end?</h4>
-  <p>
-    The game ends immediately when any column reaches 8 tiles (the maximum column height) and can no longer accept new
-    tiles.
-  </p>
+  <p>The game ends immediately when any column reaches 8 tiles (the maximum column height).</p>
   {% endcall %}
 </div>
 
 <script>
-  // ─── Confetti (standard 80-particle 3s implementation) ───────────────────
+  // ─── Confetti ────────────────────────────────────────────────────────────
   function launchConfetti() {
     const canvas = document.createElement("canvas");
     canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
@@ -511,7 +520,7 @@ icon: "🔢"
     requestAnimationFrame(draw);
   }
 
-  // ─── Constants ───────────────────────────────────────────────────────────
+  // ─── Constants ────────────────────────────────────────────────────────────
   const ROWS = 8;
   const COLS = 7;
   const STORAGE_KEY = "mini-number-merge-best";
@@ -523,43 +532,47 @@ icon: "🔢"
   let level;
   let mergeCount;
   let nextVal;
+  let currentVal; // the tile currently "falling"
   let selectedCol;
   let gameActive;
   let confettiFiredFor1024 = false;
+  let dropping = false; // prevents double-drops during animation
 
   document.getElementById("best-display").textContent = best;
 
   // ─── Tile value generation ────────────────────────────────────────────────
   function nextTileValue() {
     const r = Math.random();
-    if (level <= 2) {
-      return 2;
-    } else if (level <= 4) {
-      return r < 0.8 ? 2 : 4;
-    } else if (level <= 6) {
-      return r < 0.6 ? 2 : r < 0.9 ? 4 : 8;
-    } else {
-      return r < 0.5 ? 2 : r < 0.8 ? 4 : 8;
-    }
+    if (level <= 2) return 2;
+    else if (level <= 4) return r < 0.8 ? 2 : 4;
+    else if (level <= 6) return r < 0.6 ? 2 : r < 0.9 ? 4 : 8;
+    else return r < 0.5 ? 2 : r < 0.8 ? 4 : 8;
   }
 
-  // ─── Tile color helper (for next-tile preview) ────────────────────────────
+  // ─── Tile style helper ────────────────────────────────────────────────────
+  const TILE_STYLES = {
+    2: { bg: "#1e3a2f", color: "#4ade80" },
+    4: { bg: "#1e3a4f", color: "#60a5fa" },
+    8: { bg: "#312e81", color: "#a78bfa" },
+    16: { bg: "#4c1d95", color: "#c4b5fd" },
+    32: { bg: "#7c2d12", color: "#fdba74" },
+    64: { bg: "#92400e", color: "#fcd34d" },
+    128: { bg: "#78350f", color: "#fef08a" },
+    256: { bg: "#854d0e", color: "#fef9c3" },
+    512: { bg: "#713f12", color: "#fff" },
+  };
   function applyTileStyle(el, val) {
-    const styles = {
-      2: { bg: "#1e3a2f", color: "#4ade80" },
-      4: { bg: "#1e3a4f", color: "#60a5fa" },
-      8: { bg: "#312e81", color: "#a78bfa" },
-      16: { bg: "#4c1d95", color: "#c4b5fd" },
-      32: { bg: "#7c2d12", color: "#fdba74" },
-      64: { bg: "#92400e", color: "#fcd34d" },
-      128: { bg: "#78350f", color: "#fef08a" },
-      256: { bg: "#854d0e", color: "#fef9c3" },
-      512: { bg: "#713f12", color: "#fff" },
-    };
-    const s = styles[val] || { bg: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#fff" };
+    const s = TILE_STYLES[val] || { bg: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#fff" };
     el.style.background = s.bg;
     el.style.color = s.color;
     el.textContent = val;
+  }
+
+  // ─── Ghost row calculation ─────────────────────────────────────────────────
+  // Returns the visual row (0=top) where the tile will land in column c
+  function ghostRow(c) {
+    const height = cols[c].length;
+    return ROWS - 1 - height; // row 0 = top, ROWS-1 = bottom
   }
 
   // ─── Merge logic ──────────────────────────────────────────────────────────
@@ -569,21 +582,18 @@ icon: "🔢"
       anyMerge = false;
       if (cols[c].length === 0) break;
       const top = cols[c][cols[c].length - 1];
-      // check left
       if (c > 0 && cols[c - 1].length > 0 && cols[c - 1][cols[c - 1].length - 1] === top) {
         cols[c - 1].pop();
         cols[c][cols[c].length - 1] = top * 2;
         score += top * 2;
         mergeCount++;
         anyMerge = true;
-        // check confetti for >= 1024 tile
         if (top * 2 >= 1024 && !confettiFiredFor1024) {
           confettiFiredFor1024 = true;
           launchConfetti();
         }
-        continue; // restart while loop — re-read top
+        continue;
       }
-      // check right (only if no left merge happened this iteration)
       const top2 = cols[c][cols[c].length - 1];
       if (c < COLS - 1 && cols[c + 1].length > 0 && cols[c + 1][cols[c + 1].length - 1] === top2) {
         cols[c + 1].pop();
@@ -595,50 +605,60 @@ icon: "🔢"
           confettiFiredFor1024 = true;
           launchConfetti();
         }
-        // no continue — loop will restart via anyMerge = true
       }
     }
   }
 
   // ─── Drop tile into column ────────────────────────────────────────────────
   function dropTile(c) {
-    if (!gameActive) return;
-    if (cols[c].length >= ROWS) return; // column full
+    if (!gameActive || dropping) return;
+    if (cols[c].length >= ROWS) return;
 
-    confettiFiredFor1024 = false; // reset per-drop so each drop can trigger once
-    cols[c].push(nextVal);
-    doMerges(c);
+    dropping = true;
+    confettiFiredFor1024 = false;
 
-    // Update score display
-    document.getElementById("score").textContent = score;
-
-    // Check / update best
-    if (score > best) {
-      best = score;
-      localStorage.setItem(STORAGE_KEY, best);
-      document.getElementById("best-display").textContent = best;
-      launchConfetti();
+    // Trigger drop animation on the falling tile cell
+    const fallingEl = document.getElementById("falling-row").children[c];
+    if (fallingEl) {
+      fallingEl.classList.remove("active");
+      fallingEl.classList.add("dropping");
+      setTimeout(() => fallingEl.classList.remove("dropping"), 250);
     }
 
-    // Level up every 10 merges
-    const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
-    if (newLevel !== level) {
-      level = newLevel;
-      document.getElementById("level-display").textContent = level;
-    }
+    setTimeout(() => {
+      cols[c].push(currentVal);
+      doMerges(c);
 
-    // Check game over — any column at max height
-    if (cols.some((col) => col.length >= ROWS)) {
-      endGame();
-      return;
-    }
+      document.getElementById("score").textContent = score;
 
-    // Prepare next tile
-    nextVal = nextTileValue();
-    updateNextPreview();
-    selectedCol = Math.min(selectedCol, COLS - 1);
-    renderGrid();
-    renderColBtns();
+      if (score > best) {
+        best = score;
+        localStorage.setItem(STORAGE_KEY, best);
+        document.getElementById("best-display").textContent = best;
+        launchConfetti();
+      }
+
+      const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
+      if (newLevel !== level) {
+        level = newLevel;
+        document.getElementById("level-display").textContent = level;
+      }
+
+      if (cols.some((col) => col.length >= ROWS)) {
+        dropping = false;
+        endGame();
+        return;
+      }
+
+      // Advance: current becomes next, generate new next
+      currentVal = nextVal;
+      nextVal = nextTileValue();
+      updateNextPreview();
+      selectedCol = Math.min(selectedCol, COLS - 1);
+      dropping = false;
+      renderGrid();
+      renderFallingTile();
+    }, 120);
   }
 
   // ─── Game over ────────────────────────────────────────────────────────────
@@ -651,7 +671,7 @@ icon: "🔢"
     document.getElementById("go-title").textContent = "Game Over";
     document.getElementById("go-context").textContent = "A column is full!";
     renderGrid();
-    renderColBtns();
+    renderFallingTile();
     setTimeout(() => {
       document.getElementById("gameover-overlay").style.display = "flex";
     }, 400);
@@ -665,8 +685,10 @@ icon: "🔢"
     mergeCount = 0;
     selectedCol = 3;
     confettiFiredFor1024 = false;
+    dropping = false;
     gameActive = true;
 
+    currentVal = nextTileValue();
     nextVal = nextTileValue();
     updateNextPreview();
 
@@ -677,68 +699,120 @@ icon: "🔢"
     document.getElementById("gameover-overlay").style.display = "none";
 
     renderGrid();
-    renderColBtns();
+    renderFallingTile();
   }
 
   // ─── Next tile preview ────────────────────────────────────────────────────
   function updateNextPreview() {
-    const el = document.getElementById("next-tile");
-    applyTileStyle(el, nextVal);
+    applyTileStyle(document.getElementById("next-tile"), nextVal);
+  }
+
+  // ─── Render falling tile row ──────────────────────────────────────────────
+  function renderFallingTile() {
+    const row = document.getElementById("falling-row");
+    // Build cells if needed
+    if (row.children.length !== COLS) {
+      row.innerHTML = "";
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement("div");
+        cell.className = "falling-cell";
+        row.appendChild(cell);
+      }
+    }
+    for (let c = 0; c < COLS; c++) {
+      const cell = row.children[c];
+      cell.className = "falling-cell";
+      cell.style.background = "transparent";
+      cell.style.color = "transparent";
+      cell.textContent = "";
+      cell.onclick = null;
+    }
+    if (!gameActive) return;
+
+    const activeCell = row.children[selectedCol];
+    activeCell.classList.add("active");
+    applyTileStyle(activeCell, currentVal);
+
+    // Wire click on falling cells to drop
+    for (let c = 0; c < COLS; c++) {
+      const col = c;
+      row.children[c].onclick = () => {
+        selectedCol = col;
+        dropTile(col);
+      };
+    }
   }
 
   // ─── Render grid ──────────────────────────────────────────────────────────
   function renderGrid() {
     const grid = document.getElementById("grid");
-    grid.innerHTML = "";
-    // Rows: row 0 = top visual row (row index 0 in DOM), row ROWS-1 = bottom
+    if (grid.children.length !== ROWS * COLS) {
+      grid.innerHTML = "";
+      for (let row = 0; row < ROWS; row++) {
+        for (let c = 0; c < COLS; c++) {
+          const cell = document.createElement("div");
+          cell.className = "grid-cell";
+          cell.dataset.row = row;
+          cell.dataset.col = c;
+          grid.appendChild(cell);
+        }
+      }
+    }
+
+    const ghostR = gameActive ? cols.map((col) => (col.length < ROWS ? ROWS - 1 - col.length : -1)) : [];
+
+    let idx = 0;
     for (let row = 0; row < ROWS; row++) {
       for (let c = 0; c < COLS; c++) {
-        const cell = document.createElement("div");
-        cell.className = "grid-cell";
-        // Visual row 0 is the top; tile at cols[c][height-1] is the top tile.
-        // The tile at visual row `row` corresponds to data index `(ROWS - 1 - row)`.
+        const cell = grid.children[idx++];
         const dataIdx = ROWS - 1 - row;
         const val = cols[c][dataIdx];
+
+        cell.className = "grid-cell";
+        cell.removeAttribute("data-v");
+        cell.textContent = "";
+        cell.style.background = "";
+        cell.style.color = "";
+        cell.onclick = null;
+
         if (val !== undefined) {
           cell.dataset.v = val;
           cell.textContent = val;
           cell.classList.add("filled");
+        } else if (gameActive && c === selectedCol && row === ghostR[c] && ghostR[c] >= 0) {
+          // Ghost tile shows landing position for selected column
+          cell.dataset.v = currentVal;
+          cell.textContent = currentVal;
+          cell.classList.add("ghost");
+        } else if (gameActive && c === selectedCol) {
+          cell.classList.add("col-hover");
         }
-        grid.appendChild(cell);
-      }
-    }
-  }
 
-  // ─── Render column drop buttons ───────────────────────────────────────────
-  function renderColBtns() {
-    const container = document.getElementById("col-btns");
-    container.innerHTML = "";
-    for (let c = 0; c < COLS; c++) {
-      const btn = document.createElement("button");
-      btn.className = "col-btn" + (gameActive && c === selectedCol ? " selected" : "");
-      btn.textContent = "▼";
-      btn.disabled = !gameActive || cols[c].length >= ROWS;
-      btn.setAttribute("aria-label", `Drop into column ${c + 1}`);
-      const col = c; // capture for closure
-      btn.addEventListener("click", () => {
-        selectedCol = col;
-        dropTile(col);
-      });
-      container.appendChild(btn);
+        // Click anywhere in column to drop
+        if (gameActive) {
+          const col = c;
+          cell.onclick = () => {
+            selectedCol = col;
+            dropTile(col);
+          };
+        }
+      }
     }
   }
 
   // ─── Keyboard controls ────────────────────────────────────────────────────
   document.addEventListener("keydown", (e) => {
-    if (!gameActive) return;
+    if (!gameActive || dropping) return;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       selectedCol = Math.max(0, selectedCol - 1);
-      renderColBtns();
+      renderGrid();
+      renderFallingTile();
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
       selectedCol = Math.min(COLS - 1, selectedCol + 1);
-      renderColBtns();
+      renderGrid();
+      renderFallingTile();
     } else if (e.key === "ArrowDown" || e.key === " " || e.key === "Enter") {
       e.preventDefault();
       dropTile(selectedCol);
@@ -746,11 +820,11 @@ icon: "🔢"
   });
 
   // ─── Init ─────────────────────────────────────────────────────────────────
-  // Show start overlay; render an empty grid behind it
   cols = Array.from({ length: COLS }, () => []);
+  currentVal = 2;
   nextVal = 2;
   updateNextPreview();
   renderGrid();
-  renderColBtns();
+  renderFallingTile();
   document.getElementById("start-overlay").style.display = "flex";
 </script>
