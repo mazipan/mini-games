@@ -544,12 +544,60 @@ icon: "🔢"
   document.getElementById("best-display").textContent = best;
 
   // ─── Tile value generation ────────────────────────────────────────────────
+  // Each pool entry is [value, weight]. Higher levels unlock bigger tiles but
+  // small values are always in the mix (just less probable).
+  const TILE_POOLS = [
+    [[2, 10]], // L1 — only 2s while learning
+    [
+      [2, 8],
+      [4, 2],
+    ], // L2 — mostly 2, occasional 4
+    [
+      [2, 6],
+      [4, 3],
+      [8, 1],
+    ], // L3
+    [
+      [2, 5],
+      [4, 3],
+      [8, 2],
+      [16, 1],
+    ], // L4
+    [
+      [2, 5],
+      [4, 3],
+      [8, 2],
+      [16, 2],
+      [32, 1],
+    ], // L5
+    [
+      [2, 4],
+      [4, 3],
+      [8, 2],
+      [16, 2],
+      [32, 1],
+      [64, 1],
+    ], // L6
+    [
+      [2, 4],
+      [4, 3],
+      [8, 2],
+      [16, 2],
+      [32, 2],
+      [64, 1],
+      [128, 1],
+    ], // L7+
+  ];
+
   function nextTileValue() {
-    const r = Math.random();
-    if (level <= 2) return 2;
-    else if (level <= 4) return r < 0.8 ? 2 : 4;
-    else if (level <= 6) return r < 0.6 ? 2 : r < 0.9 ? 4 : 8;
-    else return r < 0.5 ? 2 : r < 0.8 ? 4 : 8;
+    const pool = TILE_POOLS[Math.min(level - 1, TILE_POOLS.length - 1)];
+    const total = pool.reduce((s, [, w]) => s + w, 0);
+    let pick = Math.random() * total;
+    for (const [val, w] of pool) {
+      pick -= w;
+      if (pick <= 0) return val;
+    }
+    return pool[pool.length - 1][0];
   }
 
   // ─── Tile style helper ────────────────────────────────────────────────────
