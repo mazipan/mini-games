@@ -258,11 +258,11 @@ icon: "👾"
   </ul>
   <h4>Wave Progression</h4>
   <ul>
-    <li><strong>Waves 1–2:</strong> 1–3 aliens, no shooting — learn the basics</li>
-    <li><strong>Waves 3–4:</strong> up to 7 aliens, aliens start shooting back</li>
-    <li><strong>Waves 5–6:</strong> 2-row formations, new alien type appears</li>
-    <li><strong>Waves 7–8:</strong> 3-row formations, another new type</li>
-    <li><strong>Waves 9–10:</strong> 4–5 rows — the full invasion!</li>
+    <li><strong>Waves 1–3:</strong> diagonal corner formation, no shooting — learn the basics</li>
+    <li><strong>Waves 4–5:</strong> larger formations, aliens start shooting back</li>
+    <li><strong>Waves 6–7:</strong> 2-row formations, new alien types appear</li>
+    <li><strong>Waves 8–9:</strong> 3-row formations, another new type</li>
+    <li><strong>Wave 10+:</strong> full invasion grids!</li>
   </ul>
   <h4>Secret alien 👀</h4>
   <p>
@@ -277,8 +277,7 @@ icon: "👾"
   <h4>Gift 🎁</h4>
   <p>
     A 🎁 gift floats across the <strong>middle</strong> of the screen every ~9 seconds. Shoot it to drop a 🎁 token —
-    collect for 8 seconds of double-row shot: two bullets fire side-by-side each burst (+80 pts). Stack it with rapid
-    fire for maximum carnage!
+    collect for 8 seconds of double-row shot (+80 pts).
   </p>
   <h4>Scoring</h4>
   <ul>
@@ -300,7 +299,7 @@ icon: "👾"
   </p>
   <h4>When do aliens start shooting?</h4>
   <p>
-    Aliens don't shoot in waves 1 and 2 — perfect for learning. From wave 3 onward they'll fire back, with increasing
+    Aliens don't shoot in waves 1–3 — perfect for learning. From wave 4 onward they'll fire back, with increasing
     frequency each wave.
   </p>
   <h4>What is the 🛸 mystery UFO?</h4>
@@ -312,48 +311,6 @@ icon: "👾"
 </div>
 
 <script>
-  // ── Confetti ─────────────────────────────────────────────────────────────
-  function launchConfetti() {
-    const canvas = document.createElement("canvas");
-    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
-    document.body.appendChild(canvas);
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
-    const pieces = Array.from({ length: 80 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -10 - Math.random() * 40,
-      r: Math.random() * 6 + 3,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      vx: (Math.random() - 0.5) * 5,
-      vy: Math.random() * 4 + 2,
-      angle: Math.random() * Math.PI * 2,
-      va: (Math.random() - 0.5) * 0.15,
-    }));
-    const start = performance.now();
-    function draw(now) {
-      if (now - start > 3000) {
-        canvas.remove();
-        return;
-      }
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      pieces.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.angle += p.va;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.angle);
-        ctx.fillStyle = p.color;
-        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
-        ctx.restore();
-      });
-      requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(draw);
-  }
-
   // ── Canvas setup ─────────────────────────────────────────────────────────
   const DESIGN = 480;
   const SIZE = Math.min(DESIGN, window.innerWidth - 32);
@@ -376,45 +333,88 @@ icon: "👾"
 
   // ── Wave progression config ───────────────────────────────────────────────
   const WAVE_CONFIGS = [
-    { speed: 0.35, shoot: 0 },
-    { speed: 0.4, shoot: 0 },
-    { speed: 0.48, shoot: 150 },
-    { speed: 0.55, shoot: 130 },
-    { speed: 0.62, shoot: 115 },
-    { speed: 0.7, shoot: 100 },
-    { speed: 0.8, shoot: 90 },
-    { speed: 0.9, shoot: 78 },
-    { speed: 1.0, shoot: 65 },
-    { speed: 1.15, shoot: 55 },
+    { speed: 0.28, shoot: 0 }, // wave 1 — very slow, no shooting
+    { speed: 0.32, shoot: 0 }, // wave 2
+    { speed: 0.36, shoot: 0 }, // wave 3
+    { speed: 0.44, shoot: 170 }, // wave 4
+    { speed: 0.52, shoot: 150 }, // wave 5
+    { speed: 0.6, shoot: 130 }, // wave 6
+    { speed: 0.7, shoot: 115 }, // wave 7
+    { speed: 0.8, shoot: 100 }, // wave 8
+    { speed: 0.92, shoot: 85 }, // wave 9
+    { speed: 1.05, shoot: 70 }, // wave 10
   ];
 
   // 2-D formation masks — 1 = alien present, 0 = gap
   // prettier-ignore
   const FORMATIONS = [
-    [[1]],                                                         // 1 — solo
-    [[1, 1, 1]],                                                   // 2 — row of 3
-    [[1, 1, 1, 1, 1]],                                             // 3 — row of 5
-    [[0, 1, 1, 1, 0],   [1, 1, 1, 1, 1],  [0, 1, 1, 1, 0]],      // 4 — plus / cross
-    [[0, 0, 1, 0, 0],   [0, 1, 1, 1, 0],  [1, 1, 1, 1, 1]],      // 5 — pyramid
-    [[1, 0, 1, 0, 1, 0, 1], [0, 1, 0, 1, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1]], // 6 — checkerboard
-    [[0, 0, 0, 0, 1],   [0, 0, 0, 1, 1],  [0, 0, 1, 1, 1],  [0, 1, 1, 1, 1], [1, 1, 1, 1, 1]], // 7 — staircase
-    [[1, 0, 0, 0, 1],   [0, 1, 0, 1, 0],  [0, 0, 1, 0, 0],  [0, 1, 0, 1, 0], [1, 0, 0, 0, 1]], // 8 — X-shape
-    [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0], [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0], [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0], [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]], // 9 — V-arrow
-    [[1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1]], // 10 — full grid
+    // Wave 1 — diagonal corner, 5 aliens, top-left to bottom-right
+    [[1,0,0,0,0],
+     [0,1,0,0,0],
+     [0,0,1,0,0],
+     [0,0,0,1,0],
+     [0,0,0,0,1]],
+    // Wave 2 — anti-diagonal corner (bottom-left to top-right)
+    [[0,0,0,0,1],
+     [0,0,0,1,0],
+     [0,0,1,0,0],
+     [0,1,0,0,0],
+     [1,0,0,0,0]],
+    // Wave 3 — X shape (two diagonals crossing)
+    [[1,0,0,0,1],
+     [0,1,0,1,0],
+     [0,0,1,0,0],
+     [0,1,0,1,0],
+     [1,0,0,0,1]],
+    // Wave 4 — plus / cross
+    [[0, 0, 1, 0, 0],
+     [0, 1, 1, 1, 0],
+     [1, 1, 1, 1, 1],
+     [0, 1, 1, 1, 0],
+     [0, 0, 1, 0, 0]],
+    // Wave 5 — pyramid
+    [[0, 0, 1, 0, 0],
+     [0, 1, 1, 1, 0],
+     [1, 1, 1, 1, 1]],
+    // Wave 6 — checkerboard
+    [[1, 0, 1, 0, 1, 0, 1],
+     [0, 1, 0, 1, 0, 1, 0],
+     [1, 0, 1, 0, 1, 0, 1]],
+    // Wave 7 — staircase
+    [[0, 0, 0, 0, 1],
+     [0, 0, 0, 1, 1],
+     [0, 0, 1, 1, 1],
+     [0, 1, 1, 1, 1],
+     [1, 1, 1, 1, 1]],
+    // Wave 8 — wide V-arrow
+    [[0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+     [0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0],
+     [0, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0],
+     [0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+     [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0]],
+    // Wave 9 — double staircase
+    [[1,0,0,0,0,0,0,0,0,1],
+     [1,1,0,0,0,0,0,0,1,1],
+     [1,1,1,0,0,0,0,1,1,1],
+     [1,1,1,1,0,0,1,1,1,1]],
+    // Wave 10 — full grid
+    [[1,1,1,1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1,1,1,1],
+     [1,1,1,1,1,1,1,1,1,1,1]],
   ];
 
-  const RANDOM_FORMATIONS = [3, 4, 5, 6, 7, 8]; // indices used for wave > 10
+  const RANDOM_FORMATIONS = [3, 4, 5, 6, 7, 8];
 
   function getFormation(w) {
     if (w <= FORMATIONS.length) return FORMATIONS[w - 1];
     const pick = RANDOM_FORMATIONS[Math.floor(Math.random() * RANDOM_FORMATIONS.length)];
     const mask = FORMATIONS[pick].map((row) => [...row]);
-    // Randomly mirror horizontally for variety
     if (Math.random() < 0.5) mask.forEach((row) => row.reverse());
     return mask;
   }
 
-  // 5 alien types, ordered top-row → bottom-row (hardest → easiest)
   const ALIEN_TYPE_EMOJIS = ["👾", "👽", "🧟", "👻", "🦠"];
   const ALIEN_TYPE_POINTS = [30, 25, 20, 15, 10];
   const MAX_ROWS = 5;
@@ -439,37 +439,41 @@ icon: "👾"
   let score, wave, lives, running, animId, alienShootTimer, frameCount;
   let player, playerBullets, alienBullets, aliens;
   let alienDirX, alienSpeedX, waveCfg;
-  let waveAnnounce = 0; // frames remaining to show wave announcement
+  let waveAnnounce = 0;
   let keys = {};
   let dpadLeft = false,
     dpadRight = false;
 
-  // ── Auto-fire & power-ups ─────────────────────────────────────────────────
-  const FIRE_RATE_NORMAL = 12; // frames between shots (normal)
-  const FIRE_RATE_RAPID = 4; // frames between shots (rapid-fire buff)
-  const RAPID_DURATION = 8000; // ms the rapid-fire buff lasts
-  let rapidFireUntil = 0; // performance.now() deadline; 0 = inactive
+  // Wave transition state
+  let waveCleared = false; // true after all aliens die, waiting before next wave
+  let waveDelayFrames = 0; // countdown before spawning next wave
 
-  // Mystery UFO — flies across the top, drops ⚡ rapid-fire token when shot
-  const UFO_INTERVAL = 720; // frames (~12 s at 60 fps)
+  // Alien reveal (row-by-row intro animation)
+  let waveIntro = false; // true while aliens are sliding into position
+  const SLIDE_SPEED = 7 * S; // px per frame for intro slide
+
+  // ── Auto-fire & power-ups ─────────────────────────────────────────────────
+  const FIRE_RATE_NORMAL = 12;
+  const FIRE_RATE_RAPID = 4;
+  const RAPID_DURATION = 8000;
+  let rapidFireUntil = 0;
+
+  const UFO_INTERVAL = 720;
   const UFO_SPEED = 1.8 * S;
-  let ufo = null; // { x, y, dir }
+  let ufo = null;
   let ufoTimer = 0;
 
-  // Gift — flies across the mid-screen, drops 🎁 double-shot token when shot
-  const GIFT_INTERVAL = 540; // frames (~9 s at 60 fps)
+  const GIFT_INTERVAL = 540;
   const GIFT_SPEED = 1.5 * S;
-  let gift = null; // { x, y, dir }
+  let gift = null;
   let giftTimer = 0;
-  const DOUBLE_DURATION = 8000; // ms
-  const DOUBLE_SPREAD = 10 * S; // side-by-side bullet offset
+  const DOUBLE_DURATION = 8000;
+  const DOUBLE_SPREAD = 10 * S;
   let doubleFireUntil = 0;
 
-  // Falling power-up tokens — type: 'rapid' | 'double'
-  let powerUps = []; // { x, y, type }
+  let powerUps = [];
   let powerUpMsg = 0;
 
-  // Secret aliens — one per wave, different emoji each wave, pulses to hint at its presence
   const SECRET_EMOJIS = ["💀", "🤡", "👹", "😈", "🎃", "🦹", "🤑", "💥"];
   const SECRET_BONUS = 75;
 
@@ -487,7 +491,6 @@ icon: "👾"
     const formationW = numCols * alienW + (numCols - 1) * alienPadX;
     const startX = (gameCanvas.width - formationW) / 2;
 
-    // Count live slots to pick secret index
     const slots = [];
     for (let row = 0; row < numRows; row++)
       for (let col = 0; col < (mask[row].length || 0); col++) if (mask[row][col]) slots.push({ row, col });
@@ -496,14 +499,22 @@ icon: "👾"
     const secretSlot = Math.floor(Math.random() * slots.length);
     const secretEmoji = SECRET_EMOJIS[(wave - 1) % SECRET_EMOJIS.length];
 
+    const maxRow = numRows - 1;
+    const rowH = alienH + alienPadY;
     slots.forEach(({ row, col }, idx) => {
       const typeIdx = Math.min(MAX_ROWS - 1, Math.floor((row / numRows) * MAX_ROWS));
       const isSecret = idx === secretSlot;
+      const targetY = alienOffsetY + row * rowH;
+      // Bottom row (maxRow) starts just above the canvas top (-alienH).
+      // Each row above it starts one rowH further off-screen so they all
+      // travel the same distance and parade in simultaneously, bottom-first.
+      const startY = -alienH - (maxRow - row) * rowH;
       grid.push({
         row,
         col,
         x: startX + col * (alienW + alienPadX),
-        y: alienOffsetY + row * (alienH + alienPadY),
+        y: startY,
+        targetY,
         alive: true,
         emoji: isSecret ? secretEmoji : ALIEN_TYPE_EMOJIS[typeIdx],
         points: ALIEN_TYPE_POINTS[typeIdx],
@@ -539,6 +550,10 @@ icon: "👾"
     alienShootTimer = 0;
     frameCount = 0;
     waveAnnounce = 90;
+    waveCleared = false;
+    waveDelayFrames = 0;
+    waveIntro = true;
+
     ufo = null;
     ufoTimer = 0;
     gift = null;
@@ -560,7 +575,11 @@ icon: "👾"
     alienDirX = 1;
     alienSpeedX = waveCfg.speed;
     alienShootTimer = 0;
-    waveAnnounce = 100;
+    waveAnnounce = 110;
+    waveIntro = true;
+
+    waveCleared = false;
+    waveDelayFrames = 0;
     ufo = null;
     ufoTimer = 0;
     gift = null;
@@ -588,12 +607,14 @@ icon: "👾"
     ctx.fillRect(player.x - playerW / 2, player.y - playerH, playerW, playerH);
     ctx.fillRect(player.x - 4 * S, player.y - playerH - 8 * S, 8 * S, 8 * S);
 
-    // Aliens — rendered as emoji; secret alien pulses in size
+    // Aliens
     const emojiSize = Math.round(Math.min(alienW, alienH) * 0.88);
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const a of aliens) {
       if (!a.alive) continue;
+      // During intro, only draw aliens that have started sliding (y > very top)
+      if (a.y < -alienH) continue;
       if (a.isSecret) {
         const pulse = 1 + Math.sin(frameCount * 0.1) * 0.18;
         ctx.save();
@@ -610,7 +631,7 @@ icon: "👾"
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // Player bullets — colour shows active buffs
+    // Player bullets
     const _now = performance.now();
     const _rapid = _now < rapidFireUntil,
       _dbl = _now < doubleFireUntil;
@@ -621,7 +642,7 @@ icon: "👾"
     ctx.fillStyle = "#f87171";
     for (const b of alienBullets) ctx.fillRect(b.x - BULLET_W / 2, b.y, BULLET_W, BULLET_H);
 
-    // Mystery UFO + Gift — share emoji rendering setup
+    // Mystery UFO + Gift
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = `${Math.round(alienH * 0.9)}px serif`;
@@ -636,7 +657,7 @@ icon: "👾"
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
 
-    // Buff timer bars — rapid fire (yellow) and double shot (pink), stacked
+    // Buff timer bars
     const _buffNow = performance.now();
     const _barW = gameCanvas.width * 0.4;
     const _barH = 5 * S;
@@ -673,6 +694,21 @@ icon: "👾"
       ctx.textAlign = "left";
       ctx.globalAlpha = 1;
     }
+
+    // Wave cleared banner (shown during transition)
+    if (waveCleared && waveDelayFrames > 0) {
+      const alpha = Math.min(1, waveDelayFrames / 20);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#1e293b";
+      const bh = 36 * S;
+      ctx.fillRect(0, gameCanvas.height / 2 - bh / 2, gameCanvas.width, bh);
+      ctx.fillStyle = "#22c55e";
+      ctx.font = `bold ${Math.round(13 * S)}px monospace`;
+      ctx.textAlign = "center";
+      ctx.fillText(`✓ WAVE ${wave} CLEARED`, gameCanvas.width / 2, gameCanvas.height / 2 + 5 * S);
+      ctx.textAlign = "left";
+      ctx.globalAlpha = 1;
+    }
   }
 
   // ── Update ────────────────────────────────────────────────────────────────
@@ -680,13 +716,81 @@ icon: "👾"
     frameCount++;
     if (waveAnnounce > 0) waveAnnounce--;
 
-    const spd = 3 * S;
+    // ── Intro animation: all rows slide in simultaneously, bottom row first ──
+    if (waveIntro) {
+      let allInPlace = true;
+      for (const a of aliens) {
+        if (!a.alive) continue;
+        if (a.y < a.targetY) {
+          a.y = Math.min(a.y + SLIDE_SPEED, a.targetY);
+        }
+        if (a.y < a.targetY) allInPlace = false;
+      }
+      if (allInPlace) waveIntro = false;
 
-    // Player movement
+      // Allow player movement and shooting during intro but skip alien AI
+      const spd = 3 * S;
+      if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
+      if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
+
+      const fireRate = getFireRate();
+      if (frameCount % fireRate === 0 && playerBullets.length < 4) {
+        playerBullets.push({ x: player.x, y: player.y - playerH - 8 * S });
+      }
+      playerBullets = playerBullets.filter((b) => {
+        b.y -= 5 * S;
+        return b.y + BULLET_H > 0;
+      });
+
+      return;
+    }
+
+    // ── Wave cleared: player can still move/collect; wait for tokens to leave ──
+    if (waveCleared) {
+      const spd = 3 * S;
+      if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
+      if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
+
+      // Bullets keep moving
+      playerBullets = playerBullets.filter((b) => {
+        b.y -= 5 * S;
+        return b.y + BULLET_H > 0;
+      });
+
+      // UFO/gift keep moving off screen
+      if (ufo) {
+        ufo.x += UFO_SPEED * ufo.dir;
+        if (ufo.x < -alienW * 2 || ufo.x > gameCanvas.width + alienW * 2) ufo = null;
+      }
+      if (gift) {
+        gift.x += GIFT_SPEED * gift.dir;
+        if (gift.x < -alienW * 2 || gift.x > gameCanvas.width + alienW * 2) gift = null;
+      }
+
+      // Power-ups fall — player can still collect them
+      powerUps = powerUps.filter((p) => {
+        p.y += 1.5 * S;
+        if (Math.abs(p.x - player.x) < playerW && p.y >= player.y - playerH && p.y <= player.y) {
+          if (p.type === "double") doubleFireUntil = performance.now() + DOUBLE_DURATION;
+          else rapidFireUntil = performance.now() + RAPID_DURATION;
+          return false;
+        }
+        return p.y < gameCanvas.height;
+      });
+
+      if (powerUps.length === 0 && ufo === null && gift === null) {
+        waveDelayFrames--;
+        if (waveDelayFrames <= 0) {
+          startNextWave();
+        }
+      }
+      return;
+    }
+
+    const spd = 3 * S;
     if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
     if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
 
-    // Auto-fire (rate depends on rapid buff; count depends on double buff)
     const fireRate = getFireRate();
     const isDouble = performance.now() < doubleFireUntil;
     const maxBullets = performance.now() < rapidFireUntil ? 6 : 4;
@@ -713,7 +817,7 @@ icon: "👾"
       }
     }
 
-    // Mystery UFO (top of screen → ⚡ rapid fire)
+    // Mystery UFO
     if (!demo) {
       ufoTimer++;
       if (!ufo && ufoTimer >= UFO_INTERVAL) {
@@ -727,7 +831,7 @@ icon: "👾"
       }
     }
 
-    // Gift (mid-screen → 🎁 double shot)
+    // Gift
     if (!demo) {
       giftTimer++;
       if (!gift && giftTimer >= GIFT_INTERVAL) {
@@ -770,13 +874,20 @@ icon: "👾"
 
     // Move alien formation
     const alive = liveAliens();
-    if (alive.length === 0) return;
+    if (alive.length === 0) {
+      // All dead — begin wave-cleared delay if not already set
+      if (!waveCleared) {
+        waveCleared = true;
+        waveDelayFrames = 160; // ~2.7s at 60fps
+      }
+      return;
+    }
 
     const speedMult = 1 + (1 - alive.length / Math.max(1, waveAlienCount)) * 1.5;
     const step = alienSpeedX * alienDirX * speedMult;
     for (const a of aliens) if (a.alive) a.x += step;
 
-    // Wall bounce: shift formation back and descend
+    // Wall bounce
     let minX = Infinity,
       maxX = -Infinity;
     for (const a of alive) {
@@ -790,10 +901,11 @@ icon: "👾"
         if (!a.alive) continue;
         a.x += alienDirX * overshoot;
         a.y += alienH * 0.5;
+        a.targetY += alienH * 0.5;
       }
     }
 
-    // Alien shooting (skip if shoot interval is 0 or in demo)
+    // Alien shooting
     if (waveCfg.shoot > 0 && !demo) {
       alienShootTimer++;
       if (alienShootTimer >= waveCfg.shoot) {
@@ -816,7 +928,6 @@ icon: "👾"
           if (score > best) {
             best = score;
             localStorage.setItem(STORAGE_KEY, best);
-            launchConfetti();
             updateHUD();
           }
           gift = null;
@@ -837,7 +948,6 @@ icon: "👾"
           if (score > best) {
             best = score;
             localStorage.setItem(STORAGE_KEY, best);
-            launchConfetti();
             updateHUD();
           }
           ufo = null;
@@ -856,11 +966,10 @@ icon: "👾"
           a.alive = false;
           playerBullets.splice(bi, 1);
           score += a.isSecret ? a.points + SECRET_BONUS : a.points;
-          if (a.isSecret) powerUps.push({ x: a.x + alienW / 2, y: a.y + alienH / 2 });
+          if (a.isSecret) powerUps.push({ x: a.x + alienW / 2, y: a.y + alienH / 2, type: "rapid" });
           if (score > best) {
             best = score;
             localStorage.setItem(STORAGE_KEY, best);
-            launchConfetti();
           }
           updateHUD();
           continue outer;
@@ -883,18 +992,12 @@ icon: "👾"
       }
     }
 
-    // Any alien reaches the ground line → game over
+    // Any alien reaches the ground line
     for (const a of alive) {
       if (a.y + alienH >= gameCanvas.height - 10 * S) {
         gameOver();
         return;
       }
-    }
-
-    // All dead → wave cleared
-    if (liveAliens().length === 0) {
-      launchConfetti();
-      startNextWave();
     }
   }
 
@@ -937,19 +1040,25 @@ icon: "👾"
   function startDemo() {
     running = false;
     cancelAnimationFrame(animId);
-    // Demo uses wave 4 config (1 row × 7) so it looks interesting
     score = 0;
     wave = 4;
     lives = 3;
     playerBullets = [];
     alienBullets = [];
     waveCfg = getWaveCfg(wave);
-    aliens = makeAliens(waveCfg);
+    aliens = makeAliens(getFormation(wave));
+    // Place demo aliens at their target positions immediately (no intro slide)
+    for (const a of aliens) a.y = a.targetY;
     alienDirX = 1;
     alienSpeedX = waveCfg.speed;
     alienShootTimer = 0;
     frameCount = 0;
     waveAnnounce = 0;
+    waveCleared = false;
+    waveIntro = false;
+    ufo = null;
+    gift = null;
+    powerUps = [];
     player = { x: gameCanvas.width / 2, y: gameCanvas.height - 30 * S };
     animId = requestAnimationFrame(demoLoop);
   }

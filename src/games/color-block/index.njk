@@ -67,12 +67,20 @@ icon: "🟦"
     border-radius: 4px;
     background: #1e293b;
     cursor: pointer;
-    touch-action: manipulation;
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
     transition: background 0.05s;
+    box-sizing: border-box;
   }
-  .grid-cell.preview {
-    opacity: 0.55;
+  .grid-cell.preview-valid {
+    opacity: 0.65;
+    outline: 2px solid rgba(255, 255, 255, 0.3);
+    outline-offset: -2px;
+  }
+  .grid-cell.preview-invalid {
+    background: rgba(239, 68, 68, 0.35) !important;
+    outline: 2px solid rgba(239, 68, 68, 0.6);
+    outline-offset: -2px;
   }
   #shelf {
     display: flex;
@@ -92,17 +100,22 @@ icon: "🟦"
     padding: 10px;
     min-width: 72px;
     min-height: 72px;
-    cursor: pointer;
-    touch-action: manipulation;
+    cursor: grab;
+    touch-action: none;
     -webkit-tap-highlight-color: transparent;
     transition:
       border-color 0.15s,
       background 0.15s,
-      opacity 0.15s;
+      opacity 0.15s,
+      transform 0.1s;
+  }
+  .piece-slot:active {
+    cursor: grabbing;
   }
   .piece-slot.selected {
     border-color: #3b82f6;
     background: #1e3a5f;
+    transform: scale(1.05);
   }
   .piece-slot.used {
     opacity: 0.2;
@@ -113,14 +126,33 @@ icon: "🟦"
     border-color: #475569;
     background: #263447;
   }
+  .piece-slot.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
   .piece-mini {
     display: grid;
     gap: 2px;
+    pointer-events: none;
   }
   .piece-mini-cell {
     width: 12px;
     height: 12px;
     border-radius: 2px;
+    pointer-events: none;
+  }
+  /* Drag ghost — follows cursor */
+  #drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    opacity: 0.88;
+    transform: translate(-50%, -50%);
+    background: #1e293b;
+    border: 2px solid #475569;
+    border-radius: 8px;
+    padding: 6px;
   }
   .hint-text {
     font-size: 0.75rem;
@@ -303,13 +335,17 @@ icon: "🟦"
     <div id="start-overlay">
       <span style="font-size: 2.5rem">🟦</span>
       <h2>Color Block</h2>
-      <p>Place shapes on the grid and clear full rows &amp; columns!</p>
+      <p>Tap a piece to select it (blue border), then drag it onto the grid!</p>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
 
   <div id="shelf"></div>
-  <p class="hint-text">Select a piece, then click the grid to place it</p>
+  <p class="hint-text">Tap a piece to select it · then drag onto the grid to place</p>
+</div>
+
+<div id="drag-ghost">
+  <div id="drag-ghost-inner" class="piece-mini"></div>
 </div>
 
 <div id="gameover-overlay" style="display: none">
@@ -338,10 +374,10 @@ icon: "🟦"
   </p>
   <h4>Controls</h4>
   <ul>
-    <li><strong>Click a piece</strong> in the shelf below the grid to select it</li>
-    <li><strong>Hover over the grid</strong> to preview where the piece will land (desktop)</li>
-    <li><strong>Click a grid cell</strong> to place the selected piece with its top-left at that cell</li>
-    <li>On <strong>mobile</strong>: tap a piece to select it, then tap the grid to place it</li>
+    <li><strong>Tap/click a piece</strong> to select it — it gets a blue border</li>
+    <li><strong>Drag the selected piece</strong> onto the grid to place it</li>
+    <li>A <strong>shadow preview</strong> shows where the piece will land — green tint = valid, red = invalid</li>
+    <li>You can also <strong>tap/click a grid cell</strong> to place the selected piece there</li>
   </ul>
   <h4>Scoring</h4>
   <ul>
@@ -362,10 +398,7 @@ icon: "🟦"
     place them in any order.
   </p>
   <h4>What counts as game over?</h4>
-  <p>
-    The game ends when none of the 3 pieces currently on your shelf can fit anywhere on the grid — not even in a single
-    empty cell.
-  </p>
+  <p>The game ends when none of the 3 pieces currently on your shelf can fit anywhere on the grid.</p>
   <h4>Is my best score saved?</h4>
   <p>Yes — your best score is automatically saved in your browser's local storage and persists between sessions.</p>
   {% endcall %}
@@ -418,43 +451,43 @@ icon: "🟦"
   const GRID_SIZE = 10;
 
   const SHAPES = [
-    [[0, 0]], // dot
+    [[0, 0]],
     [
       [0, 0],
       [0, 1],
-    ], // H2
+    ],
     [
       [0, 0],
       [1, 0],
-    ], // V2
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
-    ], // H3
+    ],
     [
       [0, 0],
       [1, 0],
       [2, 0],
-    ], // V3
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
       [0, 3],
-    ], // H4
+    ],
     [
       [0, 0],
       [1, 0],
       [2, 0],
       [3, 0],
-    ], // V4
+    ],
     [
       [0, 0],
       [0, 1],
       [1, 0],
       [1, 1],
-    ], // 2×2
+    ],
     [
       [0, 0],
       [0, 1],
@@ -462,7 +495,7 @@ icon: "🟦"
       [1, 0],
       [1, 1],
       [1, 2],
-    ], // 2×3
+    ],
     [
       [0, 0],
       [0, 1],
@@ -470,87 +503,92 @@ icon: "🟦"
       [1, 1],
       [2, 0],
       [2, 1],
-    ], // 3×2
+    ],
     [
       [0, 0],
       [1, 0],
       [2, 0],
       [2, 1],
-    ], // L
+    ],
     [
       [0, 1],
       [1, 1],
       [2, 0],
       [2, 1],
-    ], // J
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
       [1, 1],
-    ], // T
+    ],
     [
       [0, 0],
       [1, 0],
       [1, 1],
-    ], // corner
+    ],
     [
       [0, 1],
       [1, 0],
       [1, 1],
-    ], // corner2
+    ],
     [
       [0, 0],
       [0, 1],
       [1, 1],
-    ], // corner3
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
       [1, 0],
-    ], // L-wide
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
       [1, 2],
-    ], // J-wide
+    ],
     [
       [0, 0],
       [0, 1],
       [0, 2],
       [1, 2],
       [2, 2],
-    ], // large-L
+    ],
     [
       [0, 0],
       [1, 0],
       [2, 0],
       [2, 1],
       [2, 2],
-    ], // large-J
+    ],
   ];
 
   const COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#a855f7"];
 
   // ── State ─────────────────────────────────────────────────────────────────
-  let grid = []; // 10×10 array: 0 = empty, else color string
+  let grid = [];
   let score = 0;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  let shelfPieces = []; // array of {shape, color}
-  let shelfUsed = [false, false, false]; // which shelf slots have been placed
-  let selectedPiece = null; // index 0-2 or null
-  let hoverCell = null; // {r, c} or null
+  let shelfPieces = [];
+  let shelfUsed = [false, false, false];
+  let selectedPiece = null;
+  let hoverCell = null; // { r, c } — grid cell currently hovered/dragged over
   let gameActive = false;
+
+  // Drag state
+  let isDragging = false;
+  let dragPieceIdx = null;
 
   document.getElementById("best").textContent = best;
 
   // ── Piece generation ──────────────────────────────────────────────────────
   function randomPiece() {
-    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-    const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    return { shape, color };
+    return {
+      shape: SHAPES[Math.floor(Math.random() * SHAPES.length)],
+      color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    };
   }
 
   function generateShelf() {
@@ -566,8 +604,8 @@ icon: "🟦"
 
   function canPlace(shape, r, c) {
     for (const [dr, dc] of shape) {
-      const nr = r + dr;
-      const nc = c + dc;
+      const nr = r + dr,
+        nc = c + dc;
       if (nr < 0 || nr >= GRID_SIZE || nc < 0 || nc >= GRID_SIZE) return false;
       if (grid[nr][nc] !== 0) return false;
     }
@@ -575,23 +613,15 @@ icon: "🟦"
   }
 
   function placePiece(shape, color, r, c) {
-    for (const [dr, dc] of shape) {
-      grid[r + dr][c + dc] = color;
-    }
+    for (const [dr, dc] of shape) grid[r + dr][c + dc] = color;
   }
 
   function clearLines() {
     let bonus = 0;
-    const rowsToClear = [];
-    const colsToClear = [];
-
-    for (let r = 0; r < GRID_SIZE; r++) {
-      if (grid[r].every((cell) => cell !== 0)) rowsToClear.push(r);
-    }
-    for (let c = 0; c < GRID_SIZE; c++) {
-      if (grid.every((row) => row[c] !== 0)) colsToClear.push(c);
-    }
-
+    const rowsToClear = [],
+      colsToClear = [];
+    for (let r = 0; r < GRID_SIZE; r++) if (grid[r].every((cell) => cell !== 0)) rowsToClear.push(r);
+    for (let c = 0; c < GRID_SIZE; c++) if (grid.every((row) => row[c] !== 0)) colsToClear.push(c);
     for (const r of rowsToClear) {
       for (let c = 0; c < GRID_SIZE; c++) grid[r][c] = 0;
       bonus += 10;
@@ -600,55 +630,30 @@ icon: "🟦"
       for (let r = 0; r < GRID_SIZE; r++) grid[r][c] = 0;
       bonus += 10;
     }
-
     return bonus;
   }
 
   // ── Game-over check ───────────────────────────────────────────────────────
   function pieceCanFitAnywhere(shape) {
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        if (canPlace(shape, r, c)) return true;
-      }
-    }
+    for (let r = 0; r < GRID_SIZE; r++) for (let c = 0; c < GRID_SIZE; c++) if (canPlace(shape, r, c)) return true;
     return false;
   }
 
   function isGameOver() {
-    for (let i = 0; i < 3; i++) {
-      if (!shelfUsed[i] && pieceCanFitAnywhere(shelfPieces[i].shape)) return false;
-    }
+    for (let i = 0; i < 3; i++) if (!shelfUsed[i] && pieceCanFitAnywhere(shelfPieces[i].shape)) return false;
     return true;
   }
 
-  // ── Start / new game ──────────────────────────────────────────────────────
-  function startGame() {
-    grid = emptyGrid();
-    score = 0;
-    gameActive = true;
-    selectedPiece = null;
-    hoverCell = null;
-    generateShelf();
-    document.getElementById("score").textContent = 0;
-    document.getElementById("start-overlay").style.display = "none";
-    document.getElementById("gameover-overlay").style.display = "none";
-    render();
-  }
-
-  // ── Placement handler ─────────────────────────────────────────────────────
-  function handleCellClick(r, c) {
+  // ── Placement ─────────────────────────────────────────────────────────────
+  function commitPlace(pieceIdx, r, c) {
     if (!gameActive) return;
-    if (selectedPiece === null) return;
-    const { shape, color } = shelfPieces[selectedPiece];
-    if (!canPlace(shape, r, c)) return;
+    const { shape, color } = shelfPieces[pieceIdx];
+    if (!canPlace(shape, r, c)) return false;
 
-    // Place the piece
     placePiece(shape, color, r, c);
-    const cellsPlaced = shape.length;
     const bonus = clearLines();
-    score += cellsPlaced + bonus;
+    score += shape.length + bonus;
 
-    // Update best
     if (score > best) {
       best = score;
       localStorage.setItem(STORAGE_KEY, best);
@@ -657,22 +662,23 @@ icon: "🟦"
     }
     document.getElementById("score").textContent = score;
 
-    shelfUsed[selectedPiece] = true;
+    shelfUsed[pieceIdx] = true;
     selectedPiece = null;
     hoverCell = null;
 
-    // If all 3 placed, refresh shelf
-    if (shelfUsed.every((u) => u)) {
-      generateShelf();
-    }
-
-    // Check game over after shelf might have been refreshed
+    if (shelfUsed.every((u) => u)) generateShelf();
     if (isGameOver()) {
       endGame();
-      return;
+      return true;
     }
-
     render();
+    return true;
+  }
+
+  function handleCellClick(r, c) {
+    if (!gameActive || isDragging) return;
+    if (selectedPiece === null) return;
+    commitPlace(selectedPiece, r, c);
   }
 
   function endGame() {
@@ -686,81 +692,80 @@ icon: "🟦"
     }, 400);
   }
 
-  // ── Rendering ─────────────────────────────────────────────────────────────
-  function getPreviewCells() {
-    if (selectedPiece === null || hoverCell === null) return new Set();
-    const { shape } = shelfPieces[selectedPiece];
-    const { r, c } = hoverCell;
-    if (!canPlace(shape, r, c)) return new Set();
-    const cells = new Set();
-    for (const [dr, dc] of shape) cells.add(`${r + dr},${c + dc}`);
-    return cells;
+  // ── Start ─────────────────────────────────────────────────────────────────
+  function startGame() {
+    grid = emptyGrid();
+    score = 0;
+    gameActive = true;
+    selectedPiece = null;
+    hoverCell = null;
+    isDragging = false;
+    dragPieceIdx = null;
+    dragRafPending = false;
+    dragWasStarted = false;
+    hideDragGhost();
+    generateShelf();
+    document.getElementById("score").textContent = 0;
+    document.getElementById("start-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    render();
   }
 
-  function getPreviewColor() {
-    if (selectedPiece === null) return null;
-    return shelfPieces[selectedPiece].color;
+  // ── Drag ghost ────────────────────────────────────────────────────────────
+  const dragGhostEl = document.getElementById("drag-ghost");
+  const dragGhostInner = document.getElementById("drag-ghost-inner");
+  let dragRafPending = false;
+  let dragWasStarted = false; // suppresses the click that fires after a mousedown-drag
+
+  function showDragGhost(pieceIdx, clientX, clientY) {
+    const { shape, color } = shelfPieces[pieceIdx];
+    const { rows, cols } = getPieceBoundingBox(shape);
+    const cellSet = new Set(shape.map(([dr, dc]) => `${dr},${dc}`));
+
+    dragGhostInner.style.gridTemplateColumns = `repeat(${cols}, 14px)`;
+    dragGhostInner.style.gridTemplateRows = `repeat(${rows}, 14px)`;
+    dragGhostInner.innerHTML = "";
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = document.createElement("div");
+        cell.className = "piece-mini-cell";
+        cell.style.width = "14px";
+        cell.style.height = "14px";
+        cell.style.background = cellSet.has(`${r},${c}`) ? color : "transparent";
+        dragGhostInner.appendChild(cell);
+      }
+    }
+    dragGhostEl.style.display = "block";
+    moveDragGhost(clientX, clientY);
   }
 
-  function render() {
-    renderGrid();
-    renderShelf();
+  function moveDragGhost(clientX, clientY) {
+    dragGhostEl.style.left = clientX + "px";
+    dragGhostEl.style.top = clientY + "px";
   }
 
-  function renderGrid() {
+  function hideDragGhost() {
+    dragGhostEl.style.display = "none";
+  }
+
+  // ── Grid cell hit-test ────────────────────────────────────────────────────
+  function getCellFromPoint(clientX, clientY) {
+    // Use bounding-rect math — no DOM visibility toggle, no reflow
     const gridEl = document.getElementById("grid");
-    const previewCells = getPreviewCells();
-    const previewColor = getPreviewColor();
-
-    // Build cells array if not already built (first render)
-    if (gridEl.children.length !== GRID_SIZE * GRID_SIZE) {
-      gridEl.innerHTML = "";
-      for (let r = 0; r < GRID_SIZE; r++) {
-        for (let c = 0; c < GRID_SIZE; c++) {
-          const cell = document.createElement("div");
-          cell.className = "grid-cell";
-          cell.dataset.r = r;
-          cell.dataset.c = c;
-          cell.addEventListener("click", () => handleCellClick(r, c));
-          cell.addEventListener("mouseenter", () => {
-            if (!gameActive || selectedPiece === null) return;
-            hoverCell = { r, c };
-            renderGrid();
-          });
-          cell.addEventListener("mouseleave", () => {
-            if (!gameActive || selectedPiece === null) return;
-            hoverCell = null;
-            renderGrid();
-          });
-          gridEl.appendChild(cell);
-        }
-      }
-    }
-
-    // Update cell visuals
-    const cells = gridEl.children;
-    let idx = 0;
-    for (let r = 0; r < GRID_SIZE; r++) {
-      for (let c = 0; c < GRID_SIZE; c++) {
-        const cell = cells[idx++];
-        const key = `${r},${c}`;
-        if (grid[r][c] !== 0) {
-          // Filled cell
-          cell.style.background = grid[r][c];
-          cell.classList.remove("preview");
-        } else if (previewCells.has(key)) {
-          // Preview cell
-          cell.style.background = previewColor;
-          cell.classList.add("preview");
-        } else {
-          // Empty cell
-          cell.style.background = "#1e293b";
-          cell.classList.remove("preview");
-        }
-      }
-    }
+    const rect = gridEl.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+    // grid: padding 6px, gap 3px, 10 cols/rows
+    const innerX = clientX - rect.left - 6;
+    const innerY = clientY - rect.top - 6;
+    const cellW = (rect.width - 12 - 3 * 9) / 10;
+    const cellH = (rect.height - 12 - 3 * 9) / 10;
+    const c = Math.floor(innerX / (cellW + 3));
+    const r = Math.floor(innerY / (cellH + 3));
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return null;
+    return { r, c };
   }
 
+  // ── Rendering ─────────────────────────────────────────────────────────────
   function getPieceBoundingBox(shape) {
     let maxR = 0,
       maxC = 0;
@@ -771,35 +776,142 @@ icon: "🟦"
     return { rows: maxR + 1, cols: maxC + 1 };
   }
 
+  function getActivePiece() {
+    if (isDragging && dragPieceIdx !== null) return shelfPieces[dragPieceIdx];
+    if (selectedPiece !== null) return shelfPieces[selectedPiece];
+    return null;
+  }
+
+  function renderGrid() {
+    const gridEl = document.getElementById("grid");
+    if (gridEl.children.length !== GRID_SIZE * GRID_SIZE) {
+      gridEl.innerHTML = "";
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const cell = document.createElement("div");
+          cell.className = "grid-cell";
+          cell.dataset.r = r;
+          cell.dataset.c = c;
+          cell.addEventListener("click", () => handleCellClick(r, c));
+          cell.addEventListener("mouseenter", () => {
+            if (!gameActive || isDragging) return;
+            if (selectedPiece === null) return;
+            hoverCell = { r, c };
+            renderGrid();
+          });
+          cell.addEventListener("mouseleave", () => {
+            if (!gameActive || isDragging) return;
+            if (selectedPiece === null) return;
+            hoverCell = null;
+            renderGrid();
+          });
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    // Compute preview
+    const piece = getActivePiece();
+    const previewValid = new Set();
+    const previewInvalid = new Set();
+
+    if (piece && hoverCell) {
+      const { r, c } = hoverCell;
+      const valid = canPlace(piece.shape, r, c);
+      for (const [dr, dc] of piece.shape) {
+        const nr = r + dr,
+          nc = c + dc;
+        if (nr >= 0 && nr < GRID_SIZE && nc >= 0 && nc < GRID_SIZE) {
+          (valid ? previewValid : previewInvalid).add(`${nr},${nc}`);
+        }
+      }
+      // Also mark out-of-bounds cells as invalid signal (just color indicator)
+      if (!valid) {
+        // show the reachable cells as invalid, rest already covered
+      }
+    }
+
+    const cells = gridEl.children;
+    let idx = 0;
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        const cell = cells[idx++];
+        const key = `${r},${c}`;
+        cell.className = "grid-cell";
+        cell.style.outline = "";
+
+        if (grid[r][c] !== 0) {
+          cell.style.background = grid[r][c];
+        } else if (previewValid.has(key)) {
+          cell.style.background = piece.color;
+          cell.classList.add("preview-valid");
+        } else if (previewInvalid.has(key)) {
+          cell.style.background = "";
+          cell.classList.add("preview-invalid");
+        } else {
+          cell.style.background = "#1e293b";
+        }
+      }
+    }
+  }
+
   function renderShelf() {
     const shelfEl = document.getElementById("shelf");
     shelfEl.innerHTML = "";
-
     for (let i = 0; i < 3; i++) {
       const { shape, color } = shelfPieces[i];
       const used = shelfUsed[i];
       const isSelected = selectedPiece === i;
+      const draggingThis = isDragging && dragPieceIdx === i;
       const { rows, cols } = getPieceBoundingBox(shape);
-
-      // Build a set for fast lookup
       const cellSet = new Set(shape.map(([dr, dc]) => `${dr},${dc}`));
 
       const wrapper = document.createElement("div");
-      wrapper.className = "piece-slot" + (used ? " used" : "") + (isSelected ? " selected" : "");
+      let cls = "piece-slot";
+      if (used) cls += " used";
+      else if (draggingThis) cls += " dragging";
+      else if (isSelected) cls += " selected";
+      wrapper.className = cls;
+
       if (!used) {
-        wrapper.addEventListener("click", () => {
+        // Tap/click to select — shows blue border; drag starts only after selection
+        wrapper.addEventListener("click", (e) => {
           if (!gameActive) return;
+          if (dragWasStarted) {
+            dragWasStarted = false;
+            return; // swallow the click that fires after a mousedown-drag
+          }
           selectedPiece = selectedPiece === i ? null : i;
           hoverCell = null;
           render();
         });
+
+        // Mouse: only begin drag when this piece is already selected (has blue border)
+        wrapper.addEventListener("mousedown", (e) => {
+          if (!gameActive || selectedPiece !== i) return;
+          e.preventDefault();
+          dragWasStarted = true;
+          startDrag(i, e.clientX, e.clientY);
+        });
+
+        // Touch: only begin drag when this piece is already selected
+        wrapper.addEventListener(
+          "touchstart",
+          (e) => {
+            if (!gameActive || selectedPiece !== i) return;
+            e.preventDefault();
+            const t = e.touches[0];
+            dragWasStarted = true;
+            startDrag(i, t.clientX, t.clientY);
+          },
+          { passive: false }
+        );
       }
 
       const miniGrid = document.createElement("div");
       miniGrid.className = "piece-mini";
       miniGrid.style.gridTemplateColumns = `repeat(${cols}, 12px)`;
       miniGrid.style.gridTemplateRows = `repeat(${rows}, 12px)`;
-
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const miniCell = document.createElement("div");
@@ -808,19 +920,109 @@ icon: "🟦"
           miniGrid.appendChild(miniCell);
         }
       }
-
       wrapper.appendChild(miniGrid);
       shelfEl.appendChild(wrapper);
     }
   }
 
+  function render() {
+    renderGrid();
+    renderShelf();
+  }
+
+  // ── Drag logic ────────────────────────────────────────────────────────────
+  function startDrag(pieceIdx, clientX, clientY) {
+    isDragging = true;
+    dragPieceIdx = pieceIdx;
+    selectedPiece = pieceIdx; // also select for fallback
+    hoverCell = null;
+    showDragGhost(pieceIdx, clientX, clientY);
+    renderShelf();
+  }
+
+  function onDragMove(clientX, clientY) {
+    if (!isDragging) return;
+    moveDragGhost(clientX, clientY);
+    const cell = getCellFromPoint(clientX, clientY);
+    const prev = hoverCell;
+    hoverCell = cell;
+    // Throttle grid re-render to one per animation frame
+    if (
+      !dragRafPending &&
+      ((prev && cell && (prev.r !== cell.r || prev.c !== cell.c)) || (prev === null) !== (cell === null))
+    ) {
+      dragRafPending = true;
+      requestAnimationFrame(() => {
+        dragRafPending = false;
+        renderGrid();
+      });
+    }
+  }
+
+  function onDragEnd(clientX, clientY) {
+    if (!isDragging) return;
+    const cell = getCellFromPoint(clientX, clientY);
+    hideDragGhost();
+    isDragging = false;
+
+    if (cell) {
+      const placed = commitPlace(dragPieceIdx, cell.r, cell.c);
+      if (!placed) {
+        // Invalid drop — keep piece selected so user can try again
+        selectedPiece = dragPieceIdx;
+      }
+    }
+    // else dropped outside grid — keep selected
+
+    dragPieceIdx = null;
+    hoverCell = null;
+    render();
+  }
+
+  // Mouse events on document
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) onDragMove(e.clientX, e.clientY);
+  });
+  document.addEventListener("mouseup", (e) => {
+    if (isDragging) onDragEnd(e.clientX, e.clientY);
+  });
+
+  // Touch events on document
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const t = e.touches[0];
+      onDragMove(t.clientX, t.clientY);
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      const t = e.changedTouches[0];
+      onDragEnd(t.clientX, t.clientY);
+    },
+    { passive: false }
+  );
+
+  document.addEventListener("touchcancel", (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    dragPieceIdx = null;
+    dragWasStarted = false;
+    hoverCell = null;
+    hideDragGhost();
+    render();
+  });
+
   // ── Init ──────────────────────────────────────────────────────────────────
-  // Build the grid DOM on load so the board is visible behind the start overlay.
-  // Touch taps use the existing click listeners — touch-action:manipulation
-  // removes the 300ms delay so taps feel instant on mobile.
   grid = emptyGrid();
   generateShelf();
   renderGrid();
   renderShelf();
-  // start-overlay is visible by default (no display:none in HTML)
 </script>
