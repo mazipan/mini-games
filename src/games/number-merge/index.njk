@@ -509,7 +509,7 @@ icon: "🔢"
   const ROWS = 8;
   const COLS = 7;
   const STORAGE_KEY = "mini-number-merge-best";
-  const FALL_SPEED_MS = 500; // ms per auto-fall step
+  const FALL_SPEED_MS = 800; // ms per auto-fall step
 
   // ─── State ────────────────────────────────────────────────────────────────
   let cols; // cols[c] = array of tile values, index 0 = bottom
@@ -562,34 +562,51 @@ icon: "🔢"
   }
 
   // ─── Merge logic ──────────────────────────────────────────────────────────
-  function doMerges(c) {
+  // Cascades until no more merges exist anywhere on the board.
+  // Vertical: two equal tiles stacked in the same column merge (lower doubles).
+  // Horizontal: equal tiles at the same visual row in adjacent columns merge
+  //   (left tile consumed into right — enables chains like 2 2 4 → 4 4 → 8).
+  function recordMerge(val) {
+    score += val;
+    mergeCount++;
+    if (val >= 1024 && !confettiFiredFor1024) {
+      confettiFiredFor1024 = true;
+      launchConfetti();
+    }
+  }
+
+  function doMerges() {
     let anyMerge = true;
     while (anyMerge) {
       anyMerge = false;
-      if (cols[c].length === 0) break;
-      const top = cols[c][cols[c].length - 1];
-      if (c > 0 && cols[c - 1].length > 0 && cols[c - 1][cols[c - 1].length - 1] === top) {
-        cols[c - 1].pop();
-        cols[c][cols[c].length - 1] = top * 2;
-        score += top * 2;
-        mergeCount++;
-        anyMerge = true;
-        if (top * 2 >= 1024 && !confettiFiredFor1024) {
-          confettiFiredFor1024 = true;
-          launchConfetti();
+
+      // 1. Vertical: scan each column top-down for adjacent equal pair
+      vertLoop: for (let c = 0; c < COLS; c++) {
+        for (let i = cols[c].length - 1; i >= 1; i--) {
+          if (cols[c][i] === cols[c][i - 1]) {
+            const val = cols[c][i - 1] * 2;
+            cols[c].splice(i - 1, 2, val);
+            recordMerge(val);
+            anyMerge = true;
+            break vertLoop;
+          }
         }
-        continue;
       }
-      const top2 = cols[c][cols[c].length - 1];
-      if (c < COLS - 1 && cols[c + 1].length > 0 && cols[c + 1][cols[c + 1].length - 1] === top2) {
-        cols[c + 1].pop();
-        cols[c][cols[c].length - 1] = top2 * 2;
-        score += top2 * 2;
-        mergeCount++;
-        anyMerge = true;
-        if (top2 * 2 >= 1024 && !confettiFiredFor1024) {
-          confettiFiredFor1024 = true;
-          launchConfetti();
+      if (anyMerge) continue;
+
+      // 2. Horizontal: equal tiles at same stack index in adjacent columns
+      //    Left tile removed, right tile doubles (drives left-to-right chains)
+      horizLoop: for (let c = 0; c < COLS - 1; c++) {
+        const minH = Math.min(cols[c].length, cols[c + 1].length);
+        for (let i = minH - 1; i >= 0; i--) {
+          if (cols[c][i] === cols[c + 1][i]) {
+            const val = cols[c][i] * 2;
+            cols[c].splice(i, 1);
+            cols[c + 1][i] = val;
+            recordMerge(val);
+            anyMerge = true;
+            break horizLoop;
+          }
         }
       }
     }
@@ -625,7 +642,7 @@ icon: "🔢"
     if (!gameActive) return;
     confettiFiredFor1024 = false;
     cols[selectedCol].push(currentVal);
-    doMerges(selectedCol);
+    doMerges();
 
     document.getElementById("score").textContent = score;
 
