@@ -14,7 +14,7 @@ module.exports = [
     description: "Beat the dealer — get as close to 21 as possible without going bust!",
     category: "board",
     difficulty: "medium",
-    icon: "🂾",
+    icon: "🃏",
     tags: ["cards", "casino", "classic"],
   },
   {

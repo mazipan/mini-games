@@ -8,40 +8,61 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 
 ## Games
 
-| Game            | Category | Difficulty |
-| --------------- | -------- | ---------- |
-| 🟦 Tetris       | Arcade   | Medium     |
-| 🏓 Pong         | Arcade   | Easy       |
-| 🐦 Flappy Bird  | Arcade   | Easy       |
-| 🐍 Snake        | Arcade   | Easy       |
-| 🧱 Breakout     | Arcade   | Medium     |
-| 🔢 2048         | Puzzle   | Medium     |
-| 💣 Minesweeper  | Puzzle   | Hard       |
-| ⭕ Tic-Tac-Toe  | Board    | Easy       |
-| 🃏 Memory Match | Board    | Easy       |
-| 🔴 Connect Four | Board    | Medium     |
-| 🪨 Mancala      | Board    | Medium     |
-| 🔢 Sudoku       | Puzzle   | Hard       |
-| 🦔 Whack-a-Mole | Arcade   | Easy       |
-| 🪢 Hangman      | Word     | Easy       |
+### 🕹️ Arcade
+
+| Game              | Difficulty |
+| ----------------- | ---------- |
+| 🐦 Flappy Bird    | Easy       |
+| 🏓 Pong           | Easy       |
+| 🐍 Snake          | Easy       |
+| 🦔 Whack-a-Mole   | Easy       |
+| 🧱 Breakout       | Medium     |
+| 🟦 Tetris         | Medium     |
+| 👾 Space Invaders | Hard       |
+
+### 🧩 Puzzle
+
+| Game              | Difficulty |
+| ----------------- | ---------- |
+| 🔢 2048           | Medium     |
+| 🔲 Sliding Puzzle | Medium     |
+| 💣 Minesweeper    | Hard       |
+| 🔢 Sudoku         | Hard       |
+
+### ♟️ Board
+
+| Game            | Difficulty |
+| --------------- | ---------- |
+| ⭕ Tic-Tac-Toe  | Easy       |
+| 🃏 Memory Match | Easy       |
+| 🃏 Blackjack    | Medium     |
+| 🔴 Connect Four | Medium     |
+| 🪨 Mancala      | Medium     |
+
+### 🔤 Word
+
+| Game       | Difficulty |
+| ---------- | ---------- |
+| 🪢 Hangman | Easy       |
 
 ## Tech Stack
 
-- **Eleventy 2.x** — static site generator
+- **Eleventy 3.x** — static site generator
 - **Nunjucks** — templates and layouts
-- **Tailwind CSS v3** — utility-first styling
-- **PostCSS + Autoprefixer** — CSS pipeline
-- **Prettier** — code formatting (enforced via Husky pre-commit hooks)
+- **Tailwind CSS v4** — utility-first styling
+- **PostCSS + @tailwindcss/postcss** — CSS pipeline
+- **Prettier** — code formatting (enforced via Lefthook pre-commit hooks)
 - **Commitlint** — conventional commit enforcement
+- **Bun** — package manager and script runner
 
 ## Getting Started
 
-Requires Node.js >= 24.
+Requires [Bun](https://bun.sh) >= 1.3.12.
 
 ```bash
-npm install
-npm run dev     # start dev server at localhost:8080
-npm run build   # production build to _site/
+bun install
+bun run dev     # start dev server at localhost:8080
+bun run build   # production build to _site/
 ```
 
 ## Contributing
