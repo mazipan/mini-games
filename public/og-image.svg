@@ -1,1 +1,50 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><defs><linearGradient id="accent" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#4f46e5"/></linearGradient><radialGradient id="glow1" cx=".85" cy=".2" r=".55"><stop offset="0" stop-color="#7c3aed" stop-opacity=".35"/><stop offset="1" stop-color="#7c3aed" stop-opacity="0"/></radialGradient><radialGradient id="glow2" cx=".1" cy=".95" r=".5"><stop offset="0" stop-color="#4f46e5" stop-opacity=".25"/><stop offset="1" stop-color="#4f46e5" stop-opacity="0"/></radialGradient></defs><rect width="1200" height="630" fill="#0f172a"/><rect width="1200" height="630" fill="url(#glow1)"/><rect width="1200" height="630" fill="url(#glow2)"/><g fill="none" stroke="#1e293b" stroke-width="1" opacity=".5"><path d="M0 100 H1200 M0 200 H1200 M0 300 H1200 M0 400 H1200 M0 500 H1200"/><path d="M100 0 V630 M200 0 V630 M300 0 V630 M400 0 V630 M500 0 V630 M600 0 V630 M700 0 V630 M800 0 V630 M900 0 V630 M1000 0 V630 M1100 0 V630"/></g><rect width="72" height="6" x="80" y="170" fill="url(#accent)" rx="3"/><text x="80" y="300" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="800">Mini Games</text><text x="80" y="375" fill="#94a3b8" font-family="Arial, Helvetica, sans-serif" font-size="38">Free browser-based games. No login required.</text><g font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="500"><rect width="140" height="48" x="80" y="430" fill="#1e293b" stroke="#334155" rx="24"/><text x="150" y="461" fill="#c4b5fd" text-anchor="middle">Arcade</text><rect width="140" height="48" x="238" y="430" fill="#1e293b" stroke="#334155" rx="24"/><text x="308" y="461" fill="#6ee7b7" text-anchor="middle">Puzzle</text><rect width="140" height="48" x="396" y="430" fill="#1e293b" stroke="#334155" rx="24"/><text x="466" y="461" fill="#fcd34d" text-anchor="middle">Board</text><rect width="140" height="48" x="554" y="430" fill="#1e293b" stroke="#334155" rx="24"/><text x="624" y="461" fill="#7dd3fc" text-anchor="middle">Word</text></g><text x="80" y="568" fill="#7c3aed" font-family="Courier New, monospace" font-size="24" font-weight="500">mini-games.mazipan.space</text><g opacity=".85"><circle cx="1020" cy="490" r="100" fill="url(#accent)" opacity=".55"/><circle cx="1090" cy="410" r="60" fill="url(#accent)" opacity=".45"/><circle cx="940" cy="440" r="36" fill="url(#accent)" opacity=".4"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#c084fc"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0.85" cy="0.2" r="0.55">
+      <stop offset="0" stop-color="#c084fc" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#c084fc" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0.1" cy="0.95" r="0.5">
+      <stop offset="0" stop-color="#facc15" stop-opacity="0.25"/>
+      <stop offset="1" stop-color="#facc15" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="#0f172a"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <g stroke="#1e293b" stroke-width="1" opacity="0.5" fill="none">
+    <path d="M0 100 H1200 M0 200 H1200 M0 300 H1200 M0 400 H1200 M0 500 H1200"/>
+    <path d="M100 0 V630 M200 0 V630 M300 0 V630 M400 0 V630 M500 0 V630 M600 0 V630 M700 0 V630 M800 0 V630 M900 0 V630 M1000 0 V630 M1100 0 V630"/>
+  </g>
+
+  <rect x="80" y="170" width="72" height="6" rx="3" fill="url(#accent)"/>
+
+  <text x="80" y="300" font-family="Arial, Helvetica, sans-serif" font-size="108" font-weight="800" fill="#ffffff">Mini Games</text>
+  <text x="80" y="375" font-family="Arial, Helvetica, sans-serif" font-size="38" fill="#94a3b8">Free browser-based games. No login required.</text>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="500">
+    <rect x="80" y="430" width="140" height="48" rx="24" fill="#1e293b" stroke="#334155"/>
+    <text x="150" y="461" text-anchor="middle" fill="#e9d5ff">Arcade</text>
+    <rect x="238" y="430" width="140" height="48" rx="24" fill="#1e293b" stroke="#334155"/>
+    <text x="308" y="461" text-anchor="middle" fill="#6ee7b7">Puzzle</text>
+    <rect x="396" y="430" width="140" height="48" rx="24" fill="#1e293b" stroke="#334155"/>
+    <text x="466" y="461" text-anchor="middle" fill="#fcd34d">Board</text>
+    <rect x="554" y="430" width="140" height="48" rx="24" fill="#1e293b" stroke="#334155"/>
+    <text x="624" y="461" text-anchor="middle" fill="#7dd3fc">Word</text>
+  </g>
+
+  <text x="80" y="568" font-family="Courier New, monospace" font-size="24" font-weight="500" fill="url(#accent)">games.mazipan.space</text>
+
+  <g opacity="0.85">
+    <polygon points="1150,470 1105,548 1015,548 970,470 1015,392 1105,392" fill="none" stroke="url(#accent)" stroke-width="3" opacity="0.6"/>
+    <polygon points="1018,282 1018,338 970,365 922,338 922,282 970,255" fill="url(#accent)" opacity="0.2"/>
+    <polygon points="1140,255 1175,290 1140,325 1105,290" fill="none" stroke="url(#accent)" stroke-width="2.5" opacity="0.7"/>
+    <polygon points="913,410 899,434 871,434 857,410 871,386 899,386" fill="url(#accent)" opacity="0.35"/>
+  </g>
+</svg>
