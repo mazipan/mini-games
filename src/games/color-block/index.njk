@@ -335,13 +335,13 @@ icon: "🟦"
     <div id="start-overlay">
       <span style="font-size: 2.5rem">🟦</span>
       <h2>Color Block</h2>
-      <p>Drag pieces onto the grid, or tap to select then tap to place!</p>
+      <p>Tap a piece to select it (blue border), then drag it onto the grid!</p>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
 
   <div id="shelf"></div>
-  <p class="hint-text">Drag a piece onto the grid — or tap to select, then tap to place</p>
+  <p class="hint-text">Tap a piece to select it · then drag onto the grid to place</p>
 </div>
 
 <div id="drag-ghost">
@@ -374,12 +374,10 @@ icon: "🟦"
   </p>
   <h4>Controls</h4>
   <ul>
-    <li><strong>Drag a piece</strong> from the shelf onto the grid to place it</li>
+    <li><strong>Tap/click a piece</strong> to select it — it gets a blue border</li>
+    <li><strong>Drag the selected piece</strong> onto the grid to place it</li>
     <li>A <strong>shadow preview</strong> shows where the piece will land — green tint = valid, red = invalid</li>
-    <li>
-      Alternatively: <strong>tap/click a piece</strong> to select it, then <strong>tap/click the grid</strong> to place
-      it
-    </li>
+    <li>You can also <strong>tap/click a grid cell</strong> to place the selected piece there</li>
   </ul>
   <h4>Scoring</h4>
   <ul>
@@ -703,6 +701,8 @@ icon: "🟦"
     hoverCell = null;
     isDragging = false;
     dragPieceIdx = null;
+    dragRafPending = false;
+    dragWasStarted = false;
     hideDragGhost();
     generateShelf();
     document.getElementById("score").textContent = 0;
@@ -714,6 +714,8 @@ icon: "🟦"
   // ── Drag ghost ────────────────────────────────────────────────────────────
   const dragGhostEl = document.getElementById("drag-ghost");
   const dragGhostInner = document.getElementById("drag-ghost-inner");
+  let dragRafPending = false;
+  let dragWasStarted = false; // suppresses the click that fires after a mousedown-drag
 
   function showDragGhost(pieceIdx, clientX, clientY) {
     const { shape, color } = shelfPieces[pieceIdx];
@@ -748,16 +750,18 @@ icon: "🟦"
 
   // ── Grid cell hit-test ────────────────────────────────────────────────────
   function getCellFromPoint(clientX, clientY) {
-    // Temporarily hide drag ghost so elementFromPoint works
-    dragGhostEl.style.display = "none";
-    const el = document.elementFromPoint(clientX, clientY);
-    dragGhostEl.style.display = isDragging ? "block" : "none";
-    if (!el) return null;
-    const cell = el.closest ? el.closest("[data-r]") : null;
-    if (!cell) return null;
-    const r = parseInt(cell.dataset.r, 10);
-    const c = parseInt(cell.dataset.c, 10);
-    if (isNaN(r) || isNaN(c)) return null;
+    // Use bounding-rect math — no DOM visibility toggle, no reflow
+    const gridEl = document.getElementById("grid");
+    const rect = gridEl.getBoundingClientRect();
+    if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) return null;
+    // grid: padding 6px, gap 3px, 10 cols/rows
+    const innerX = clientX - rect.left - 6;
+    const innerY = clientY - rect.top - 6;
+    const cellW = (rect.width - 12 - 3 * 9) / 10;
+    const cellH = (rect.height - 12 - 3 * 9) / 10;
+    const c = Math.floor(innerX / (cellW + 3));
+    const r = Math.floor(innerY / (cellH + 3));
+    if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) return null;
     return { r, c };
   }
 
@@ -870,28 +874,34 @@ icon: "🟦"
       wrapper.className = cls;
 
       if (!used) {
-        // Click to select (tap-to-select mode)
+        // Tap/click to select — shows blue border; drag starts only after selection
         wrapper.addEventListener("click", (e) => {
-          if (!gameActive || isDragging) return;
+          if (!gameActive) return;
+          if (dragWasStarted) {
+            dragWasStarted = false;
+            return; // swallow the click that fires after a mousedown-drag
+          }
           selectedPiece = selectedPiece === i ? null : i;
           hoverCell = null;
           render();
         });
 
-        // Mouse drag
+        // Mouse: only begin drag when this piece is already selected (has blue border)
         wrapper.addEventListener("mousedown", (e) => {
-          if (!gameActive) return;
+          if (!gameActive || selectedPiece !== i) return;
           e.preventDefault();
+          dragWasStarted = true;
           startDrag(i, e.clientX, e.clientY);
         });
 
-        // Touch drag
+        // Touch: only begin drag when this piece is already selected
         wrapper.addEventListener(
           "touchstart",
           (e) => {
-            if (!gameActive) return;
+            if (!gameActive || selectedPiece !== i) return;
             e.preventDefault();
             const t = e.touches[0];
+            dragWasStarted = true;
             startDrag(i, t.clientX, t.clientY);
           },
           { passive: false }
@@ -936,9 +946,16 @@ icon: "🟦"
     const cell = getCellFromPoint(clientX, clientY);
     const prev = hoverCell;
     hoverCell = cell;
-    // Only re-render if hoverCell changed
-    if ((prev && cell && (prev.r !== cell.r || prev.c !== cell.c)) || (prev === null) !== (cell === null)) {
-      renderGrid();
+    // Throttle grid re-render to one per animation frame
+    if (
+      !dragRafPending &&
+      ((prev && cell && (prev.r !== cell.r || prev.c !== cell.c)) || (prev === null) !== (cell === null))
+    ) {
+      dragRafPending = true;
+      requestAnimationFrame(() => {
+        dragRafPending = false;
+        renderGrid();
+      });
     }
   }
 
@@ -997,6 +1014,7 @@ icon: "🟦"
     if (!isDragging) return;
     isDragging = false;
     dragPieceIdx = null;
+    dragWasStarted = false;
     hoverCell = null;
     hideDragGhost();
     render();

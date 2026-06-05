@@ -75,54 +75,34 @@ icon: "🔢"
     gap: 0;
     user-select: none;
   }
-  /* Falling tile row — sits directly above the grid */
-  #falling-row {
-    display: grid;
-    grid-template-columns: repeat(7, var(--tile));
-    gap: 3px;
-    padding: 0 6px;
-    height: calc(var(--tile) + 3px);
-    align-items: end;
+  /* Active falling tile in the grid */
+  .grid-cell.falling {
+    color: inherit;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.35);
   }
-  .falling-cell {
-    width: var(--tile);
-    height: var(--tile);
-    border-radius: 6px;
+  /* D-pad controls */
+  #dpad {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .dpad-btn {
+    width: 54px;
+    height: 54px;
+    font-size: 1.4rem;
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: bold;
-    font-family: monospace;
-    font-size: calc(var(--tile) * 0.3);
-    background: transparent;
-    transition: transform 0.08s ease-out;
+    line-height: 1;
   }
-  .falling-cell.active {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-    animation: bobble 1.4s ease-in-out infinite;
-  }
-  @keyframes bobble {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-4px);
-    }
-  }
-  .falling-cell.active.dropping {
-    animation: drop-in 0.22s ease-in forwards;
-  }
-  @keyframes drop-in {
-    0% {
-      transform: translateY(0) scale(1);
-    }
-    60% {
-      transform: translateY(8px) scale(1.06);
-    }
-    100% {
-      transform: translateY(0) scale(1);
-    }
+  .dpad-btn:active {
+    background: #334155;
   }
   #grid {
     display: grid;
@@ -400,11 +380,16 @@ icon: "🔢"
   </div>
 
   <div id="board-area">
-    <div id="falling-row"></div>
     <div id="grid"></div>
   </div>
 
-  <p class="controls-hint">← → to aim · ↓ / Space to drop · click column to drop</p>
+  <div id="dpad">
+    <button class="dpad-btn" onclick="moveLeft()">⬅️</button>
+    <button class="dpad-btn" onclick="dropNow()">⬇️</button>
+    <button class="dpad-btn" onclick="moveRight()">➡️</button>
+  </div>
+
+  <p class="controls-hint">⬅️ ➡️ to move · ⬇️ to drop · click a column to drop there</p>
   <button class="new-btn" onclick="startGame()">New Game</button>
 </div>
 
@@ -524,6 +509,7 @@ icon: "🔢"
   const ROWS = 8;
   const COLS = 7;
   const STORAGE_KEY = "mini-number-merge-best";
+  const FALL_SPEED_MS = 500; // ms per auto-fall step
 
   // ─── State ────────────────────────────────────────────────────────────────
   let cols; // cols[c] = array of tile values, index 0 = bottom
@@ -532,11 +518,13 @@ icon: "🔢"
   let level;
   let mergeCount;
   let nextVal;
-  let currentVal; // the tile currently "falling"
+  let currentVal; // the tile currently falling through the grid
   let selectedCol;
+  let fallingRow; // current row (0 = top of grid)
+  let fallTimer; // setInterval handle
+  let dropping = false; // brief lock-delay flag
   let gameActive;
   let confettiFiredFor1024 = false;
-  let dropping = false; // prevents double-drops during animation
 
   document.getElementById("best-display").textContent = best;
 
@@ -568,11 +556,9 @@ icon: "🔢"
     el.textContent = val;
   }
 
-  // ─── Ghost row calculation ─────────────────────────────────────────────────
-  // Returns the visual row (0=top) where the tile will land in column c
-  function ghostRow(c) {
-    const height = cols[c].length;
-    return ROWS - 1 - height; // row 0 = top, ROWS-1 = bottom
+  // ─── Landing row helper ───────────────────────────────────────────────────
+  function landRow(c) {
+    return ROWS - 1 - cols[c].length; // row 0 = top, ROWS-1 = bottom
   }
 
   // ─── Merge logic ──────────────────────────────────────────────────────────
@@ -609,61 +595,102 @@ icon: "🔢"
     }
   }
 
-  // ─── Drop tile into column ────────────────────────────────────────────────
-  function dropTile(c) {
+  // ─── Auto-fall step ───────────────────────────────────────────────────────
+  function stepFall() {
     if (!gameActive || dropping) return;
-    if (cols[c].length >= ROWS) return;
+    const lr = landRow(selectedCol);
+    if (fallingRow < lr) {
+      fallingRow++;
+      renderGrid();
+    } else {
+      // Reached the stack — lock with brief visual delay
+      clearInterval(fallTimer);
+      dropping = true;
+      setTimeout(() => {
+        lockTile();
+        dropping = false;
+      }, 80);
+    }
+  }
 
-    dropping = true;
+  function startFall() {
+    fallingRow = 0;
+    clearInterval(fallTimer);
+    fallTimer = setInterval(stepFall, FALL_SPEED_MS);
+    renderGrid();
+  }
+
+  // ─── Lock tile into column ────────────────────────────────────────────────
+  function lockTile() {
+    if (!gameActive) return;
     confettiFiredFor1024 = false;
+    cols[selectedCol].push(currentVal);
+    doMerges(selectedCol);
 
-    // Trigger drop animation on the falling tile cell
-    const fallingEl = document.getElementById("falling-row").children[c];
-    if (fallingEl) {
-      fallingEl.classList.remove("active");
-      fallingEl.classList.add("dropping");
-      setTimeout(() => fallingEl.classList.remove("dropping"), 250);
+    document.getElementById("score").textContent = score;
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
     }
 
+    const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
+    if (newLevel !== level) {
+      level = newLevel;
+      document.getElementById("level-display").textContent = level;
+    }
+
+    if (cols.some((col) => col.length >= ROWS)) {
+      endGame();
+      return;
+    }
+
+    currentVal = nextVal;
+    nextVal = nextTileValue();
+    updateNextPreview();
+    startFall();
+  }
+
+  // ─── Hard drop ────────────────────────────────────────────────────────────
+  function dropNow() {
+    if (!gameActive || dropping) return;
+    clearInterval(fallTimer);
+    const lr = landRow(selectedCol);
+    if (lr < 0) return;
+    fallingRow = lr;
+    renderGrid();
+    dropping = true;
     setTimeout(() => {
-      cols[c].push(currentVal);
-      doMerges(c);
-
-      document.getElementById("score").textContent = score;
-
-      if (score > best) {
-        best = score;
-        localStorage.setItem(STORAGE_KEY, best);
-        document.getElementById("best-display").textContent = best;
-        launchConfetti();
-      }
-
-      const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
-      if (newLevel !== level) {
-        level = newLevel;
-        document.getElementById("level-display").textContent = level;
-      }
-
-      if (cols.some((col) => col.length >= ROWS)) {
-        dropping = false;
-        endGame();
-        return;
-      }
-
-      // Advance: current becomes next, generate new next
-      currentVal = nextVal;
-      nextVal = nextTileValue();
-      updateNextPreview();
-      selectedCol = Math.min(selectedCol, COLS - 1);
+      lockTile();
       dropping = false;
-      renderGrid();
-      renderFallingTile();
-    }, 120);
+    }, 80);
+  }
+
+  // ─── Move tile left / right ───────────────────────────────────────────────
+  function moveLeft() {
+    if (!gameActive || dropping) return;
+    const newCol = selectedCol - 1;
+    if (newCol < 0) return;
+    if (fallingRow > landRow(newCol)) return; // blocked by taller stack
+    selectedCol = newCol;
+    renderGrid();
+  }
+
+  function moveRight() {
+    if (!gameActive || dropping) return;
+    const newCol = selectedCol + 1;
+    if (newCol >= COLS) return;
+    if (fallingRow > landRow(newCol)) return;
+    selectedCol = newCol;
+    renderGrid();
   }
 
   // ─── Game over ────────────────────────────────────────────────────────────
   function endGame() {
     gameActive = false;
+    clearInterval(fallTimer);
     document.getElementById("go-score").textContent = score;
     document.getElementById("go-best").textContent = best;
     document.getElementById("go-level").textContent = level;
@@ -671,7 +698,6 @@ icon: "🔢"
     document.getElementById("go-title").textContent = "Game Over";
     document.getElementById("go-context").textContent = "A column is full!";
     renderGrid();
-    renderFallingTile();
     setTimeout(() => {
       document.getElementById("gameover-overlay").style.display = "flex";
     }, 400);
@@ -679,6 +705,7 @@ icon: "🔢"
 
   // ─── Start / reset ────────────────────────────────────────────────────────
   function startGame() {
+    clearInterval(fallTimer);
     cols = Array.from({ length: COLS }, () => []);
     score = 0;
     level = 1;
@@ -698,49 +725,12 @@ icon: "🔢"
     document.getElementById("start-overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
 
-    renderGrid();
-    renderFallingTile();
+    startFall();
   }
 
   // ─── Next tile preview ────────────────────────────────────────────────────
   function updateNextPreview() {
     applyTileStyle(document.getElementById("next-tile"), nextVal);
-  }
-
-  // ─── Render falling tile row ──────────────────────────────────────────────
-  function renderFallingTile() {
-    const row = document.getElementById("falling-row");
-    // Build cells if needed
-    if (row.children.length !== COLS) {
-      row.innerHTML = "";
-      for (let c = 0; c < COLS; c++) {
-        const cell = document.createElement("div");
-        cell.className = "falling-cell";
-        row.appendChild(cell);
-      }
-    }
-    for (let c = 0; c < COLS; c++) {
-      const cell = row.children[c];
-      cell.className = "falling-cell";
-      cell.style.background = "transparent";
-      cell.style.color = "transparent";
-      cell.textContent = "";
-      cell.onclick = null;
-    }
-    if (!gameActive) return;
-
-    const activeCell = row.children[selectedCol];
-    activeCell.classList.add("active");
-    applyTileStyle(activeCell, currentVal);
-
-    // Wire click on falling cells to drop
-    for (let c = 0; c < COLS; c++) {
-      const col = c;
-      row.children[c].onclick = () => {
-        selectedCol = col;
-        dropTile(col);
-      };
-    }
   }
 
   // ─── Render grid ──────────────────────────────────────────────────────────
@@ -759,13 +749,13 @@ icon: "🔢"
       }
     }
 
-    const ghostR = gameActive ? cols.map((col) => (col.length < ROWS ? ROWS - 1 - col.length : -1)) : [];
+    const lr = gameActive ? landRow(selectedCol) : -1;
 
     let idx = 0;
     for (let row = 0; row < ROWS; row++) {
       for (let c = 0; c < COLS; c++) {
         const cell = grid.children[idx++];
-        const dataIdx = ROWS - 1 - row;
+        const dataIdx = ROWS - 1 - row; // cols[c][0] is bottom; row 0 is top
         const val = cols[c][dataIdx];
 
         cell.className = "grid-cell";
@@ -779,21 +769,28 @@ icon: "🔢"
           cell.dataset.v = val;
           cell.textContent = val;
           cell.classList.add("filled");
-        } else if (gameActive && c === selectedCol && row === ghostR[c] && ghostR[c] >= 0) {
-          // Ghost tile shows landing position for selected column
+        } else if (gameActive && c === selectedCol && row === fallingRow) {
+          // The tile currently falling
+          cell.dataset.v = currentVal;
+          cell.textContent = currentVal;
+          cell.classList.add("falling");
+        } else if (gameActive && c === selectedCol && lr > fallingRow && row === lr) {
+          // Ghost shows where it will land
           cell.dataset.v = currentVal;
           cell.textContent = currentVal;
           cell.classList.add("ghost");
-        } else if (gameActive && c === selectedCol) {
+        } else if (gameActive && c === selectedCol && row > fallingRow && row < lr) {
+          // Path between falling tile and landing spot
           cell.classList.add("col-hover");
         }
 
-        // Click anywhere in column to drop
+        // Click any cell to hard-drop there
         if (gameActive) {
           const col = c;
           cell.onclick = () => {
+            if (cols[col].length >= ROWS) return;
             selectedCol = col;
-            dropTile(col);
+            dropNow();
           };
         }
       }
@@ -802,20 +799,16 @@ icon: "🔢"
 
   // ─── Keyboard controls ────────────────────────────────────────────────────
   document.addEventListener("keydown", (e) => {
-    if (!gameActive || dropping) return;
+    if (!gameActive) return;
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      selectedCol = Math.max(0, selectedCol - 1);
-      renderGrid();
-      renderFallingTile();
+      moveLeft();
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      selectedCol = Math.min(COLS - 1, selectedCol + 1);
-      renderGrid();
-      renderFallingTile();
+      moveRight();
     } else if (e.key === "ArrowDown" || e.key === " " || e.key === "Enter") {
       e.preventDefault();
-      dropTile(selectedCol);
+      dropNow();
     }
   });
 
@@ -823,8 +816,8 @@ icon: "🔢"
   cols = Array.from({ length: COLS }, () => []);
   currentVal = 2;
   nextVal = 2;
+  fallingRow = 0;
   updateNextPreview();
   renderGrid();
-  renderFallingTile();
   document.getElementById("start-overlay").style.display = "flex";
 </script>
