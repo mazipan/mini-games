@@ -4,12 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="{{ description or site.description }}" />
+    <meta name="author" content="{{ site.author }}" />
+    <meta name="robots" content="index, follow" />
+    <meta name="google-site-verification" content="dX5C5vUSIubW3_nbheDlOWWIN8ECF-FrCsrsZdIf7pQ" />
+
     <title>{{ title }} — {{ site.title }}</title>
+
+    {% set gameSlug = page.url.split('/')[2] %}
+    <link rel="canonical" href="{{ site.url }}{{ page.url }}" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="{{ site.title }}" />
+    <meta property="og:title" content="{{ title }} — {{ site.title }}" />
+    <meta property="og:description" content="{{ description or site.description }}" />
+    <meta property="og:url" content="{{ site.url }}{{ page.url }}" />
+    <meta property="og:image" content="{{ site.url }}/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="{{ title }} — {{ site.title }}" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="{{ title }} — {{ site.title }}" />
+    <meta name="twitter:description" content="{{ description or site.description }}" />
+    <meta name="twitter:image" content="{{ site.url }}/og-image.png" />
+
     <link rel="stylesheet" href="/css/main.css" />
-    <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>"
-    />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-{{ gameSlug }}.png" />
   </head>
   <body class="min-h-screen bg-slate-900 flex flex-col">
     <!-- Game Nav -->
@@ -52,6 +74,6 @@
     <!-- Game Content -->
     <div class="flex-1 flex flex-col">{{ content | safe }}</div>
 
-    {% include "partials/footer.njk" %}
+    {% include "partials/other-games.njk" %} {% include "partials/footer.njk" %}
   </body>
 </html>

@@ -1,5 +1,6 @@
 module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy({ "src/css/fonts": "css/fonts" });
+  eleventyConfig.addPassthroughCopy({ public: "/" });
 
   eleventyConfig.addFilter("categoryLabel", (category) => {
     const labels = {
@@ -21,6 +22,8 @@ module.exports = function (eleventyConfig) {
     return colors[category] || "bg-slate-500/20 text-slate-300 border-slate-500/30";
   });
 
+  eleventyConfig.addFilter("isoDate", (date) => new Date(date).toISOString().slice(0, 10));
+
   eleventyConfig.addFilter("difficultyColor", (difficulty) => {
     const colors = {
       easy: "text-emerald-400",
@@ -31,6 +34,7 @@ module.exports = function (eleventyConfig) {
   });
 
   return {
+    cleanOutputDir: true,
     dir: {
       input: "src",
       output: "_site",

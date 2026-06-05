@@ -6,46 +6,58 @@ A collection of free, browser-based mini games built with Eleventy (SSG), Tailwi
 
 ## Tech Stack
 
-- **Eleventy 2.x** — static site generator, config in `.eleventy.js`
+- **Eleventy 3.x** — static site generator, config in `eleventy.config.js`
 - **Nunjucks** — template engine for layouts and partials
-- **Tailwind CSS v3** — utility-first CSS, config in `tailwind.config.js`
-- **PostCSS + autoprefixer** — CSS pipeline, config in `postcss.config.js`
+- **Tailwind CSS v4** — utility-first CSS, configured via `src/css/main.css` (`@theme`)
+- **PostCSS + @tailwindcss/postcss** — CSS pipeline, config in `postcss.config.js`
 - **Prettier** — code formatter, config in `.prettierrc`
-- **Husky + lint-staged** — pre-commit hooks
+- **Lefthook** — pre-commit hooks, config in `lefthook.yml`
 - **Commitlint** — conventional commit enforcement
+- **Bun** — package manager and script runner
 
 ## Development Commands
 
 ```bash
-npm run dev          # start dev server (Eleventy + Tailwind watch)
-npm run build        # production build
-npm run format       # format all files with Prettier
-npm run format:check # check formatting without writing
+bun run dev              # start dev server (Eleventy + Tailwind watch)
+bun run build            # production build
+bun run format           # format all files with Prettier
+bun run format:check     # check formatting without writing
+bun run generate:og      # re-render public/og-image.svg → public/og-image.png
+bun run generate:favicon # regenerate all per-game favicons in public/
 ```
 
 ## Project Structure
 
 ```
+public/                  # static assets copied as-is to _site/ root
+  og-image.svg           # source OG image (1200×630, edit this)
+  og-image.png           # pre-rendered PNG (committed, copied at build)
+  favicon.png            # site-wide fallback favicon (🎮)
+  favicon-[slug].png     # per-game emoji favicons (one per game)
+  google…html            # Google Search Console verification file
+scripts/
+  generate-og-image.mjs  # renders og-image.svg → og-image.png
+  generate-favicon.mjs   # generates all favicon-[slug].png from games.js icons
 src/
   _data/
-    site.js         # site-wide metadata (title, description, url)
-    games.js        # array of all games with metadata
+    site.js              # site-wide metadata (title, description, url)
+    games.js             # array of all games with metadata
   _includes/
     layouts/
-      base.njk      # base HTML wrapper (head, meta, CSS)
-      game.njk      # game page layout (minimal nav + back button)
+      base.njk           # base HTML wrapper (head, full SEO meta, CSS)
+      game.njk           # game page layout (nav, full SEO meta, per-game favicon)
     partials/
-      header.njk    # site header with nav
-      footer.njk    # site footer
-      hero.njk      # landing page hero section
-      features.njk  # USP/features section
-      games-list.njk # games grouped by category
+      header.njk         # site header with nav
+      footer.njk         # site footer
+      hero.njk           # landing page hero section
+      features.njk       # USP/features section
+      games-list.njk     # games grouped by category
   css/
-    main.css        # Tailwind entry point (@tailwind directives)
+    main.css             # Tailwind v4 entry point (@import "tailwindcss" + @theme)
   games/
     [slug]/
-      index.njk     # individual game page
-  index.njk         # homepage
+      index.njk          # individual game page
+  index.njk              # homepage
 ```
 
 ## Categories
@@ -165,7 +177,7 @@ The CSS for `.info-details` / `.info-body` must still be present in the game's `
 - Inline `<style>` block first, then HTML, then `<script>` — all in the one `.njk` file
 - Use canvas for games requiring pixel-level rendering (Snake, Breakout, Tetris); DOM manipulation for grid games (2048, Memory Match, Minesweeper, Tic-Tac-Toe)
 - Commit new games with the `game:` commit type (e.g. `game: add Pong`)
-- All code must be formatted with Prettier before committing (`npm run format`)
+- All code must be formatted with Prettier before committing (`bun run format`)
 - **Always add a `launchConfetti()` reward animation** when a player wins a game or advances a level. Paste the standard implementation (fixed canvas overlay, 80 particles, 3s duration, pointer-events:none) directly into the game's `<script>` block since each game is self-contained. Call it at: game-win moments (all pairs matched, 2048 tile reached, board cleared, match won) and level-advance moments (Tetris line-clear level up, Breakout level clear, Snake level up).
 
 ## Game Over & Die State Conventions
@@ -320,13 +332,34 @@ function startGame() {
 | Minesweeper  | `mini-minesweeper-best-easy`, `mini-minesweeper-best-medium`, `mini-minesweeper-best-hard` |
 | Tic-Tac-Toe  | `mini-tictactoe-scores` (JSON: `{X, D, O}`)                                                |
 
+## Asset Generation Scripts
+
+These scripts generate static assets that are **committed to the repo**. Run them manually when needed — never as part of the build.
+
+### OG Image (`bun run generate:og`)
+
+- **When to run:** only when `public/og-image.svg` is edited
+- **What it does:** renders `public/og-image.svg` → `public/og-image.png` using `@resvg/resvg-js`
+- **Commit both** the `.svg` (source) and the `.png` (output)
+
+### Favicons (`bun run generate:favicon`)
+
+- **When to run:** when a new game is added to `src/_data/games.js`, or when an existing game's `icon` emoji changes
+- **What it does:** reads every game's `icon` field from `games.js`, converts each emoji to a Twemoji SVG, renders a 32×32 PNG to `public/favicon-[slug].png`; also generates the site-wide fallback `public/favicon.png` (🎮)
+- **Commit the new PNG(s)** — the build only copies whatever is already in `public/`
+- **Emoji must exist in Twemoji** — if generation throws `No Twemoji SVG for "X"`, replace the icon with a supported emoji (standard Unicode emoji, not obscure card/symbol codepoints like `🂾`)
+
+---
+
 ## Adding a New Game — Checklist
 
 - [ ] Entry added to `src/_data/games.js` (slug, name, description, category, difficulty, icon, tags) — keep the array sorted alphabetically by `name`
+- [ ] Run `bun run generate:favicon` and commit the new `public/favicon-[slug].png`
 - [ ] File created at `src/games/<slug>/index.njk`
 - [ ] `localStorage` best score implemented and displayed
 - [ ] Level/difficulty progression implemented
 - [ ] Mobile responsive (canvas sizing, touch controls, D-pad if needed)
 - [ ] Demo mode on start/game-over overlay (for canvas arcade games)
 - [ ] How to Play + FAQ section below the game
-- [ ] Prettier formatting passes (`npm run format:check`)
+- [ ] Prettier formatting passes (`bun run format:check`)
+- [ ] Entry added to the correct category table in `README.md` (sorted by difficulty within the category)

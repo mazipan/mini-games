@@ -1,32 +1,90 @@
-<footer class="border-t border-slate-800 py-10 mt-20">
+<footer class="border-t border-slate-800 pt-12 pb-8 mt-20">
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="flex items-center gap-2 text-slate-400">
-        <span class="text-xl">🎮</span>
-        <span class="font-semibold text-slate-300">Mini Games</span>
-        <span>·</span>
-        <span class="text-sm">Free. No login. Play instantly.</span>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+      <!-- Brand -->
+      <div class="lg:col-span-1">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-2xl">🎮</span>
+          <span class="font-bold text-white">Mini Games</span>
+        </div>
+        <p class="text-sm text-slate-400 leading-relaxed">
+          Free browser-based games.<br />No login. No downloads.<br />Play instantly.
+        </p>
       </div>
-      <div class="flex items-center gap-6 text-sm text-slate-500">
-        <a href="/design-system/" class="hover:text-slate-300 transition-colors">Design System</a>
-        <a
-          href="{{ site.repo }}"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="hover:text-slate-300 transition-colors"
-          >GitHub</a
-        >
-        <span
-          >© {{ site.year }}
-          <a
-            href="https://mazipan.space"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="hover:text-slate-300 transition-colors"
-            >{{ site.author }}</a
-          ></span
-        >
+
+      <!-- Games -->
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Games</h3>
+        <ul class="space-y-1">
+          <li><a href="/#games" class="text-sm text-slate-400 hover:text-white transition-colors">All Games</a></li>
+          <li><a href="/#arcade" class="text-sm text-slate-400 hover:text-white transition-colors">Arcade</a></li>
+          <li><a href="/#puzzle" class="text-sm text-slate-400 hover:text-white transition-colors">Puzzle</a></li>
+          <li><a href="/#board" class="text-sm text-slate-400 hover:text-white transition-colors">Board</a></li>
+          <li><a href="/#word" class="text-sm text-slate-400 hover:text-white transition-colors">Word</a></li>
+        </ul>
       </div>
+
+      <!-- Other Projects -->
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Other Projects</h3>
+        <ul class="space-y-1">
+          <li>
+            <a
+              href="https://tools.mazipan.space/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              HTML Tools
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.baca-quran.id/"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Baca Quran
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Site -->
+      <div>
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Site</h3>
+        <ul class="space-y-1">
+          <li>
+            <a
+              href="{{ site.repo }}"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-slate-400 hover:text-white transition-colors"
+              >GitHub</a
+            >
+          </li>
+          <li>
+            <a href="/design-system/" class="text-sm text-slate-400 hover:text-white transition-colors"
+              >Design System</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://mazipan.space"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm text-slate-400 hover:text-white transition-colors"
+              >{{ site.author }}</a
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="border-t border-slate-800 pt-6 text-center text-xs text-slate-600">
+      © {{ site.year }} {{ site.author }} · Free to play, forever.
     </div>
   </div>
 </footer>
