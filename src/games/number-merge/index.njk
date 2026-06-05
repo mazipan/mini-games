@@ -565,6 +565,7 @@ icon: "🔢"
   let fallTimer; // setInterval handle
   let dropping = false; // brief lock-delay flag
   let gameActive;
+  let newBestThisGame = false;
 
   document.getElementById("best-display").textContent = best;
 
@@ -776,7 +777,7 @@ icon: "🔢"
       best = score;
       localStorage.setItem(STORAGE_KEY, best);
       document.getElementById("best-display").textContent = best;
-      launchConfetti();
+      newBestThisGame = true;
     }
 
     const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
@@ -843,6 +844,7 @@ icon: "🔢"
     renderGrid();
     setTimeout(() => {
       document.getElementById("gameover-overlay").style.display = "flex";
+      if (newBestThisGame) launchConfetti();
     }, 400);
   }
 
@@ -853,6 +855,7 @@ icon: "🔢"
     score = 0;
     level = 1;
     mergeCount = 0;
+    newBestThisGame = false;
     selectedCol = 3;
     dropping = false;
     gameActive = true;
