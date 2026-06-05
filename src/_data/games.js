@@ -27,6 +27,15 @@ module.exports = [
     tags: ["ball", "classic", "canvas"],
   },
   {
+    slug: "color-block",
+    name: "Color Block",
+    description: "Place colorful block shapes on the grid and clear full rows and columns.",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🟦",
+    tags: ["blocks", "casual", "puzzle", "placement"],
+  },
+  {
     slug: "connect-four",
     name: "Connect Four",
     description: "Drop colored discs into a 7×6 grid and connect four in a row to win.",
@@ -82,6 +91,15 @@ module.exports = [
     tags: ["mines", "logic", "classic"],
   },
   {
+    slug: "number-merge",
+    name: "Number Merge",
+    description: "Drop tiles into columns — equal neighbors merge into their sum, chaining combos!",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🔢",
+    tags: ["numbers", "merge", "falling", "combo"],
+  },
+  {
     slug: "pong",
     name: "Pong",
     description: "Two paddles, one ball — first to 7 points wins. Play vs AI or a friend!",
@@ -89,6 +107,15 @@ module.exports = [
     difficulty: "easy",
     icon: "🏓",
     tags: ["ball", "classic", "canvas", "two-player"],
+  },
+  {
+    slug: "reversi",
+    name: "Reversi",
+    description: "Outflank your opponent's discs to flip them — most discs at the end wins!",
+    category: "board",
+    difficulty: "medium",
+    icon: "⚫",
+    tags: ["strategy", "classic", "board", "two-player"],
   },
   {
     slug: "sliding-puzzle",

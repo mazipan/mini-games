@@ -1,0 +1,756 @@
+---
+layout: layouts/game.njk
+title: Number Merge
+description: Drop tiles into columns — equal neighbors merge into their sum, chaining combos!
+category: puzzle
+icon: "🔢"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  :root {
+    --tile: min(52px, calc((100vw - 3rem) / 7.5));
+  }
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    min-width: 70px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #next-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  #next-tile {
+    width: var(--tile);
+    height: var(--tile);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: calc(var(--tile) * 0.32);
+    border: 2px solid #334155;
+  }
+  #board-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    user-select: none;
+  }
+  #col-btns {
+    display: grid;
+    grid-template-columns: repeat(7, var(--tile));
+    gap: 3px;
+    padding: 0 6px;
+  }
+  .col-btn {
+    width: var(--tile);
+    height: calc(var(--tile) * 0.58);
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #475569;
+    font-size: calc(var(--tile) * 0.28);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition:
+      color 0.1s,
+      background 0.1s,
+      border-color 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .col-btn:not(:disabled):hover {
+    background: #293548;
+    border-color: #475569;
+    color: #94a3b8;
+  }
+  .col-btn.selected {
+    color: #a78bfa;
+    border-color: rgba(167, 139, 250, 0.5);
+    background: rgba(49, 46, 129, 0.35);
+  }
+  .col-btn.selected:hover {
+    background: rgba(49, 46, 129, 0.5);
+  }
+  .col-btn:disabled {
+    cursor: default;
+    opacity: 0.3;
+  }
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(7, var(--tile));
+    grid-template-rows: repeat(8, var(--tile));
+    gap: 3px;
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  }
+  .grid-cell {
+    width: var(--tile);
+    height: var(--tile);
+    border-radius: 6px;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: calc(var(--tile) * 0.3);
+    transition:
+      background 0.12s,
+      color 0.12s;
+    color: transparent;
+  }
+  .grid-cell.filled {
+    color: inherit;
+  }
+  /* Tile value colors */
+  .grid-cell[data-v="2"] {
+    background: #1e3a2f;
+    color: #4ade80;
+  }
+  .grid-cell[data-v="4"] {
+    background: #1e3a4f;
+    color: #60a5fa;
+  }
+  .grid-cell[data-v="8"] {
+    background: #312e81;
+    color: #a78bfa;
+  }
+  .grid-cell[data-v="16"] {
+    background: #4c1d95;
+    color: #c4b5fd;
+  }
+  .grid-cell[data-v="32"] {
+    background: #7c2d12;
+    color: #fdba74;
+  }
+  .grid-cell[data-v="64"] {
+    background: #92400e;
+    color: #fcd34d;
+  }
+  .grid-cell[data-v="128"] {
+    background: #78350f;
+    color: #fef08a;
+  }
+  .grid-cell[data-v="256"] {
+    background: #854d0e;
+    color: #fef9c3;
+  }
+  .grid-cell[data-v="512"] {
+    background: #713f12;
+    color: #fff;
+  }
+  .grid-cell[data-v="1024"] {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+  }
+  .grid-cell[data-v="2048"] {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+  }
+  .grid-cell[data-v="4096"] {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+  }
+  .grid-cell[data-v="8192"] {
+    background: linear-gradient(135deg, #7c3aed, #db2777);
+    color: #fff;
+  }
+  .grid-cell.pop {
+    animation: cellpop 0.18s ease-out;
+  }
+  @keyframes cellpop {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.18);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .controls-hint {
+    font-size: 0.72rem;
+    color: #475569;
+    text-align: center;
+  }
+  .new-btn {
+    padding: 0.4rem 1rem;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .new-btn:hover {
+    background: #475569;
+  }
+  /* Overlays */
+  .full-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 200;
+    padding: 1rem;
+    text-align: center;
+  }
+  #start-overlay {
+    background: rgba(15, 23, 42, 0.97);
+  }
+  #gameover-overlay {
+    background: rgba(15, 23, 42, 0.95);
+  }
+  .full-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+  }
+  .full-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #go-context {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+  /* Info section */
+  .info-section {
+    width: 100%;
+    max-width: 440px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Score", "score", "0") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level",
+    "level-display", "1") }}
+  </div>
+
+  <div id="next-preview">
+    <span>Next</span>
+    <div id="next-tile">2</div>
+  </div>
+
+  <div id="board-area">
+    <div id="col-btns"></div>
+    <div id="grid"></div>
+  </div>
+
+  <p class="controls-hint">Click ▼ to drop · ←/→ select column · ↓ / Space drop</p>
+  <button class="new-btn" onclick="startGame()">New Game</button>
+</div>
+
+<div id="start-overlay" class="full-overlay">
+  <span style="font-size: 3rem">🔢</span>
+  <h2>Number Merge</h2>
+  <p>Drop tiles into columns — equal neighbors merge!</p>
+  <button class="play-btn" onclick="startGame()">Play Game</button>
+</div>
+
+<div id="gameover-overlay" class="full-overlay" style="display: none">
+  <span id="go-icon" style="font-size: 3rem">💀</span>
+  <h2 id="go-title">Game Over</h2>
+  <div class="summary-row">
+    <div class="summary-stat">
+      <div class="summary-label">Score</div>
+      <div class="summary-value" id="go-score">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Best</div>
+      <div class="summary-value" id="go-best">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Level</div>
+      <div class="summary-value" id="go-level">1</div>
+    </div>
+  </div>
+  <p id="go-context">A column is full!</p>
+  <button class="play-btn" onclick="startGame()">New Game</button>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Drop numbered tiles into columns. When two equal tiles sit at the top of adjacent columns, they
+    <strong>merge</strong> into their sum. Score as many points as you can before any column fills up!
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click ▼</strong> above a column to drop the current tile into that column</li>
+    <li><strong>← → arrow keys</strong> to move the column selection left or right</li>
+    <li><strong>↓ / Space / Enter</strong> to drop the tile into the selected column</li>
+  </ul>
+  <h4>Scoring</h4>
+  <p>
+    Each merge earns you the value of the newly merged tile. Combos — where one drop triggers several merges in a row —
+    multiply your score quickly.
+  </p>
+  <h4>Levels</h4>
+  <p>
+    Every 10 merges you advance a level. Higher levels introduce 8-value tiles into the mix, making combos more
+    achievable but the board harder to manage.
+  </p>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>How do merges work?</h4>
+  <p>
+    After a tile lands in a column, the game checks if the tile on top of the <em>left</em> neighbor column has the same
+    value. If so, they merge (left column's top tile is consumed, current column's top tile doubles). The check then
+    repeats — potentially chaining multiple merges from a single drop.
+  </p>
+  <h4>What is a combo?</h4>
+  <p>
+    A combo is a chain of merges triggered by a single tile drop. Each merge re-checks both neighbors, so a single drop
+    can trigger several merges back-to-back, scoring all of them.
+  </p>
+  <h4>Is my best score saved?</h4>
+  <p>
+    Yes — your all-time best score is automatically saved in your browser's local storage and displayed in the score
+    row.
+  </p>
+  <h4>When does the game end?</h4>
+  <p>
+    The game ends immediately when any column reaches 8 tiles (the maximum column height) and can no longer accept new
+    tiles.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  // ─── Confetti (standard 80-particle 3s implementation) ───────────────────
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#ef4444", "#fbbf24", "#10b981", "#3b82f6", "#a78bfa", "#f97316", "#ec4899"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  // ─── Constants ───────────────────────────────────────────────────────────
+  const ROWS = 8;
+  const COLS = 7;
+  const STORAGE_KEY = "mini-number-merge-best";
+
+  // ─── State ────────────────────────────────────────────────────────────────
+  let cols; // cols[c] = array of tile values, index 0 = bottom
+  let score;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let level;
+  let mergeCount;
+  let nextVal;
+  let selectedCol;
+  let gameActive;
+  let confettiFiredFor1024 = false;
+
+  document.getElementById("best-display").textContent = best;
+
+  // ─── Tile value generation ────────────────────────────────────────────────
+  function nextTileValue() {
+    const r = Math.random();
+    if (level <= 2) {
+      return 2;
+    } else if (level <= 4) {
+      return r < 0.8 ? 2 : 4;
+    } else if (level <= 6) {
+      return r < 0.6 ? 2 : r < 0.9 ? 4 : 8;
+    } else {
+      return r < 0.5 ? 2 : r < 0.8 ? 4 : 8;
+    }
+  }
+
+  // ─── Tile color helper (for next-tile preview) ────────────────────────────
+  function applyTileStyle(el, val) {
+    const styles = {
+      2: { bg: "#1e3a2f", color: "#4ade80" },
+      4: { bg: "#1e3a4f", color: "#60a5fa" },
+      8: { bg: "#312e81", color: "#a78bfa" },
+      16: { bg: "#4c1d95", color: "#c4b5fd" },
+      32: { bg: "#7c2d12", color: "#fdba74" },
+      64: { bg: "#92400e", color: "#fcd34d" },
+      128: { bg: "#78350f", color: "#fef08a" },
+      256: { bg: "#854d0e", color: "#fef9c3" },
+      512: { bg: "#713f12", color: "#fff" },
+    };
+    const s = styles[val] || { bg: "linear-gradient(135deg,#7c3aed,#db2777)", color: "#fff" };
+    el.style.background = s.bg;
+    el.style.color = s.color;
+    el.textContent = val;
+  }
+
+  // ─── Merge logic ──────────────────────────────────────────────────────────
+  function doMerges(c) {
+    let anyMerge = true;
+    while (anyMerge) {
+      anyMerge = false;
+      if (cols[c].length === 0) break;
+      const top = cols[c][cols[c].length - 1];
+      // check left
+      if (c > 0 && cols[c - 1].length > 0 && cols[c - 1][cols[c - 1].length - 1] === top) {
+        cols[c - 1].pop();
+        cols[c][cols[c].length - 1] = top * 2;
+        score += top * 2;
+        mergeCount++;
+        anyMerge = true;
+        // check confetti for >= 1024 tile
+        if (top * 2 >= 1024 && !confettiFiredFor1024) {
+          confettiFiredFor1024 = true;
+          launchConfetti();
+        }
+        continue; // restart while loop — re-read top
+      }
+      // check right (only if no left merge happened this iteration)
+      const top2 = cols[c][cols[c].length - 1];
+      if (c < COLS - 1 && cols[c + 1].length > 0 && cols[c + 1][cols[c + 1].length - 1] === top2) {
+        cols[c + 1].pop();
+        cols[c][cols[c].length - 1] = top2 * 2;
+        score += top2 * 2;
+        mergeCount++;
+        anyMerge = true;
+        if (top2 * 2 >= 1024 && !confettiFiredFor1024) {
+          confettiFiredFor1024 = true;
+          launchConfetti();
+        }
+        // no continue — loop will restart via anyMerge = true
+      }
+    }
+  }
+
+  // ─── Drop tile into column ────────────────────────────────────────────────
+  function dropTile(c) {
+    if (!gameActive) return;
+    if (cols[c].length >= ROWS) return; // column full
+
+    confettiFiredFor1024 = false; // reset per-drop so each drop can trigger once
+    cols[c].push(nextVal);
+    doMerges(c);
+
+    // Update score display
+    document.getElementById("score").textContent = score;
+
+    // Check / update best
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    // Level up every 10 merges
+    const newLevel = Math.min(10, 1 + Math.floor(mergeCount / 10));
+    if (newLevel !== level) {
+      level = newLevel;
+      document.getElementById("level-display").textContent = level;
+    }
+
+    // Check game over — any column at max height
+    if (cols.some((col) => col.length >= ROWS)) {
+      endGame();
+      return;
+    }
+
+    // Prepare next tile
+    nextVal = nextTileValue();
+    updateNextPreview();
+    selectedCol = Math.min(selectedCol, COLS - 1);
+    renderGrid();
+    renderColBtns();
+  }
+
+  // ─── Game over ────────────────────────────────────────────────────────────
+  function endGame() {
+    gameActive = false;
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("go-icon").textContent = "💀";
+    document.getElementById("go-title").textContent = "Game Over";
+    document.getElementById("go-context").textContent = "A column is full!";
+    renderGrid();
+    renderColBtns();
+    setTimeout(() => {
+      document.getElementById("gameover-overlay").style.display = "flex";
+    }, 400);
+  }
+
+  // ─── Start / reset ────────────────────────────────────────────────────────
+  function startGame() {
+    cols = Array.from({ length: COLS }, () => []);
+    score = 0;
+    level = 1;
+    mergeCount = 0;
+    selectedCol = 3;
+    confettiFiredFor1024 = false;
+    gameActive = true;
+
+    nextVal = nextTileValue();
+    updateNextPreview();
+
+    document.getElementById("score").textContent = 0;
+    document.getElementById("best-display").textContent = best;
+    document.getElementById("level-display").textContent = 1;
+    document.getElementById("start-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    renderGrid();
+    renderColBtns();
+  }
+
+  // ─── Next tile preview ────────────────────────────────────────────────────
+  function updateNextPreview() {
+    const el = document.getElementById("next-tile");
+    applyTileStyle(el, nextVal);
+  }
+
+  // ─── Render grid ──────────────────────────────────────────────────────────
+  function renderGrid() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    // Rows: row 0 = top visual row (row index 0 in DOM), row ROWS-1 = bottom
+    for (let row = 0; row < ROWS; row++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement("div");
+        cell.className = "grid-cell";
+        // Visual row 0 is the top; tile at cols[c][height-1] is the top tile.
+        // The tile at visual row `row` corresponds to data index `(ROWS - 1 - row)`.
+        const dataIdx = ROWS - 1 - row;
+        const val = cols[c][dataIdx];
+        if (val !== undefined) {
+          cell.dataset.v = val;
+          cell.textContent = val;
+          cell.classList.add("filled");
+        }
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  // ─── Render column drop buttons ───────────────────────────────────────────
+  function renderColBtns() {
+    const container = document.getElementById("col-btns");
+    container.innerHTML = "";
+    for (let c = 0; c < COLS; c++) {
+      const btn = document.createElement("button");
+      btn.className = "col-btn" + (gameActive && c === selectedCol ? " selected" : "");
+      btn.textContent = "▼";
+      btn.disabled = !gameActive || cols[c].length >= ROWS;
+      btn.setAttribute("aria-label", `Drop into column ${c + 1}`);
+      const col = c; // capture for closure
+      btn.addEventListener("click", () => {
+        selectedCol = col;
+        dropTile(col);
+      });
+      container.appendChild(btn);
+    }
+  }
+
+  // ─── Keyboard controls ────────────────────────────────────────────────────
+  document.addEventListener("keydown", (e) => {
+    if (!gameActive) return;
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      selectedCol = Math.max(0, selectedCol - 1);
+      renderColBtns();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      selectedCol = Math.min(COLS - 1, selectedCol + 1);
+      renderColBtns();
+    } else if (e.key === "ArrowDown" || e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      dropTile(selectedCol);
+    }
+  });
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+  // Show start overlay; render an empty grid behind it
+  cols = Array.from({ length: COLS }, () => []);
+  nextVal = 2;
+  updateNextPreview();
+  renderGrid();
+  renderColBtns();
+  document.getElementById("start-overlay").style.display = "flex";
+</script>

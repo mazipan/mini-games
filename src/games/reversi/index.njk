@@ -1,0 +1,781 @@
+---
+layout: layouts/game.njk
+title: Reversi
+description: Outflank your opponent's discs to flip them — most discs wins!
+category: board
+icon: "⚫"
+---
+
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
+<style>
+  :root {
+    --cell: min(52px, calc((100vw - 3rem) / 8.5));
+  }
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .mode-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-btn.active,
+  .mode-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #166534;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 64px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-height: 1.5rem;
+    text-align: center;
+  }
+  #board-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, var(--cell));
+    grid-template-rows: repeat(8, var(--cell));
+    gap: 3px;
+    background: #14532d;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  }
+  .cell {
+    width: var(--cell);
+    height: var(--cell);
+    background: #166534;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.1s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cell:hover {
+    background: #15803d;
+  }
+  .cell.valid {
+    cursor: pointer;
+  }
+  .cell.valid::after {
+    content: "";
+    width: calc(var(--cell) * 0.28);
+    height: calc(var(--cell) * 0.28);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+  }
+  .disc {
+    width: calc(var(--cell) * 0.78);
+    height: calc(var(--cell) * 0.78);
+    border-radius: 50%;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .disc-black {
+    background: radial-gradient(circle at 35% 35%, #374151, #111827);
+    box-shadow:
+      2px 3px 8px rgba(0, 0, 0, 0.6),
+      inset -1px -2px 4px rgba(0, 0, 0, 0.4);
+  }
+  .disc-white {
+    background: radial-gradient(circle at 35% 35%, #f8fafc, #cbd5e1);
+    box-shadow:
+      2px 3px 8px rgba(0, 0, 0, 0.4),
+      inset -1px -2px 4px rgba(148, 163, 184, 0.4);
+  }
+  .btn-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #166534;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #15803d;
+  }
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #go-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #go-context {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 0;
+  }
+  #lobby-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    z-index: 200;
+    padding: 1rem;
+  }
+  #lobby-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="mode-row" id="mode-row">
+    <button class="mode-btn active" id="mode-machine" onclick="setMode('machine')">VS AI</button>
+    <button class="mode-btn" id="mode-player" onclick="setMode('player')">VS Friend</button>
+  </div>
+
+  <div class="score-row">
+    {{ statCard("⚫ You", "p1-count", "2", "", "p1-label") }} {{ statCard("Best", "best-display", "0") }} {{
+    statCard("⚪ AI", "p2-count", "2", "", "p2-label") }}
+  </div>
+
+  <div id="status">Your turn (⚫)</div>
+
+  <div id="board-area">
+    <div id="board"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="play-btn" onclick="showLobby()">New Game</button>
+  </div>
+</div>
+
+<div id="gameover-overlay" style="display: none">
+  <span id="go-icon">🏆</span>
+  <h2 id="go-title">You Win!</h2>
+  <div class="summary-row">
+    <div class="summary-stat">
+      <div class="summary-label" id="go-p1-label">⚫ You</div>
+      <div class="summary-value" id="go-p1">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Best</div>
+      <div class="summary-value" id="go-best">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label" id="go-p2-label">⚪ AI</div>
+      <div class="summary-value" id="go-p2">0</div>
+    </div>
+  </div>
+  <p id="go-context"></p>
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="lobby-overlay">
+  <span style="font-size: 3rem">⚫</span>
+  <h2>Reversi</h2>
+  <p>Outflank your opponent's discs to flip them — most discs wins!</p>
+  <div class="mode-row">
+    <button class="mode-btn active" id="lobby-ai" onclick="selectLobbyMode('machine')">VS AI</button>
+    <button class="mode-btn" id="lobby-player" onclick="selectLobbyMode('player')">VS Friend</button>
+  </div>
+  <button class="play-btn" onclick="startGame()">New Game</button>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Claim the most discs on the 8×8 board. Place your disc to outflank at least one opponent disc — any opponent discs
+    trapped between your new disc and another of yours (in a straight line) flip to your color.
+  </p>
+  <h4>VS AI</h4>
+  <p>
+    You play as ⚫ (Black) and go first. The AI plays as ⚪ (White) and uses a greedy strategy, favouring corners and
+    edges.
+  </p>
+  <h4>VS Friend</h4>
+  <p>Two players share the same device. ⚫ (Black / P1) always goes first.</p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click or tap</strong> a highlighted cell to place your disc</li>
+    <li>Semi-transparent dots show all valid moves on your turn</li>
+    <li>If you have no valid moves your turn is skipped automatically</li>
+  </ul>
+  <h4>Scoring</h4>
+  <p>
+    Your personal best (highest ⚫ disc count at game end) is saved in your browser and shown in the
+    <strong>Best</strong> stat.
+  </p>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What counts as a valid move?</h4>
+  <p>
+    A cell is valid if placing your disc there would flip at least one opponent disc — meaning at least one straight
+    line (horizontal, vertical, or diagonal) runs from your new disc through one or more opponent discs and ends on one
+    of your existing discs.
+  </p>
+  <h4>What if I have no valid moves?</h4>
+  <p>
+    Your turn is skipped and your opponent plays again. If <em>neither</em> player has a valid move the game ends
+    immediately and discs are counted regardless of how many empty cells remain.
+  </p>
+  <h4>Is my best disc count saved?</h4>
+  <p>
+    Yes — your highest ⚫ disc count at game end is saved in your browser's local storage under the key
+    <code>mini-reversi-best</code> and persists between sessions.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#22c55e", "#16a34a", "#4ade80", "#86efac", "#f8fafc", "#fbbf24", "#a78bfa", "#f97316"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  const SIZE = 8;
+  const STORAGE_KEY = "mini-reversi-best";
+  const DIRS = [
+    [-1, -1],
+    [-1, 0],
+    [-1, 1],
+    [0, -1],
+    [0, 1],
+    [1, -1],
+    [1, 0],
+    [1, 1],
+  ];
+
+  // B = black, W = white, "" = empty
+  let board, currentPlayer, gameOver, mode;
+  let lobbyMode = "machine";
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+  // ── Board helpers ──────────────────────────────────────────────────────────
+
+  function emptyBoard() {
+    return Array.from({ length: SIZE }, () => Array(SIZE).fill(""));
+  }
+
+  function getFlips(b, r, c, player) {
+    if (b[r][c] !== "") return [];
+    const opp = player === "B" ? "W" : "B";
+    const flips = [];
+    for (const [dr, dc] of DIRS) {
+      const line = [];
+      let nr = r + dr,
+        nc = c + dc;
+      while (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && b[nr][nc] === opp) {
+        line.push([nr, nc]);
+        nr += dr;
+        nc += dc;
+      }
+      if (line.length > 0 && nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && b[nr][nc] === player) {
+        flips.push(...line);
+      }
+    }
+    return flips;
+  }
+
+  function getValidMoves(b, player) {
+    const moves = [];
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (getFlips(b, r, c, player).length > 0) moves.push([r, c]);
+      }
+    }
+    return moves;
+  }
+
+  function countDiscs(b) {
+    let black = 0,
+      white = 0;
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        if (b[r][c] === "B") black++;
+        else if (b[r][c] === "W") white++;
+      }
+    }
+    return { black, white };
+  }
+
+  // ── AI ─────────────────────────────────────────────────────────────────────
+
+  function scoreMove(b, r, c) {
+    const flips = getFlips(b, r, c, "W");
+    let score = flips.length;
+    // Corner bonus
+    if ((r === 0 || r === 7) && (c === 0 || c === 7)) score += 50;
+    // X-squares penalty (adjacent to corners diagonally)
+    else if ((r === 1 || r === 6) && (c === 1 || c === 6)) score -= 20;
+    // Edge bonus
+    else if (r === 0 || r === 7 || c === 0 || c === 7) score += 5;
+    return score;
+  }
+
+  function aiMove() {
+    if (gameOver) return;
+    const moves = getValidMoves(board, "W");
+    if (moves.length === 0) return;
+    let best_score = -Infinity,
+      chosen = moves[0];
+    for (const [r, c] of moves) {
+      const s = scoreMove(board, r, c);
+      if (s > best_score) {
+        best_score = s;
+        chosen = [r, c];
+      }
+    }
+    playAt(chosen[0], chosen[1]);
+  }
+
+  // ── Core turn logic ────────────────────────────────────────────────────────
+
+  function playAt(r, c) {
+    if (gameOver) return;
+    const flips = getFlips(board, r, c, currentPlayer);
+    if (flips.length === 0) return;
+
+    board[r][c] = currentPlayer;
+    for (const [fr, fc] of flips) {
+      board[fr][fc] = currentPlayer;
+    }
+
+    updateCounts();
+
+    const opp = currentPlayer === "B" ? "W" : "B";
+    const oppMoves = getValidMoves(board, opp);
+
+    if (oppMoves.length > 0) {
+      currentPlayer = opp;
+      updateStatus();
+      renderBoard();
+      if (mode === "machine" && currentPlayer === "W") {
+        setTimeout(aiMove, 600);
+      }
+    } else {
+      // Opponent has no moves — check if current player can still go
+      const ownMoves = getValidMoves(board, currentPlayer);
+      if (ownMoves.length > 0) {
+        // Opponent passes, current player goes again
+        const passName =
+          opp === "B"
+            ? mode === "machine"
+              ? "⚫ You pass"
+              : "⚫ P1 passes"
+            : mode === "machine"
+              ? "⚪ AI passes"
+              : "⚪ P2 passes";
+        updateStatus(passName);
+        renderBoard();
+        if (mode === "machine" && currentPlayer === "W") {
+          setTimeout(aiMove, 600);
+        }
+      } else {
+        // Neither player has moves — game over
+        renderBoard();
+        setTimeout(endGame, 600);
+      }
+    }
+  }
+
+  // ── End game ───────────────────────────────────────────────────────────────
+
+  function endGame() {
+    gameOver = true;
+    const { black, white } = countDiscs(board);
+
+    // Update best (tracks black disc count)
+    let isNewBest = false;
+    if (black > best) {
+      best = black;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      isNewBest = true;
+    }
+
+    // Determine winner
+    let playerWins = false;
+    let icon, title, context;
+
+    if (mode === "machine") {
+      if (black > white) {
+        playerWins = true;
+        icon = "🏆";
+        title = "You Win!";
+        context = "⚫ Black wins with more discs!";
+        document.getElementById("status").textContent = "You win! 🎉";
+      } else if (white > black) {
+        icon = "🤖";
+        title = "AI Wins!";
+        context = "⚪ White wins with more discs.";
+        document.getElementById("status").textContent = "AI wins! 🤖";
+      } else {
+        icon = "🤝";
+        title = "It's a Draw!";
+        context = "Equal discs — it's a tie!";
+        document.getElementById("status").textContent = "It's a draw!";
+      }
+    } else {
+      if (black > white) {
+        playerWins = true;
+        icon = "🏆";
+        title = "Player 1 Wins!";
+        context = "⚫ Black wins with more discs!";
+        document.getElementById("status").textContent = "Player 1 wins! 🎉";
+      } else if (white > black) {
+        playerWins = true;
+        icon = "🏆";
+        title = "Player 2 Wins!";
+        context = "⚪ White wins with more discs!";
+        document.getElementById("status").textContent = "Player 2 wins! 🎉";
+      } else {
+        icon = "🤝";
+        title = "It's a Draw!";
+        context = "Equal discs — it's a tie!";
+        document.getElementById("status").textContent = "It's a draw!";
+      }
+    }
+
+    if (playerWins || isNewBest) {
+      launchConfetti();
+    }
+
+    // Populate overlay
+    document.getElementById("go-icon").textContent = icon;
+    document.getElementById("go-title").textContent = title;
+    document.getElementById("go-p1-label").textContent = mode === "machine" ? "⚫ You" : "⚫ P1";
+    document.getElementById("go-p2-label").textContent = mode === "machine" ? "⚪ AI" : "⚪ P2";
+    document.getElementById("go-p1").textContent = black;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-p2").textContent = white;
+    document.getElementById("go-context").textContent = context;
+
+    setTimeout(() => {
+      document.getElementById("gameover-overlay").style.display = "flex";
+    }, 600);
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+
+  function updateCounts() {
+    const { black, white } = countDiscs(board);
+    document.getElementById("p1-count").textContent = black;
+    document.getElementById("p2-count").textContent = white;
+  }
+
+  function updateStatus(override) {
+    if (gameOver) return;
+    if (override) {
+      document.getElementById("status").textContent = override;
+      return;
+    }
+    if (mode === "machine") {
+      document.getElementById("status").textContent = currentPlayer === "B" ? "Your turn (⚫)" : "AI thinking… (⚪)";
+    } else {
+      document.getElementById("status").textContent =
+        currentPlayer === "B" ? "⚫ Player 1's turn" : "⚪ Player 2's turn";
+    }
+  }
+
+  function renderBoard() {
+    const isHumanTurn = !gameOver && !(mode === "machine" && currentPlayer === "W");
+    const validSet = new Set();
+    if (isHumanTurn) {
+      for (const [r, c] of getValidMoves(board, currentPlayer)) {
+        validSet.add(`${r},${c}`);
+      }
+    }
+
+    const boardEl = document.getElementById("board");
+    boardEl.innerHTML = "";
+    for (let r = 0; r < SIZE; r++) {
+      for (let c = 0; c < SIZE; c++) {
+        const cell = document.createElement("div");
+        const key = `${r},${c}`;
+        let cls = "cell";
+        if (validSet.has(key)) cls += " valid";
+        cell.className = cls;
+
+        if (board[r][c] !== "") {
+          const disc = document.createElement("div");
+          disc.className = "disc " + (board[r][c] === "B" ? "disc-black" : "disc-white");
+          cell.appendChild(disc);
+        }
+
+        if (validSet.has(key)) {
+          cell.onclick = () => playAt(r, c);
+        }
+
+        boardEl.appendChild(cell);
+      }
+    }
+  }
+
+  // ── Game lifecycle ─────────────────────────────────────────────────────────
+
+  function selectLobbyMode(m) {
+    lobbyMode = m;
+    document.getElementById("lobby-ai").classList.toggle("active", m === "machine");
+    document.getElementById("lobby-player").classList.toggle("active", m === "player");
+  }
+
+  function showLobby() {
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("lobby-overlay").style.display = "flex";
+    selectLobbyMode(mode || "machine");
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById("mode-machine").classList.toggle("active", m === "machine");
+    document.getElementById("mode-player").classList.toggle("active", m === "player");
+    document.getElementById("p1-label").textContent = m === "machine" ? "⚫ You" : "⚫ P1";
+    document.getElementById("p2-label").textContent = m === "machine" ? "⚪ AI" : "⚪ P2";
+  }
+
+  function startGame() {
+    mode = lobbyMode;
+    document.getElementById("lobby-overlay").style.display = "none";
+    document.getElementById("p1-label").textContent = mode === "machine" ? "⚫ You" : "⚫ P1";
+    document.getElementById("p2-label").textContent = mode === "machine" ? "⚪ AI" : "⚪ P2";
+    document.getElementById("mode-machine").classList.toggle("active", mode === "machine");
+    document.getElementById("mode-player").classList.toggle("active", mode === "player");
+    newGame();
+  }
+
+  function newGame() {
+    board = emptyBoard();
+    // Standard starting position
+    board[3][3] = "W";
+    board[3][4] = "B";
+    board[4][3] = "B";
+    board[4][4] = "W";
+    currentPlayer = "B";
+    gameOver = false;
+
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("best-display").textContent = best;
+    updateCounts();
+    updateStatus();
+    renderBoard();
+  }
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  mode = "machine";
+  document.getElementById("best-display").textContent = best;
+  showLobby();
+</script>
