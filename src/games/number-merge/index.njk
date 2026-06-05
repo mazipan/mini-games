@@ -196,17 +196,32 @@ icon: "🔢"
     color: #fff;
   }
   .grid-cell.pop {
-    animation: cellpop 0.18s ease-out;
+    animation: cellpop 0.2s ease-out;
   }
   @keyframes cellpop {
     0% {
       transform: scale(1);
     }
-    50% {
-      transform: scale(1.18);
+    45% {
+      transform: scale(1.22);
     }
     100% {
       transform: scale(1);
+    }
+  }
+  /* Squeeze-in just before two tiles merge */
+  .grid-cell.pre-merge {
+    animation: pre-merge 0.12s ease-in-out forwards;
+  }
+  @keyframes pre-merge {
+    0% {
+      transform: scale(1);
+    }
+    60% {
+      transform: scale(0.82);
+    }
+    100% {
+      transform: scale(0.88);
     }
   }
   .controls-hint {
@@ -561,11 +576,7 @@ icon: "🔢"
     return ROWS - 1 - cols[c].length; // row 0 = top, ROWS-1 = bottom
   }
 
-  // ─── Merge logic ──────────────────────────────────────────────────────────
-  // Cascades until no more merges exist anywhere on the board.
-  // Vertical: two equal tiles stacked in the same column merge (lower doubles).
-  // Horizontal: equal tiles at the same visual row in adjacent columns merge
-  //   (left tile consumed into right — enables chains like 2 2 4 → 4 4 → 8).
+  // ─── Merge helpers ────────────────────────────────────────────────────────
   function recordMerge(val) {
     score += val;
     mergeCount++;
@@ -575,36 +586,74 @@ icon: "🔢"
     }
   }
 
-  function doMerges() {
+  function getCellEl(c, visualRow) {
+    const grid = document.getElementById("grid");
+    return grid.children[visualRow * COLS + c] || null;
+  }
+
+  function flashClass(el, cls, ms) {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth; // restart animation if already running
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), ms);
+  }
+
+  function wait(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+
+  // ─── Animated merge cascade ───────────────────────────────────────────────
+  // Each merge step: squeeze source cells (120 ms) → execute → pop result (180 ms).
+  // dropping=true throughout so no other input can fire.
+  async function doMergesAnimated() {
     let anyMerge = true;
     while (anyMerge) {
       anyMerge = false;
+      if (!gameActive) break;
 
-      // 1. Vertical: scan each column top-down for adjacent equal pair
+      // Vertical: find first adjacent equal pair in a column (top-down)
+      let found = false;
       vertLoop: for (let c = 0; c < COLS; c++) {
         for (let i = cols[c].length - 1; i >= 1; i--) {
           if (cols[c][i] === cols[c][i - 1]) {
+            const rowHigh = ROWS - 1 - i;
+            const rowLow = ROWS - 1 - (i - 1);
+            flashClass(getCellEl(c, rowHigh), "pre-merge", 180);
+            flashClass(getCellEl(c, rowLow), "pre-merge", 180);
+            await wait(120);
             const val = cols[c][i - 1] * 2;
             cols[c].splice(i - 1, 2, val);
             recordMerge(val);
+            renderGrid();
+            flashClass(getCellEl(c, rowLow), "pop", 250);
+            await wait(180);
             anyMerge = true;
+            found = true;
             break vertLoop;
           }
         }
       }
-      if (anyMerge) continue;
+      if (found) continue;
 
-      // 2. Horizontal: equal tiles at same stack index in adjacent columns
-      //    Left tile removed, right tile doubles (drives left-to-right chains)
+      // Horizontal: equal tiles at same stack index in adjacent columns
       horizLoop: for (let c = 0; c < COLS - 1; c++) {
         const minH = Math.min(cols[c].length, cols[c + 1].length);
         for (let i = minH - 1; i >= 0; i--) {
           if (cols[c][i] === cols[c + 1][i]) {
+            const vRow = ROWS - 1 - i;
+            flashClass(getCellEl(c, vRow), "pre-merge", 180);
+            flashClass(getCellEl(c + 1, vRow), "pre-merge", 180);
+            await wait(120);
             const val = cols[c][i] * 2;
             cols[c].splice(i, 1);
             cols[c + 1][i] = val;
             recordMerge(val);
+            renderGrid();
+            flashClass(getCellEl(c + 1, ROWS - 1 - i), "pop", 250);
+            await wait(180);
             anyMerge = true;
+            found = true;
             break horizLoop;
           }
         }
@@ -623,10 +672,7 @@ icon: "🔢"
       // Reached the stack — lock with brief visual delay
       clearInterval(fallTimer);
       dropping = true;
-      setTimeout(() => {
-        lockTile();
-        dropping = false;
-      }, 80);
+      setTimeout(() => lockTile(), 80);
     }
   }
 
@@ -638,11 +684,14 @@ icon: "🔢"
   }
 
   // ─── Lock tile into column ────────────────────────────────────────────────
-  function lockTile() {
+  async function lockTile() {
     if (!gameActive) return;
     confettiFiredFor1024 = false;
     cols[selectedCol].push(currentVal);
-    doMerges();
+    renderGrid(); // show tile landed before merges start
+
+    await doMergesAnimated();
+    if (!gameActive) return; // game may have ended during animation
 
     document.getElementById("score").textContent = score;
 
@@ -660,6 +709,7 @@ icon: "🔢"
     }
 
     if (cols.some((col) => col.length >= ROWS)) {
+      dropping = false;
       endGame();
       return;
     }
@@ -667,6 +717,7 @@ icon: "🔢"
     currentVal = nextVal;
     nextVal = nextTileValue();
     updateNextPreview();
+    dropping = false;
     startFall();
   }
 
@@ -679,10 +730,7 @@ icon: "🔢"
     fallingRow = lr;
     renderGrid();
     dropping = true;
-    setTimeout(() => {
-      lockTile();
-      dropping = false;
-    }, 80);
+    setTimeout(() => lockTile(), 80);
   }
 
   // ─── Move tile left / right ───────────────────────────────────────────────
