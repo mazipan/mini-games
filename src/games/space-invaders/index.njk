@@ -748,14 +748,19 @@ icon: "👾"
       return;
     }
 
-    // ── Wave cleared: wait for power-ups to leave, then delay ────────────
+    // ── Wave cleared: player can still move/collect; wait for tokens to leave ──
     if (waveCleared) {
-      // Power-ups keep falling until gone
-      powerUps = powerUps.filter((p) => {
-        p.y += 1.5 * S;
-        return p.y < gameCanvas.height;
+      const spd = 3 * S;
+      if ((keys["ArrowLeft"] || dpadLeft) && player.x - playerW / 2 > 0) player.x -= spd;
+      if ((keys["ArrowRight"] || dpadRight) && player.x + playerW / 2 < gameCanvas.width) player.x += spd;
+
+      // Bullets keep moving
+      playerBullets = playerBullets.filter((b) => {
+        b.y -= 5 * S;
+        return b.y + BULLET_H > 0;
       });
-      // UFO/gift keep moving
+
+      // UFO/gift keep moving off screen
       if (ufo) {
         ufo.x += UFO_SPEED * ufo.dir;
         if (ufo.x < -alienW * 2 || ufo.x > gameCanvas.width + alienW * 2) ufo = null;
@@ -764,10 +769,16 @@ icon: "👾"
         gift.x += GIFT_SPEED * gift.dir;
         if (gift.x < -alienW * 2 || gift.x > gameCanvas.width + alienW * 2) gift = null;
       }
-      // Bullets fade out
-      playerBullets = playerBullets.filter((b) => {
-        b.y -= 5 * S;
-        return b.y + BULLET_H > 0;
+
+      // Power-ups fall — player can still collect them
+      powerUps = powerUps.filter((p) => {
+        p.y += 1.5 * S;
+        if (Math.abs(p.x - player.x) < playerW && p.y >= player.y - playerH && p.y <= player.y) {
+          if (p.type === "double") doubleFireUntil = performance.now() + DOUBLE_DURATION;
+          else rapidFireUntil = performance.now() + RAPID_DURATION;
+          return false;
+        }
+        return p.y < gameCanvas.height;
       });
 
       if (powerUps.length === 0 && ufo === null && gift === null) {
