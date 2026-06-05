@@ -450,8 +450,6 @@ icon: "👾"
 
   // Alien reveal (row-by-row intro animation)
   let waveIntro = false; // true while aliens are sliding into position
-  let waveIntroTimer = 0;
-  const REVEAL_ROW_DELAY = 22; // frames between each row appearing
   const SLIDE_SPEED = 7 * S; // px per frame for intro slide
 
   // ── Auto-fire & power-ups ─────────────────────────────────────────────────
@@ -501,15 +499,21 @@ icon: "👾"
     const secretSlot = Math.floor(Math.random() * slots.length);
     const secretEmoji = SECRET_EMOJIS[(wave - 1) % SECRET_EMOJIS.length];
 
+    const maxRow = numRows - 1;
+    const rowH = alienH + alienPadY;
     slots.forEach(({ row, col }, idx) => {
       const typeIdx = Math.min(MAX_ROWS - 1, Math.floor((row / numRows) * MAX_ROWS));
       const isSecret = idx === secretSlot;
-      const targetY = alienOffsetY + row * (alienH + alienPadY);
+      const targetY = alienOffsetY + row * rowH;
+      // Bottom row (maxRow) starts just above the canvas top (-alienH).
+      // Each row above it starts one rowH further off-screen so they all
+      // travel the same distance and parade in simultaneously, bottom-first.
+      const startY = -alienH - (maxRow - row) * rowH;
       grid.push({
         row,
         col,
         x: startX + col * (alienW + alienPadX),
-        y: -alienH * 2, // start above screen
+        y: startY,
         targetY,
         alive: true,
         emoji: isSecret ? secretEmoji : ALIEN_TYPE_EMOJIS[typeIdx],
@@ -549,7 +553,7 @@ icon: "👾"
     waveCleared = false;
     waveDelayFrames = 0;
     waveIntro = true;
-    waveIntroTimer = 0;
+
     ufo = null;
     ufoTimer = 0;
     gift = null;
@@ -573,7 +577,7 @@ icon: "👾"
     alienShootTimer = 0;
     waveAnnounce = 110;
     waveIntro = true;
-    waveIntroTimer = 0;
+
     waveCleared = false;
     waveDelayFrames = 0;
     ufo = null;
@@ -712,22 +716,15 @@ icon: "👾"
     frameCount++;
     if (waveAnnounce > 0) waveAnnounce--;
 
-    // ── Intro animation: slide aliens in row by row ───────────────────────
+    // ── Intro animation: all rows slide in simultaneously, bottom row first ──
     if (waveIntro) {
-      waveIntroTimer++;
       let allInPlace = true;
       for (const a of aliens) {
         if (!a.alive) continue;
-        // Unlock row based on timer
-        const unlockFrame = a.row * REVEAL_ROW_DELAY;
-        if (waveIntroTimer >= unlockFrame) {
-          if (a.y < a.targetY) {
-            a.y = Math.min(a.y + SLIDE_SPEED, a.targetY);
-          }
-          if (a.y < a.targetY) allInPlace = false;
-        } else {
-          allInPlace = false; // row not yet unlocked
+        if (a.y < a.targetY) {
+          a.y = Math.min(a.y + SLIDE_SPEED, a.targetY);
         }
+        if (a.y < a.targetY) allInPlace = false;
       }
       if (allInPlace) waveIntro = false;
 
