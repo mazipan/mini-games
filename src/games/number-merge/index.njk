@@ -381,6 +381,30 @@ icon: "🔢"
   .info-body p {
     margin: 0.25rem 0;
   }
+  #level-toast {
+    position: fixed;
+    top: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(-12px);
+    background: #7c3aed;
+    color: #fff;
+    padding: 0.3rem 1rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    z-index: 500;
+    opacity: 0;
+    transition:
+      opacity 0.2s,
+      transform 0.2s;
+    white-space: nowrap;
+  }
+  #level-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 </style>
 
 <div id="game-wrapper">
@@ -388,6 +412,8 @@ icon: "🔢"
     {{ statCard("Score", "score", "0") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level",
     "level-display", "1") }}
   </div>
+
+  <div id="level-toast"></div>
 
   <div id="next-preview">
     <span>Next</span>
@@ -539,7 +565,6 @@ icon: "🔢"
   let fallTimer; // setInterval handle
   let dropping = false; // brief lock-delay flag
   let gameActive;
-  let confettiFiredFor1024 = false;
 
   document.getElementById("best-display").textContent = best;
 
@@ -628,10 +653,15 @@ icon: "🔢"
   function recordMerge(val) {
     score += val;
     mergeCount++;
-    if (val >= 1024 && !confettiFiredFor1024) {
-      confettiFiredFor1024 = true;
-      launchConfetti();
-    }
+  }
+
+  let levelToastTimer = null;
+  function showLevelToast(lvl) {
+    const el = document.getElementById("level-toast");
+    el.textContent = `Level ${lvl}!`;
+    el.classList.add("show");
+    clearTimeout(levelToastTimer);
+    levelToastTimer = setTimeout(() => el.classList.remove("show"), 1600);
   }
 
   function getCellEl(c, visualRow) {
@@ -734,7 +764,6 @@ icon: "🔢"
   // ─── Lock tile into column ────────────────────────────────────────────────
   async function lockTile() {
     if (!gameActive) return;
-    confettiFiredFor1024 = false;
     cols[selectedCol].push(currentVal);
     renderGrid(); // show tile landed before merges start
 
@@ -754,6 +783,7 @@ icon: "🔢"
     if (newLevel !== level) {
       level = newLevel;
       document.getElementById("level-display").textContent = level;
+      showLevelToast(level);
     }
 
     if (cols.some((col) => col.length >= ROWS)) {
@@ -824,7 +854,6 @@ icon: "🔢"
     level = 1;
     mergeCount = 0;
     selectedCol = 3;
-    confettiFiredFor1024 = false;
     dropping = false;
     gameActive = true;
 
