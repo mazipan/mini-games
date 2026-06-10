@@ -514,26 +514,47 @@ icon: "🔩"
     dst.push(...src.splice(src.length - toMove, toMove));
   }
 
-  function generatePuzzle(numColors) {
+  function isSolvedState(bts) {
+    return bts.every((bolt) => bolt.length === 0 || (bolt.length === CAPACITY && bolt.every((n) => n === bolt[0])));
+  }
+
+  function generatePuzzle(numColors, diff) {
     const colors = COLOR_NAMES.slice(0, numColors);
-    let bts = colors.map((c) => Array(CAPACITY).fill(c));
+
+    // Build a flat list of all nails in solved order, then shuffle it.
+    // Bypassing game-move rules during generation avoids the "always sorted" bug
+    // that occurred when starting from a solved state and only applying valid moves.
+    const allNails = [];
+    colors.forEach((c) => {
+      for (let i = 0; i < CAPACITY; i++) allNails.push(c);
+    });
+
+    // Swap count controls how scrambled the result is:
+    //   easy   → light mix (some runs of same color survive, easier to read)
+    //   medium → proper shuffle
+    //   hard   → heavy shuffle (maximum entropy)
+    const n = allNails.length;
+    const swaps = diff === "easy" ? n * 2 : diff === "hard" ? n * 8 : n * 4;
+    for (let i = 0; i < swaps; i++) {
+      const a = Math.floor(Math.random() * n);
+      const b = Math.floor(Math.random() * n);
+      [allNails[a], allNails[b]] = [allNails[b], allNails[a]];
+    }
+
+    // Distribute nails into bolts: numColors filled bolts + 2 empty
+    const bts = [];
+    for (let i = 0; i < numColors; i++) {
+      bts.push(allNails.slice(i * CAPACITY, (i + 1) * CAPACITY));
+    }
     bts.push([], []);
 
-    for (let i = 0; i < 300; i++) {
-      const nonEmpty = bts.map((_, idx) => idx).filter((idx) => bts[idx].length > 0);
-      const candidates = bts.map((_, idx) => idx).filter((idx) => idx !== nonEmpty[0] && bts[idx].length < CAPACITY);
-      if (nonEmpty.length === 0 || candidates.length === 0) continue;
-      const from = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
-      const availableTo = candidates.filter((idx) => idx !== from);
-      if (availableTo.length === 0) continue;
-      const to = availableTo[Math.floor(Math.random() * availableTo.length)];
-      if (canMoveRaw(bts, from, to)) executeRawMove(bts, from, to);
-    }
+    // Extremely rare edge case: retry if already solved
+    if (isSolvedState(bts)) return generatePuzzle(numColors, diff);
     return bts;
   }
 
   function isWon() {
-    return bolts.every((bolt) => bolt.length === 0 || (bolt.length === CAPACITY && bolt.every((n) => n === bolt[0])));
+    return isSolvedState(bolts);
   }
 
   function handleBoltClick(idx) {
@@ -664,7 +685,7 @@ icon: "🔩"
     document.getElementById("moves-display").textContent = "0";
 
     const cfg = DIFFICULTY[difficulty];
-    bolts = generatePuzzle(cfg.colors);
+    bolts = generatePuzzle(cfg.colors, difficulty);
     document.getElementById("best-display").textContent = getBestDisplay(difficulty);
     renderBolts();
   }
@@ -682,6 +703,6 @@ icon: "🔩"
   document.getElementById("best-display").textContent = getBestDisplay(difficulty);
 
   const cfg = DIFFICULTY[difficulty];
-  bolts = generatePuzzle(cfg.colors);
+  bolts = generatePuzzle(cfg.colors, difficulty);
   renderBolts();
 </script>
