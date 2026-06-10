@@ -86,6 +86,7 @@ icon: "🔗"
     border-radius: 6px;
     padding: 2px;
     user-select: none;
+    touch-action: none;
   }
   .gc {
     border-radius: 4px;
@@ -197,6 +198,49 @@ icon: "🔗"
   .play-btn:hover {
     background: #6d28d9;
   }
+  .action-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hint-btn {
+    padding: 0.5rem 1.25rem;
+    background: #0e7490;
+    color: white;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .hint-btn:hover {
+    background: #0c6079;
+  }
+  .hint-btn:disabled {
+    background: #1e293b;
+    color: #475569;
+    cursor: default;
+  }
+  .new-game-btn {
+    padding: 0.5rem 1.25rem;
+    background: #1e293b;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .new-game-btn:hover {
+    background: #273449;
+    border-color: #7c3aed;
+    color: #e2e8f0;
+  }
   .info-section {
     width: 100%;
     max-width: 480px;
@@ -266,9 +310,9 @@ icon: "🔗"
     "best-display", "—") }}
   </div>
   <div class="diff-row">
-    <button class="diff-btn" id="btn-easy" onclick="setDifficulty('easy')">Easy (5×5)</button>
-    <button class="diff-btn active" id="btn-medium" onclick="setDifficulty('medium')">Medium (7×7)</button>
-    <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">Hard (9×9)</button>
+    <button class="diff-btn active" id="btn-easy" onclick="setDifficulty('easy')">Easy (4×4)</button>
+    <button class="diff-btn" id="btn-medium" onclick="setDifficulty('medium')">Medium (5×5)</button>
+    <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">Hard (7×7)</button>
   </div>
   <div class="board-wrapper" id="board-wrapper">
     <div id="grid"></div>
@@ -281,6 +325,10 @@ icon: "🔗"
       </div>
       <button class="play-btn" onclick="newGame()">New Game</button>
     </div>
+  </div>
+  <div class="action-row">
+    <button class="hint-btn" id="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">10</span>)</button>
+    <button class="new-game-btn" onclick="newGame()">New Game</button>
   </div>
 </div>
 
@@ -304,11 +352,16 @@ icon: "🔗"
     <li>Every cell in the grid must be covered</li>
     <li>No paths may overlap or cross</li>
   </ul>
+  <h4>Hints</h4>
+  <ul>
+    <li>Tap <strong>💡 Hint</strong> to reveal the correct path for the color with least progress</li>
+    <li>You start each puzzle with <strong>10 hints</strong></li>
+  </ul>
   <h4>Difficulty</h4>
   <ul>
-    <li><strong>Easy (5×5)</strong> — 4 color pairs</li>
-    <li><strong>Medium (7×7)</strong> — 6 color pairs</li>
-    <li><strong>Hard (9×9)</strong> — 8 color pairs</li>
+    <li><strong>Easy (4×4)</strong> — 3 color pairs, great for beginners</li>
+    <li><strong>Medium (5×5)</strong> — 4–5 color pairs</li>
+    <li><strong>Hard (7×7)</strong> — 5–6 color pairs</li>
   </ul>
   {% endcall %} {% call infoDetails("FAQ") %}
   <h4>Is every puzzle solvable?</h4>
@@ -376,271 +429,107 @@ icon: "🔗"
     maroon: "#be123c",
   };
 
+  // prettier-ignore
   const LEVELS = {
+    // Easy: 4×4 grid, 3 colors — genuinely beginner-friendly
     easy: [
       {
-        size: 5,
-        dots: {
-          red: [
-            [0, 0],
-            [4, 4],
-          ],
-          blue: [
-            [0, 4],
-            [4, 0],
-          ],
-          green: [
-            [0, 2],
-            [2, 4],
-          ],
-          yellow: [
-            [2, 0],
-            [4, 2],
-          ],
+        size: 4,
+        dots: { red: [[0,0],[2,0]], blue: [[3,0],[3,3]], green: [[2,1],[2,3]] },
+        solution: {
+          red:   [[0,0],[0,1],[0,2],[0,3],[1,3],[1,2],[1,1],[1,0],[2,0]],
+          blue:  [[3,0],[3,1],[3,2],[3,3]],
+          green: [[2,1],[2,2],[2,3]],
         },
       },
       {
-        size: 5,
-        dots: {
-          red: [
-            [0, 0],
-            [0, 4],
-          ],
-          blue: [
-            [1, 1],
-            [3, 3],
-          ],
-          green: [
-            [4, 0],
-            [4, 4],
-          ],
-          yellow: [
-            [2, 0],
-            [2, 4],
-          ],
+        size: 4,
+        dots: { red: [[0,0],[3,0]], blue: [[2,1],[2,3]], green: [[3,1],[3,3]] },
+        solution: {
+          red:   [[0,0],[0,1],[0,2],[0,3],[1,3],[1,2],[1,1],[1,0],[2,0],[3,0]],
+          blue:  [[2,1],[2,2],[2,3]],
+          green: [[3,1],[3,2],[3,3]],
         },
       },
       {
-        size: 5,
-        dots: {
-          red: [
-            [0, 1],
-            [4, 3],
-          ],
-          blue: [
-            [0, 3],
-            [4, 1],
-          ],
-          green: [
-            [2, 0],
-            [2, 4],
-          ],
-          yellow: [
-            [0, 0],
-            [4, 0],
-          ],
+        size: 4,
+        dots: { red: [[0,0],[2,2]], blue: [[0,3],[3,3]], green: [[3,0],[3,2]] },
+        solution: {
+          red:   [[0,0],[1,0],[2,0],[2,1],[2,2]],
+          blue:  [[0,3],[0,2],[0,1],[1,1],[1,2],[1,3],[2,3],[3,3]],
+          green: [[3,0],[3,1],[3,2]],
         },
       },
     ],
+    // Medium: 5×5 grid, 4–5 colors
     medium: [
       {
-        size: 7,
-        dots: {
-          red: [
-            [0, 0],
-            [6, 6],
-          ],
-          blue: [
-            [0, 6],
-            [6, 0],
-          ],
-          green: [
-            [0, 3],
-            [6, 3],
-          ],
-          yellow: [
-            [3, 0],
-            [3, 6],
-          ],
-          orange: [
-            [1, 1],
-            [5, 5],
-          ],
-          purple: [
-            [1, 5],
-            [5, 1],
-          ],
+        size: 5,
+        dots: { red: [[0,0],[4,4]], blue: [[4,0],[1,0]], green: [[1,1],[2,2]], yellow: [[4,1],[4,3]] },
+        solution: {
+          red:    [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[4,4]],
+          blue:   [[4,0],[3,0],[2,0],[1,0]],
+          green:  [[1,1],[1,2],[1,3],[2,3],[3,3],[3,2],[3,1],[2,1],[2,2]],
+          yellow: [[4,1],[4,2],[4,3]],
         },
       },
       {
-        size: 7,
-        dots: {
-          red: [
-            [0, 0],
-            [3, 3],
-          ],
-          blue: [
-            [0, 6],
-            [3, 3],
-          ],
-          green: [
-            [6, 0],
-            [3, 3],
-          ],
-          yellow: [
-            [6, 6],
-            [3, 3],
-          ],
-          orange: [
-            [0, 3],
-            [6, 3],
-          ],
-          purple: [
-            [3, 0],
-            [3, 6],
-          ],
+        size: 5,
+        dots: { red: [[0,0],[4,4]], blue: [[4,0],[2,0]], green: [[1,0],[1,3]], yellow: [[2,1],[4,3]] },
+        solution: {
+          red:    [[0,0],[0,1],[0,2],[0,3],[0,4],[1,4],[2,4],[3,4],[4,4]],
+          blue:   [[4,0],[3,0],[2,0]],
+          green:  [[1,0],[1,1],[1,2],[1,3]],
+          yellow: [[2,1],[2,2],[2,3],[3,3],[3,2],[3,1],[4,1],[4,2],[4,3]],
         },
       },
       {
-        size: 7,
-        dots: {
-          red: [
-            [0, 0],
-            [0, 6],
-          ],
-          blue: [
-            [6, 0],
-            [6, 6],
-          ],
-          green: [
-            [0, 2],
-            [4, 4],
-          ],
-          yellow: [
-            [2, 0],
-            [4, 6],
-          ],
-          orange: [
-            [2, 6],
-            [6, 2],
-          ],
-          purple: [
-            [4, 0],
-            [6, 4],
-          ],
+        size: 5,
+        dots: { red: [[0,0],[0,4]], blue: [[4,0],[4,4]], green: [[1,0],[3,0]], yellow: [[1,4],[3,4]], purple: [[1,1],[2,2]] },
+        solution: {
+          red:    [[0,0],[0,1],[0,2],[0,3],[0,4]],
+          blue:   [[4,0],[4,1],[4,2],[4,3],[4,4]],
+          green:  [[1,0],[2,0],[3,0]],
+          yellow: [[1,4],[2,4],[3,4]],
+          purple: [[1,1],[1,2],[1,3],[2,3],[3,3],[3,2],[3,1],[2,1],[2,2]],
         },
       },
     ],
+    // Hard: 7×7 grid, 5–6 colors
     hard: [
       {
-        size: 9,
-        dots: {
-          red: [
-            [0, 0],
-            [8, 8],
-          ],
-          blue: [
-            [0, 8],
-            [8, 0],
-          ],
-          green: [
-            [0, 4],
-            [8, 4],
-          ],
-          yellow: [
-            [4, 0],
-            [4, 8],
-          ],
-          orange: [
-            [1, 1],
-            [7, 7],
-          ],
-          purple: [
-            [1, 7],
-            [7, 1],
-          ],
-          pink: [
-            [2, 4],
-            [6, 4],
-          ],
-          cyan: [
-            [4, 2],
-            [4, 6],
-          ],
+        size: 7,
+        dots: { red: [[0,0],[0,6]], blue: [[6,0],[6,6]], green: [[1,0],[5,0]], yellow: [[1,6],[5,6]], orange: [[1,1],[5,5]] },
+        solution: {
+          red:    [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6]],
+          blue:   [[6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]],
+          green:  [[1,0],[2,0],[3,0],[4,0],[5,0]],
+          yellow: [[1,6],[2,6],[3,6],[4,6],[5,6]],
+          orange: [[1,1],[1,2],[1,3],[2,3],[2,2],[2,1],[3,1],[3,2],[3,3],[4,3],[4,2],[4,1],[5,1],[5,2],[5,3],[5,4],[4,4],[3,4],[2,4],[1,4],[1,5],[2,5],[3,5],[4,5],[5,5]],
         },
       },
       {
-        size: 9,
-        dots: {
-          red: [
-            [0, 0],
-            [4, 4],
-          ],
-          blue: [
-            [0, 8],
-            [4, 4],
-          ],
-          green: [
-            [8, 0],
-            [4, 4],
-          ],
-          yellow: [
-            [8, 8],
-            [4, 4],
-          ],
-          orange: [
-            [0, 4],
-            [8, 4],
-          ],
-          purple: [
-            [4, 0],
-            [4, 8],
-          ],
-          pink: [
-            [2, 2],
-            [6, 6],
-          ],
-          cyan: [
-            [2, 6],
-            [6, 2],
-          ],
+        size: 7,
+        dots: { red: [[0,0],[0,6]], blue: [[6,0],[6,6]], green: [[1,0],[5,0]], yellow: [[1,6],[5,6]], orange: [[1,1],[2,1]], purple: [[3,5],[5,1]] },
+        solution: {
+          red:    [[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6]],
+          blue:   [[6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[6,6]],
+          green:  [[1,0],[2,0],[3,0],[4,0],[5,0]],
+          yellow: [[1,6],[2,6],[3,6],[4,6],[5,6]],
+          orange: [[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[2,4],[2,3],[2,2],[2,1]],
+          purple: [[3,5],[3,4],[3,3],[3,2],[3,1],[4,1],[4,2],[4,3],[4,4],[4,5],[5,5],[5,4],[5,3],[5,2],[5,1]],
         },
       },
       {
-        size: 9,
-        dots: {
-          red: [
-            [0, 0],
-            [0, 8],
-          ],
-          blue: [
-            [8, 0],
-            [8, 8],
-          ],
-          green: [
-            [0, 2],
-            [6, 6],
-          ],
-          yellow: [
-            [0, 6],
-            [6, 2],
-          ],
-          orange: [
-            [2, 0],
-            [6, 8],
-          ],
-          purple: [
-            [2, 8],
-            [8, 2],
-          ],
-          pink: [
-            [4, 0],
-            [4, 8],
-          ],
-          cyan: [
-            [8, 4],
-            [4, 4],
-          ],
+        size: 7,
+        dots: { red: [[0,0],[6,0]], blue: [[0,6],[6,6]], green: [[0,1],[0,5]], yellow: [[6,1],[6,5]], orange: [[1,1],[2,1]], purple: [[3,1],[4,4]] },
+        solution: {
+          red:    [[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0]],
+          blue:   [[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6]],
+          green:  [[0,1],[0,2],[0,3],[0,4],[0,5]],
+          yellow: [[6,1],[6,2],[6,3],[6,4],[6,5]],
+          orange: [[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[2,4],[2,3],[2,2],[2,1]],
+          purple: [[3,1],[4,1],[5,1],[5,2],[5,3],[5,4],[5,5],[4,5],[3,5],[3,4],[3,3],[3,2],[4,2],[4,3],[4,4]],
         },
       },
     ],
@@ -652,14 +541,15 @@ icon: "🔗"
     hard: "mini-color-connect-best-hard",
   };
 
-  let difficulty = "medium";
+  let difficulty = "easy";
   let currentLevel = null;
-  let size = 7;
+  let size = 5;
   let paths = {};
   let grid = [];
   let activeColor = null;
   let moves = 0;
   let gameWon = false;
+  let hintsLeft = 10;
   let levelIdx = { easy: 0, medium: 0, hard: 0 };
 
   let bests = {
@@ -792,14 +682,59 @@ icon: "🔗"
   }
 
   function isSolved() {
-    const dots = currentLevel.dots;
-    const allConnected = Object.entries(dots).every(([color, [a, b]]) => {
-      const path = paths[color];
-      if (path.length < 2) return false;
-      const head = path[path.length - 1];
-      return head[0] === b[0] && head[1] === b[1];
+    const allConnected = Object.entries(currentLevel.dots).every(([color, [a, b]]) => {
+      const p = paths[color];
+      if (!p || p.length < 2) return false;
+      const s = p[0],
+        e = p[p.length - 1];
+      return (
+        (s[0] === a[0] && s[1] === a[1] && e[0] === b[0] && e[1] === b[1]) ||
+        (s[0] === b[0] && s[1] === b[1] && e[0] === a[0] && e[1] === a[1])
+      );
     });
     return allConnected && filledCount() === size * size;
+  }
+
+  function applyHintPath(color) {
+    const sol = currentLevel.solution[color];
+    clearPath(color);
+    // clear any conflicting occupants in the solution cells
+    for (const [r, c] of sol) {
+      const cell = grid[r][c];
+      if (cell.color && cell.color !== color && !cell.isEndpoint) {
+        clearPathFromCell(cell.color, r, c);
+      }
+    }
+    paths[color] = sol.map(([r, c]) => [r, c]);
+    for (const [r, c] of sol) grid[r][c].color = color;
+  }
+
+  function useHint() {
+    if (hintsLeft <= 0 || gameWon) return;
+    // pick the color with least relative progress vs solution
+    let target = null,
+      minRatio = Infinity;
+    for (const [color, sol] of Object.entries(currentLevel.solution)) {
+      const cur = paths[color] || [];
+      let match = 0;
+      for (let i = 0; i < Math.min(cur.length, sol.length); i++) {
+        if (cur[i][0] === sol[i][0] && cur[i][1] === sol[i][1]) match++;
+        else break;
+      }
+      const ratio = match / sol.length;
+      if (ratio < 1 && ratio < minRatio) {
+        minRatio = ratio;
+        target = color;
+      }
+    }
+    if (!target) return;
+    applyHintPath(target);
+    hintsLeft--;
+    document.getElementById("hints-left").textContent = hintsLeft;
+    document.getElementById("hint-btn").disabled = hintsLeft <= 0;
+    updateFilledDisplay();
+    renderGrid();
+    if (isSolved()) handleWin();
   }
 
   function handleWin() {
@@ -914,6 +849,7 @@ icon: "🔗"
         cell.className = "gc";
         cell.style.width = cs + "px";
         cell.style.height = cs + "px";
+        cell.dataset.idx = r * size + c;
         gridEl.appendChild(cell);
       }
     }
@@ -921,13 +857,11 @@ icon: "🔗"
   }
 
   function cellFromPoint(x, y) {
-    const gridEl = document.getElementById("grid");
-    const rect = gridEl.getBoundingClientRect();
-    const cs = getCellSize();
-    const col = Math.floor((x - rect.left) / (cs + 2));
-    const row = Math.floor((y - rect.top) / (cs + 2));
-    if (row < 0 || row >= size || col < 0 || col >= size) return null;
-    return { row, col };
+    let el = document.elementFromPoint(x, y);
+    while (el && !el.classList?.contains("gc")) el = el.parentElement;
+    if (!el || el.dataset.idx === undefined) return null;
+    const idx = parseInt(el.dataset.idx, 10);
+    return { row: Math.floor(idx / size), col: idx % size };
   }
 
   const gridEl = document.getElementById("grid");
@@ -971,13 +905,19 @@ icon: "🔗"
   );
 
   gridEl.addEventListener("touchend", () => stopDraw());
+  gridEl.addEventListener("touchcancel", () => stopDraw());
+  window.addEventListener("touchend", () => stopDraw());
+  window.addEventListener("touchcancel", () => stopDraw());
 
   function newGame() {
     gameWon = false;
     moves = 0;
     activeColor = null;
+    hintsLeft = 10;
     document.getElementById("moves-display").textContent = "0";
     document.getElementById("filled-display").textContent = "0%";
+    document.getElementById("hints-left").textContent = "10";
+    document.getElementById("hint-btn").disabled = false;
     document.getElementById("win-overlay").style.display = "none";
     const levels = LEVELS[difficulty];
     currentLevel = levels[levelIdx[difficulty] % levels.length];
