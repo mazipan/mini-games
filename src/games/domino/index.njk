@@ -105,6 +105,45 @@ icon: "🎲"
     padding: 0 4px;
     flex-shrink: 0;
   }
+  /* Open ends summary row */
+  #ends-row {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .end-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.3rem 0.65rem;
+    font-size: 0.75rem;
+    flex: 1;
+  }
+  .end-badge.end-right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+  .end-dir {
+    font-size: 0.8rem;
+    color: #64748b;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .end-badge .d-half {
+    --pip: 7px;
+    width: calc(var(--pip) * 3 + 8px);
+    height: calc(var(--pip) * 3 + 8px);
+    padding: 2px;
+    gap: 1px;
+    flex-shrink: 0;
+    border: 1.5px solid #475569;
+    border-radius: 3px;
+  }
   /* Domino tile */
   .domino {
     display: inline-flex;
@@ -475,6 +514,17 @@ icon: "🎲"
       </div>
     </div>
 
+    <div id="ends-row">
+      <div class="end-badge end-left">
+        <div id="end-left-pip"></div>
+        <span class="end-dir">← Left open</span>
+      </div>
+      <div class="end-badge end-right">
+        <div id="end-right-pip"></div>
+        <span class="end-dir">Right open →</span>
+      </div>
+    </div>
+
     <div id="status">Your turn</div>
 
     <div id="action-row"></div>
@@ -723,8 +773,10 @@ icon: "🎲"
 
   function renderChain() {
     const el = document.getElementById("chain");
+    const endsRow = document.getElementById("ends-row");
     if (chain.length === 0) {
       el.innerHTML = `<span id="chain-empty">Place your first tile to start the chain…</span>`;
+      endsRow.style.display = "none";
       return;
     }
     const { left, right } = getChainEnds();
@@ -737,6 +789,10 @@ icon: "🎲"
     // Scroll to end of chain when new tile is added
     const scroll = document.getElementById("chain-scroll");
     scroll.scrollLeft = scroll.scrollWidth;
+    // Update always-visible open-ends summary
+    document.getElementById("end-left-pip").innerHTML = makeHalfHTML(left);
+    document.getElementById("end-right-pip").innerHTML = makeHalfHTML(right);
+    endsRow.style.display = "flex";
   }
 
   function renderPlayerHand() {
