@@ -162,6 +162,12 @@ icon: "🎲"
   .domino.hand-tile {
     cursor: pointer;
     border-color: #64748b;
+    flex-direction: column;
+  }
+  .domino.hand-tile .d-half + .d-half {
+    border-left: none;
+    border-top: 2px solid;
+    border-top-color: inherit;
   }
   .domino.hand-tile:hover {
     border-color: #94a3b8;
