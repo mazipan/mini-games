@@ -490,24 +490,50 @@ icon: "🍬"
       const isAdjacent = (Math.abs(sr - r) === 1 && sc === c) || (Math.abs(sc - c) === 1 && sr === r);
       if (isAdjacent) {
         doSwap(sr, sc, r, c);
+      } else {
+        selected = { r, c };
+        getTileEl(r, c).classList.add("selected");
       }
     }
   }
 
   async function doSwap(r1, c1, r2, c2) {
     if (busy) return;
+    busy = true;
+
+    const el1 = getTileEl(r1, c1);
+    const el2 = getTileEl(r2, c2);
+    if (el1 && el2) {
+      const rect1 = el1.getBoundingClientRect();
+      const rect2 = el2.getBoundingClientRect();
+      const dx = rect2.left - rect1.left;
+      const dy = rect2.top - rect1.top;
+      el1.style.transition = "transform 0.15s ease-in-out";
+      el2.style.transition = "transform 0.15s ease-in-out";
+      el1.style.zIndex = "5";
+      el2.style.zIndex = "5";
+      el1.style.transform = `translate(${dx}px, ${dy}px)`;
+      el2.style.transform = `translate(${-dx}px, ${-dy}px)`;
+      await delay(170);
+    }
+
     swapBoard(board, r1, c1, r2, c2);
     const matches = findMatches(board);
     if (matches.size === 0) {
       swapBoard(board, r1, c1, r2, c2);
-      const e1 = getTileEl(r1, c1);
-      if (e1) {
-        e1.style.transform = "translateX(6px)";
-        setTimeout(() => (e1.style.transform = ""), 150);
+      if (el1 && el2) {
+        el1.style.transform = "";
+        el2.style.transform = "";
+        await delay(170);
+        el1.style.transition = "";
+        el2.style.transition = "";
+        el1.style.zIndex = "";
+        el2.style.zIndex = "";
       }
+      busy = false;
       return;
     }
-    busy = true;
+
     moves--;
     movesEl.textContent = moves;
     await resolveBoard();
