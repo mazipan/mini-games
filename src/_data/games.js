@@ -18,6 +18,15 @@ module.exports = [
     tags: ["cards", "casino", "classic"],
   },
   {
+    slug: "bolt-sort",
+    name: "Bolt Sort",
+    description: "Move nails between bolts until every bolt holds nails of only one color.",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🔩",
+    tags: ["sorting", "puzzle", "colors", "casual"],
+  },
+  {
     slug: "breakout",
     name: "Breakout",
     description: "Break all the bricks by bouncing the ball with your paddle.",
