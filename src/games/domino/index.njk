@@ -379,6 +379,57 @@ icon: "🎲"
     margin: 0;
     max-width: 300px;
   }
+  /* Round summary overlay */
+  #round-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #round-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #round-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+  #round-desc {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    text-align: center;
+    margin: 0;
+  }
+  .round-btn-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .secondary-btn {
+    padding: 0.5rem 1.5rem;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .secondary-btn:hover {
+    background: #475569;
+  }
   /* Lobby overlay */
   #lobby-overlay {
     position: fixed;
@@ -559,6 +610,30 @@ icon: "🎲"
   </div>
   <p id="go-context"></p>
   <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="round-overlay" style="display: none">
+  <span id="round-icon">🎉</span>
+  <h2 id="round-title">Round Over</h2>
+  <p id="round-desc"></p>
+  <div class="summary-row">
+    <div class="summary-stat">
+      <div class="summary-label">🙂 You</div>
+      <div class="summary-value" id="round-player">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">🤖 AI</div>
+      <div class="summary-value" id="round-ai">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Target</div>
+      <div class="summary-value">100</div>
+    </div>
+  </div>
+  <div class="round-btn-row">
+    <button class="play-btn" onclick="nextRound()">Next Round</button>
+    <button class="secondary-btn" onclick="showLobby()">New Game</button>
+  </div>
 </div>
 
 <div id="lobby-overlay">
@@ -1070,9 +1145,41 @@ icon: "🎲"
     if (playerScore >= TARGET_SCORE || aiScore >= TARGET_SCORE) {
       endGame(playerScore >= TARGET_SCORE && playerScore > aiScore ? "player" : "ai");
     } else {
-      // Start new round after short delay
-      setTimeout(startRound, 1200);
+      showRoundSummary(winner, roundPoints);
     }
+  }
+
+  function showRoundSummary(winner, roundPoints) {
+    gameOver = true;
+    let icon, title, desc;
+    if (winner === "player") {
+      icon = "🎉";
+      title = "Round Won!";
+      desc = `You scored ${roundPoints} point${roundPoints !== 1 ? "s" : ""} from the AI's remaining tiles.`;
+    } else if (winner === "ai") {
+      icon = "😤";
+      title = "Round Lost";
+      desc = `AI scored ${roundPoints} point${roundPoints !== 1 ? "s" : ""} from your remaining tiles.`;
+    } else {
+      icon = roundPoints > 0 ? (playerScore > aiScore ? "🎉" : "😤") : "🤝";
+      title = "Round Blocked";
+      desc =
+        roundPoints > 0
+          ? `${playerScore > aiScore ? "You" : "AI"} scored ${roundPoints} pts (lower pip count).`
+          : "Both hands tied — no points scored this round.";
+    }
+    document.getElementById("round-icon").textContent = icon;
+    document.getElementById("round-title").textContent = title;
+    document.getElementById("round-desc").textContent = desc;
+    document.getElementById("round-player").textContent = playerScore;
+    document.getElementById("round-ai").textContent = aiScore;
+    document.getElementById("round-overlay").style.display = "flex";
+  }
+
+  function nextRound() {
+    document.getElementById("round-overlay").style.display = "none";
+    gameOver = false;
+    startRound();
   }
 
   function endGame(winner) {
@@ -1150,6 +1257,7 @@ icon: "🎲"
     gameOver = true;
     aiActing = false;
     document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("round-overlay").style.display = "none";
     document.getElementById("lobby-overlay").style.display = "flex";
     selectDiff(difficulty);
   }
