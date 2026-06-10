@@ -676,6 +676,21 @@ icon: "🎲"
     If both players are stuck (no valid plays, empty boneyard), the player with the lower pip total wins and scores the
     difference.
   </p>
+  <h4>Scoring</h4>
+  <p>Points are awarded at the end of each round:</p>
+  <ul>
+    <li>
+      <strong>You empty your hand</strong> — you score the sum of all pips left in the AI's hand (e.g. AI holds [3|2]
+      and [4|1] → you score 10).
+    </li>
+    <li><strong>AI empties its hand</strong> — AI scores the sum of all pips left in your hand.</li>
+    <li>
+      <strong>Blocked game</strong> — the player with the lower pip total wins and scores the
+      <em>difference</em> between the two totals.
+    </li>
+    <li><strong>Tied blocked game</strong> — both totals are equal, no points scored.</li>
+  </ul>
+  <p>The first player to reach <strong>100 points</strong> wins the match.</p>
   <h4>Difficulty</h4>
   <ul>
     <li><strong>Easy</strong> — AI plays a random valid tile</li>
