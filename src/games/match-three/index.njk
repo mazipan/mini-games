@@ -47,6 +47,61 @@ icon: "🍬"
     color: #e2e8f0;
     font-family: monospace;
   }
+  #status-banner {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #f59e0b;
+    min-height: 1.2em;
+    text-align: center;
+    transition: opacity 0.3s;
+  }
+  #tools-row {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    align-items: center;
+  }
+  .bomb-btn {
+    background: #1e293b;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    padding: 0.4rem 1.1rem;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      transform 0.1s;
+  }
+  .bomb-btn:hover:not(:disabled) {
+    border-color: #ef4444;
+    background: #2d1b1b;
+  }
+  .bomb-btn.active {
+    border-color: #ef4444;
+    background: #2d1b1b;
+    animation: pulse-bomb 0.7s ease-in-out infinite;
+  }
+  .bomb-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  @keyframes pulse-bomb {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.06);
+    }
+  }
   #board-container {
     position: relative;
   }
@@ -93,8 +148,35 @@ icon: "🍬"
     transform: scale(0);
     opacity: 0;
   }
-  .tile.falling {
-    transition: transform 0.18s ease-in;
+  .tile-empty {
+    width: var(--cell);
+    height: var(--cell);
+    border-radius: 8px;
+    box-sizing: border-box;
+    background: rgba(15, 23, 42, 0.3);
+    border: 1px dashed #1e293b;
+  }
+  .tile.bomb-preview {
+    outline: 2px solid rgba(239, 68, 68, 0.85);
+    outline-offset: -2px;
+    filter: brightness(1.3);
+  }
+  .tile.blasting {
+    animation: blast 0.22s ease-out forwards;
+  }
+  @keyframes blast {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    40% {
+      transform: scale(1.35);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(0);
+      opacity: 0;
+    }
   }
   .tile[data-color="0"] {
     background: #ef4444;
@@ -112,7 +194,7 @@ icon: "🍬"
     background: #a855f7;
   }
   .tile[data-color="5"] {
-    background: #ec4899;
+    background: #f97316;
   }
 
   #overlay,
@@ -249,13 +331,21 @@ icon: "🍬"
     "500") }}
   </div>
 
+  <div id="status-banner"></div>
+
+  <div id="tools-row">
+    <button class="bomb-btn" id="bomb-btn" onclick="toggleBombMode()" title="Bomb: blasts a 5×5 area">
+      💣 Bomb ×<span id="bomb-count">3</span>
+    </button>
+  </div>
+
   <div id="board-container">
     <div id="board"></div>
 
     <div id="overlay">
       <span class="overlay-icon">🍬</span>
       <h2>Match Three</h2>
-      <p>Swap tiles to match 3+ in a row or column.<br />Reach the target score before moves run out!</p>
+      <p>Swap tiles to match 3+ in a row or column.<br />Reach the target score, then clear the board!</p>
       <button class="play-btn" onclick="startGame()">Play Game</button>
     </div>
 
@@ -273,42 +363,47 @@ icon: "🍬"
   <div class="info-section">
     {% call infoDetails("How to Play") %}
     <h4>Goal</h4>
-    <p>Reach the target score before you run out of moves to advance to the next level.</p>
+    <p>
+      Reach the target score, then clear every tile from the board to advance to the next level. No new tiles drop once
+      the target is hit!
+    </p>
     <h4>Controls — Desktop</h4>
     <ul>
-      <li>Click a tile to select it (it glows white)</li>
-      <li>Click an adjacent tile to swap them</li>
-      <li>Only valid swaps (that form a match) are allowed</li>
+      <li>Click a tile to select it (glows white), then click an adjacent tile to swap</li>
+      <li>Clicking a non-adjacent tile re-selects it as your new choice</li>
+      <li>Only swaps that create a match are allowed</li>
     </ul>
     <h4>Controls — Mobile</h4>
     <ul>
-      <li>Tap a tile to select, tap an adjacent tile to swap</li>
-      <li>Or swipe directly from one tile to a neighbor</li>
+      <li>Tap to select, tap adjacent to swap — or swipe directly from one tile to a neighbor</li>
     </ul>
+    <h4>Bomb</h4>
+    <p>
+      Press 💣 Bomb, then click any tile to blast a 5×5 area around it. You start with 3 bombs and earn +1 per level
+      (max 3).
+    </p>
     <h4>Scoring</h4>
     <ul>
-      <li>3 tiles matched → 30 pts</li>
-      <li>4 tiles matched → 60 pts</li>
-      <li>5+ tiles matched → 150 pts</li>
-      <li>Each cascade chain doubles the multiplier</li>
+      <li>3 tiles → 30 pts · 4 tiles → 60 pts · 5+ tiles → 150 pts</li>
+      <li>Each cascade step doubles the multiplier</li>
     </ul>
     <h4>Level Progression</h4>
-    <p>Each level raises the target score by 300 and reduces moves by 1 (min 12).</p>
+    <p>
+      Each level raises the target by 300 and reduces moves by 1 (min 12). Once the target is reached, stop adding new
+      tiles and clear the board completely to advance.
+    </p>
     {% endcall %} {% call infoDetails("FAQ") %}
+    <h4>Why did tiles stop dropping from the top?</h4>
+    <p>
+      You hit the target score — the board is now in "clear" mode. Match the remaining tiles until the board is empty to
+      advance to the next level.
+    </p>
     <h4>Why can't I swap these two tiles?</h4>
-    <p>
-      Only swaps that immediately create a match of 3 or more are allowed. If no match would result, the swap is
-      rejected.
-    </p>
-    <h4>What happens when the board has no valid moves?</h4>
-    <p>The board is automatically reshuffled so there is always at least one valid move available.</p>
+    <p>Only swaps that immediately create a match of 3 or more are allowed. Invalid swaps animate back.</p>
+    <h4>What if there are no valid moves left during clearing?</h4>
+    <p>The board shuffles the remaining tiles so you can always keep playing.</p>
     <h4>Is my best score saved?</h4>
-    <p>Yes — your best score is saved in your browser's local storage and persists across sessions.</p>
-    <h4>What do the cascades do?</h4>
-    <p>
-      When cleared tiles cause new matches to form as tiles fall, each chain step doubles the points multiplier — so a
-      3-step cascade turns a 30-pt match into 120 pts!
-    </p>
+    <p>Yes — saved in your browser's local storage and persists across sessions.</p>
     {% endcall %}
   </div>
 </div>
@@ -317,6 +412,8 @@ icon: "🍬"
   const ROWS = 8;
   const COLS = 8;
   const COLORS = 6;
+  const BOMB_RADIUS = 2;
+  const EMOJIS = ["🔴", "🔵", "🟢", "🟡", "🟣", "🟠"];
   const STORAGE_KEY = "mini-match-three-best";
 
   let board = [];
@@ -328,6 +425,9 @@ icon: "🍬"
   let selected = null;
   let busy = false;
   let touchStartTile = null;
+  let clearingMode = false;
+  let bombs = 3;
+  let bombMode = false;
 
   const boardEl = document.getElementById("board");
   const scoreEl = document.getElementById("score-display");
@@ -337,6 +437,7 @@ icon: "🍬"
   const targetEl = document.getElementById("target-display");
   const overlayEl = document.getElementById("overlay");
   const gameoverEl = document.getElementById("gameover-overlay");
+  const statusBannerEl = document.getElementById("status-banner");
 
   bestEl.textContent = best;
 
@@ -392,11 +493,16 @@ icon: "🍬"
     return matched;
   }
 
+  function isBoardEmpty() {
+    return board.every((row) => row.every((cell) => cell === null));
+  }
+
   function hasValidMoves(b) {
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        if (c + 1 < COLS && wouldMatch(b, r, c, r, c + 1)) return true;
-        if (r + 1 < ROWS && wouldMatch(b, r, c, r + 1, c)) return true;
+        if (b[r][c] === null) continue;
+        if (c + 1 < COLS && b[r][c + 1] !== null && wouldMatch(b, r, c, r, c + 1)) return true;
+        if (r + 1 < ROWS && b[r + 1][c] !== null && wouldMatch(b, r, c, r + 1, c)) return true;
       }
     }
     return false;
@@ -430,24 +536,27 @@ icon: "🍬"
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         const el = document.createElement("div");
-        el.className = "tile";
         el.dataset.row = r;
         el.dataset.col = c;
-        el.dataset.color = board[r][c];
-        el.textContent = ["🔴", "🔵", "🟢", "🟡", "🟣", "🩷"][board[r][c]];
-        el.addEventListener("click", () => onTileClick(r, c));
-        el.addEventListener("touchstart", (e) => onTouchStart(e, r, c), { passive: true });
-        el.addEventListener("touchend", (e) => onTouchEnd(e, r, c), { passive: true });
+        if (board[r][c] === null) {
+          el.className = "tile-empty";
+        } else {
+          el.className = "tile";
+          el.dataset.color = board[r][c];
+          el.textContent = EMOJIS[board[r][c]];
+          el.addEventListener("click", () => onTileClick(r, c));
+          el.addEventListener("touchstart", (e) => onTouchStart(e, r, c), { passive: true });
+          el.addEventListener("touchend", (e) => onTouchEnd(e, r, c), { passive: true });
+          el.addEventListener("mouseover", () => {
+            if (bombMode) showBombPreview(r, c);
+          });
+          el.addEventListener("mouseleave", () => {
+            if (bombMode) clearBombPreview();
+          });
+        }
         boardEl.appendChild(el);
       }
     }
-  }
-
-  function refreshTile(r, c) {
-    const el = getTileEl(r, c);
-    if (!el) return;
-    el.dataset.color = board[r][c];
-    el.textContent = ["🔴", "🔵", "🟢", "🟡", "🟣", "🩷"][board[r][c]];
   }
 
   function onTouchStart(e, r, c) {
@@ -462,7 +571,7 @@ icon: "🍬"
     const absDy = Math.abs(dy);
     if (absDx < 10 && absDy < 10) {
       onTileClick(r, c);
-    } else {
+    } else if (!bombMode) {
       let tr = touchStartTile.r;
       let tc = touchStartTile.c;
       if (absDx > absDy) {
@@ -479,6 +588,10 @@ icon: "🍬"
 
   function onTileClick(r, c) {
     if (busy) return;
+    if (bombMode) {
+      useBomb(r, c);
+      return;
+    }
     if (selected === null) {
       selected = { r, c };
       getTileEl(r, c).classList.add("selected");
@@ -565,16 +678,20 @@ icon: "🍬"
       }
       await delay(170);
 
+      const dropCounts = Array.from({ length: COLS }, (_, ci) =>
+        board.reduce((sum, row) => sum + (row[ci] === null ? 1 : 0), 0)
+      );
+
       applyGravity();
       refillBoard();
       renderBoard();
-      await delay(120);
+      await animateDrop(dropCounts);
 
       multiplier++;
       matches = findMatches(board);
     }
 
-    if (!hasValidMoves(board)) {
+    if (!isBoardEmpty() && !hasValidMoves(board)) {
       shuffleBoard();
       renderBoard();
     }
@@ -593,6 +710,7 @@ icon: "🍬"
   }
 
   function refillBoard() {
+    if (clearingMode) return;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (board[r][c] === null) board[r][c] = randomColor();
@@ -601,15 +719,20 @@ icon: "🍬"
   }
 
   function shuffleBoard() {
-    const flat = board.flat();
-    for (let i = flat.length - 1; i > 0; i--) {
+    const nonNull = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c] !== null) nonNull.push(board[r][c]);
+      }
+    }
+    for (let i = nonNull.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [flat[i], flat[j]] = [flat[j], flat[i]];
+      [nonNull[i], nonNull[j]] = [nonNull[j], nonNull[i]];
     }
     let idx = 0;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        board[r][c] = flat[idx++];
+        if (board[r][c] !== null) board[r][c] = nonNull[idx++];
       }
     }
   }
@@ -623,17 +746,166 @@ icon: "🍬"
     }
   }
 
-  function checkEndCondition() {
-    if (score >= target) {
-      launchConfetti();
-      level++;
-      moves = movesForLevel(level);
-      target = targetForLevel(level);
-      levelEl.textContent = level;
-      movesEl.textContent = moves;
-      targetEl.textContent = target;
-      board = makeBoard();
+  function updateStatusBanner() {
+    if (clearingMode) {
+      statusBannerEl.textContent = "🎯 Target reached! Clear all tiles to advance!";
+    } else {
+      statusBannerEl.textContent = "";
+    }
+  }
+
+  function updateBombDisplay() {
+    document.getElementById("bomb-count").textContent = bombs;
+    const btn = document.getElementById("bomb-btn");
+    btn.disabled = bombs <= 0;
+    btn.classList.toggle("active", bombMode);
+  }
+
+  function toggleBombMode() {
+    if (busy || bombs <= 0) return;
+    bombMode = !bombMode;
+    if (!bombMode) clearBombPreview();
+    if (selected !== null) {
+      const el = getTileEl(selected.r, selected.c);
+      if (el) el.classList.remove("selected");
+      selected = null;
+    }
+    updateBombDisplay();
+    boardEl.style.cursor = bombMode ? "crosshair" : "";
+  }
+
+  async function useBomb(r, c) {
+    if (busy || bombs <= 0) return;
+    busy = true;
+    bombMode = false;
+    clearBombPreview();
+    boardEl.style.cursor = "";
+    bombs--;
+    updateBombDisplay();
+
+    const toRemove = [];
+    for (let dr = -BOMB_RADIUS; dr <= BOMB_RADIUS; dr++) {
+      for (let dc = -BOMB_RADIUS; dc <= BOMB_RADIUS; dc++) {
+        const nr = r + dr;
+        const nc = c + dc;
+        if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && board[nr][nc] !== null) {
+          toRemove.push([nr, nc]);
+        }
+      }
+    }
+
+    for (const [nr, nc] of toRemove) {
+      const el = getTileEl(nr, nc);
+      if (el) el.classList.add("blasting");
+    }
+    await delay(240);
+
+    for (const [nr, nc] of toRemove) {
+      board[nr][nc] = null;
+    }
+
+    const bombDropCounts = Array.from({ length: COLS }, (_, ci) =>
+      board.reduce((sum, row) => sum + (row[ci] === null ? 1 : 0), 0)
+    );
+
+    applyGravity();
+    refillBoard();
+    renderBoard();
+    await animateDrop(bombDropCounts);
+
+    const matches = findMatches(board);
+    if (matches.size > 0) {
+      await resolveBoard();
+    } else if (!isBoardEmpty() && !hasValidMoves(board)) {
+      shuffleBoard();
       renderBoard();
+    }
+
+    busy = false;
+    checkEndCondition();
+  }
+
+  function showBombPreview(cr, cc) {
+    clearBombPreview();
+    for (let dr = -BOMB_RADIUS; dr <= BOMB_RADIUS; dr++) {
+      for (let dc = -BOMB_RADIUS; dc <= BOMB_RADIUS; dc++) {
+        const el = getTileEl(cr + dr, cc + dc);
+        if (el) el.classList.add("bomb-preview");
+      }
+    }
+  }
+
+  function clearBombPreview() {
+    boardEl.querySelectorAll(".bomb-preview").forEach((el) => el.classList.remove("bomb-preview"));
+  }
+
+  async function animateDrop(dropCounts) {
+    const firstTile = boardEl.querySelector(".tile");
+    if (!firstTile) return;
+    const cellH = firstTile.getBoundingClientRect().height;
+    const step = cellH + 3;
+
+    for (let c = 0; c < COLS; c++) {
+      const dc = dropCounts[c];
+      if (dc === 0) continue;
+      for (let r = 0; r < ROWS; r++) {
+        const el = getTileEl(r, c);
+        if (!el) continue;
+        const offset = r < dc ? (dc - r) * step : dc * step;
+        el.style.transition = "none";
+        el.style.transform = `translateY(${-offset}px)`;
+      }
+    }
+
+    boardEl.offsetHeight;
+
+    for (let c = 0; c < COLS; c++) {
+      if (dropCounts[c] === 0) continue;
+      for (let r = 0; r < ROWS; r++) {
+        const el = getTileEl(r, c);
+        if (!el) continue;
+        el.style.transition = "transform 0.38s ease-in";
+        el.style.transform = "";
+      }
+    }
+
+    await delay(400);
+
+    for (let c = 0; c < COLS; c++) {
+      if (dropCounts[c] === 0) continue;
+      for (let r = 0; r < ROWS; r++) {
+        const el = getTileEl(r, c);
+        if (!el) continue;
+        el.style.transition = "";
+      }
+    }
+  }
+
+  function checkEndCondition() {
+    if (clearingMode) {
+      if (isBoardEmpty()) {
+        launchConfetti();
+        clearingMode = false;
+        level++;
+        bombs = Math.min(bombs + 1, 3);
+        moves = movesForLevel(level);
+        target = targetForLevel(level);
+        levelEl.textContent = level;
+        movesEl.textContent = moves;
+        targetEl.textContent = target;
+        updateStatusBanner();
+        updateBombDisplay();
+        board = makeBoard();
+        renderBoard();
+      } else if (moves <= 0) {
+        showEnd(false);
+      }
+      return;
+    }
+    if (score >= target) {
+      clearingMode = true;
+      targetEl.textContent = "✓";
+      updateStatusBanner();
       return;
     }
     if (moves <= 0) {
@@ -661,11 +933,17 @@ icon: "🍬"
     target = targetForLevel(level);
     selected = null;
     busy = false;
+    clearingMode = false;
+    bombs = 3;
+    bombMode = false;
     board = makeBoard();
     scoreEl.textContent = 0;
     levelEl.textContent = 1;
     movesEl.textContent = moves;
     targetEl.textContent = target;
+    updateStatusBanner();
+    updateBombDisplay();
+    boardEl.style.cursor = "";
     overlayEl.style.display = "none";
     gameoverEl.style.display = "none";
     renderBoard();
