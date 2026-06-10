@@ -141,6 +141,7 @@ icon: "🎲"
     padding: 2px;
     gap: 1px;
     flex-shrink: 0;
+    background: #e2e8f0;
     border: 1.5px solid #475569;
     border-radius: 3px;
   }
@@ -922,11 +923,10 @@ icon: "🎲"
       return;
     }
     const { left, right } = getChainEnds();
-    let html = `<span class="chain-end-label">◀ ${left}</span>`;
+    let html = "";
     for (const t of chain) {
       html += makeTileHTML(t.left, t.right, "chain-tile");
     }
-    html += `<span class="chain-end-label">${right} ▶</span>`;
     el.innerHTML = html;
     // Scroll to end of chain when new tile is added
     const scroll = document.getElementById("chain-scroll");
