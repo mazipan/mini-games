@@ -100,6 +100,16 @@ module.exports = [
     tags: ["numbers", "merge", "falling", "combo"],
   },
   {
+    slug: "onet-connect",
+    name: "Onet Connect Classic",
+    description:
+      "Connect pairs of identical tiles through a path with at most 2 turns to clear the board.",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🀄",
+    tags: ["matching", "tiles", "classic", "connect"],
+  },
+  {
     slug: "pong",
     name: "Pong",
     description: "Two paddles, one ball — first to 7 points wins. Play vs AI or a friend!",

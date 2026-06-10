@@ -1,0 +1,929 @@
+---
+layout: layouts/game.njk
+title: Onet Connect Classic
+description: Match pairs of identical tiles by connecting them through a path with at most 2 turns. Clear the board to advance!
+category: puzzle
+icon: "🀄"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  #overlay,
+  #gameover-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    z-index: 100;
+    text-align: center;
+    padding: 1rem;
+  }
+  #overlay {
+    background: rgba(15, 23, 42, 0.95);
+  }
+  #gameover-overlay {
+    background: rgba(15, 23, 42, 0.97);
+    display: none;
+  }
+  #overlay .ov-icon,
+  #gameover-overlay .ov-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+  #overlay h2,
+  #gameover-overlay h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p,
+  #gameover-overlay p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.9rem;
+    max-width: 320px;
+  }
+  .summary-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .summary-stat {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    text-align: center;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+
+  .score-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.4rem 0.75rem;
+    min-width: 58px;
+  }
+  .stat-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .stat-value.timer-warn {
+    color: #f87171;
+  }
+
+  #game-area {
+    position: relative;
+    flex-shrink: 0;
+  }
+  #grid {
+    display: grid;
+    gap: 2px;
+  }
+  .cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    user-select: none;
+    box-sizing: border-box;
+    transition:
+      transform 0.1s,
+      background 0.12s,
+      border-color 0.12s,
+      opacity 0.2s;
+  }
+  .cell.tile {
+    background: #1e293b;
+    border: 2px solid #334155;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cell.tile:hover {
+    border-color: #7c3aed;
+    transform: scale(1.06);
+  }
+  .cell.empty {
+    background: transparent;
+    border: 2px solid transparent;
+  }
+  .cell.selected {
+    background: #2d1b69 !important;
+    border-color: #a855f7 !important;
+    transform: scale(1.1) !important;
+  }
+  .cell.matched-anim {
+    background: #14532d !important;
+    border-color: #22c55e !important;
+    transform: scale(0.85) !important;
+    opacity: 0.5;
+  }
+  .cell.hint-highlight {
+    background: #451a03 !important;
+    border-color: #f59e0b !important;
+    animation: hint-pulse 0.45s ease-in-out infinite alternate;
+  }
+  .cell.invalid-flash {
+    background: #450a0a !important;
+    border-color: #ef4444 !important;
+  }
+  @keyframes hint-pulse {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.1);
+    }
+  }
+
+  #conn-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .action-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .action-btn {
+    padding: 0.4rem 1rem;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.12s;
+  }
+  .action-btn:hover:not(:disabled) {
+    background: #334155;
+    border-color: #7c3aed;
+  }
+  .action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  #toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #0f172a;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
+    z-index: 200;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+  }
+
+  .info-section {
+    width: 100%;
+    max-width: 540px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div id="overlay">
+    <span class="ov-icon">🀄</span>
+    <h2>Onet Connect Classic</h2>
+    <p>Connect matching tiles through a path with at most 2 turns to clear the board</p>
+    <p style="font-size: 0.8rem; color: #64748b">5-min timer · 3 hints · 3 shuffles per level</p>
+    <button class="play-btn" onclick="startGame()">Play Game</button>
+  </div>
+
+  <div id="gameover-overlay">
+    <span class="ov-icon" id="go-icon">💀</span>
+    <h2 id="go-title">Game Over</h2>
+    <div class="summary-row">
+      {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+      "go-level", "1") }}
+    </div>
+    <p id="go-context"></p>
+    <button class="play-btn" onclick="startGame()">New Game</button>
+  </div>
+
+  <div class="score-row">
+    {{ statCard("Score", "score") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level", "level-display",
+    "1") }} {{ statCard("Time", "timer-display", "5:00") }}
+  </div>
+
+  <div id="game-area">
+    <div id="grid"></div>
+    <svg id="conn-svg"></svg>
+  </div>
+
+  <div class="action-row">
+    <button class="action-btn" id="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">3</span>)</button>
+    <button class="action-btn" id="shuffle-btn" onclick="useShuffle()">
+      🔀 Shuffle (<span id="shuffles-left">3</span>)
+    </button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Clear all tiles from the 8×10 board by connecting matching pairs before the 5-minute timer runs out.</p>
+  <h4>Connection Rules</h4>
+  <p>
+    Two matching tiles can be connected if a line between them has <strong>at most 2 right-angle turns</strong> and
+    passes only through empty cells. The line may travel along the outside edge of the board.
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li>Click a tile to select it (purple glow)</li>
+    <li>Click a second matching tile — they clear if the path is valid</li>
+    <li>Click the selected tile again to deselect</li>
+    <li>Clicking a non-matching tile switches the selection</li>
+  </ul>
+  <h4>Power-ups</h4>
+  <ul>
+    <li><strong>💡 Hint</strong> — highlights a valid pair you can connect (3 per level)</li>
+    <li><strong>🔀 Shuffle</strong> — rearranges all remaining tiles randomly (3 per level)</li>
+  </ul>
+  <h4>Scoring</h4>
+  <ul>
+    <li>10 points per matched pair</li>
+    <li>Level completion bonus: 50 + remaining seconds</li>
+    <li>Your best total score is saved across sessions</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Why can't I connect two matching tiles?</h4>
+  <p>
+    Their path needs more than 2 turns, or all routes are blocked by other tiles. Clear nearby tiles first, or use a
+    Shuffle to open up new paths.
+  </p>
+  <h4>Can the path go outside the board?</h4>
+  <p>
+    Yes! The line can travel along the border outside the grid. This often unlocks connections that look impossible at
+    first glance.
+  </p>
+  <h4>What happens when no moves are left?</h4>
+  <p>
+    If no valid connections exist, the board auto-shuffles using one of your Shuffle charges. If you have none left, the
+    game ends.
+  </p>
+  <h4>Do hints and shuffles reset each level?</h4>
+  <p>Yes — both reset to 3 when you advance to the next level.</p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your highest cumulative score is stored in your browser's local storage.</p>
+  {% endcall %}
+</div>
+
+<script>
+  const ROWS = 8,
+    COLS = 10;
+  const TIMER_SEC = 300;
+  const INIT_SHUFFLES = 3,
+    INIT_HINTS = 3;
+  const SCORE_PER_PAIR = 10;
+  const STORAGE_KEY = "mini-onet-connect-best";
+  const GAP = 2;
+
+  const TILE_EMOJIS = [
+    "🐶",
+    "🐱",
+    "🐭",
+    "🐹",
+    "🐰",
+    "🦊",
+    "🐻",
+    "🐼",
+    "🐨",
+    "🐯",
+    "🦁",
+    "🐮",
+    "🐷",
+    "🐸",
+    "🐵",
+    "🐔",
+    "🐧",
+    "🐦",
+    "🦋",
+    "🐝",
+    "🍎",
+    "🍊",
+    "🍋",
+    "🍇",
+    "🍓",
+    "🍒",
+    "🍕",
+    "🍔",
+    "🌮",
+    "🍜",
+    "⚽",
+    "🏀",
+    "🎾",
+    "🎯",
+    "🎮",
+    "🎲",
+    "🎸",
+    "🎨",
+    "🔮",
+    "👑",
+  ];
+
+  let grid, selected, score, level, shuffles, hints, timerSec;
+  let timerInterval, connecting, CELL_SIZE;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+  document.getElementById("best-display").textContent = best;
+
+  function computeCellSize() {
+    const maxW = Math.min(540, window.innerWidth - 32);
+    CELL_SIZE = Math.floor((maxW - GAP * (COLS - 1)) / COLS);
+  }
+
+  // BFS: find a connecting path with ≤ 2 turns through empty cells.
+  // The path may travel through the 1-cell border outside the grid.
+  function findPath(r1, c1, r2, c2) {
+    const DIRS = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
+    const visited = new Set();
+    const queue = [{ r: r1, c: c1, dir: -1, turns: 0, path: [{ r: r1, c: c1 }] }];
+    visited.add(`${r1},${c1},-1,0`);
+
+    while (queue.length > 0) {
+      const { r, c, dir, turns, path } = queue.shift();
+
+      for (let d = 0; d < 4; d++) {
+        const nr = r + DIRS[d][0];
+        const nc = c + DIRS[d][1];
+
+        if (nr < -1 || nr > ROWS || nc < -1 || nc > COLS) continue;
+
+        const isTarget = nr === r2 && nc === c2;
+        const outOfGrid = nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS;
+        const passable = outOfGrid || grid[nr][nc] === null;
+
+        if (!passable && !isTarget) continue;
+
+        const newTurns = dir !== -1 && d !== dir ? turns + 1 : turns;
+        if (newTurns > 2) continue;
+
+        if (isTarget) return [...path, { r: nr, c: nc }];
+
+        const key = `${nr},${nc},${d},${newTurns}`;
+        if (visited.has(key)) continue;
+        visited.add(key);
+        queue.push({ r: nr, c: nc, dir: d, turns: newTurns, path: [...path, { r: nr, c: nc }] });
+      }
+    }
+    return null;
+  }
+
+  function simplifyPath(path) {
+    if (path.length <= 2) return path;
+    const pts = [path[0]];
+    for (let i = 1; i < path.length - 1; i++) {
+      const prev = path[i - 1],
+        curr = path[i],
+        next = path[i + 1];
+      if (curr.r - prev.r !== next.r - curr.r || curr.c - prev.c !== next.c - curr.c) {
+        pts.push(curr);
+      }
+    }
+    pts.push(path[path.length - 1]);
+    return pts;
+  }
+
+  function cellCenter(r, c) {
+    return {
+      x: c * (CELL_SIZE + GAP) + CELL_SIZE / 2,
+      y: r * (CELL_SIZE + GAP) + CELL_SIZE / 2,
+    };
+  }
+
+  function drawConnLine(path) {
+    const pts = simplifyPath(path);
+    const points = pts
+      .map((p) => {
+        const { x, y } = cellCenter(p.r, p.c);
+        return `${x},${y}`;
+      })
+      .join(" ");
+    document.getElementById("conn-svg").innerHTML =
+      `<polyline points="${points}" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  function clearConnLine() {
+    document.getElementById("conn-svg").innerHTML = "";
+  }
+
+  function shuffleArray(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function makeGrid() {
+    const pool = shuffleArray([...TILE_EMOJIS, ...TILE_EMOJIS]);
+    grid = [];
+    for (let r = 0; r < ROWS; r++) {
+      grid[r] = pool.slice(r * COLS, (r + 1) * COLS);
+    }
+  }
+
+  function renderGrid() {
+    computeCellSize();
+    const gridEl = document.getElementById("grid");
+    const gridW = COLS * CELL_SIZE + (COLS - 1) * GAP;
+    const gridH = ROWS * CELL_SIZE + (ROWS - 1) * GAP;
+
+    gridEl.style.width = gridW + "px";
+    gridEl.style.height = gridH + "px";
+    gridEl.style.gridTemplateColumns = `repeat(${COLS}, ${CELL_SIZE}px)`;
+
+    const svg = document.getElementById("conn-svg");
+    svg.setAttribute("width", gridW);
+    svg.setAttribute("height", gridH);
+    svg.setAttribute("viewBox", `0 0 ${gridW} ${gridH}`);
+
+    document.getElementById("game-area").style.width = gridW + "px";
+
+    const fontSize = Math.max(12, Math.floor(CELL_SIZE * 0.48)) + "px";
+    gridEl.innerHTML = "";
+
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const cell = document.createElement("div");
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+        cell.style.width = CELL_SIZE + "px";
+        cell.style.height = CELL_SIZE + "px";
+        cell.style.lineHeight = CELL_SIZE + "px";
+        cell.style.fontSize = fontSize;
+
+        const emoji = grid[r][c];
+        if (emoji) {
+          cell.className = "cell tile";
+          cell.textContent = emoji;
+          if (selected && selected.r === r && selected.c === c) cell.classList.add("selected");
+          const _r = r,
+            _c = c;
+          cell.onclick = () => onCellClick(_r, _c);
+        } else {
+          cell.className = "cell empty";
+        }
+
+        gridEl.appendChild(cell);
+      }
+    }
+  }
+
+  function onCellClick(r, c) {
+    if (connecting || !grid[r][c]) return;
+
+    if (!selected) {
+      selected = { r, c };
+      renderGrid();
+      return;
+    }
+
+    if (selected.r === r && selected.c === c) {
+      selected = null;
+      renderGrid();
+      return;
+    }
+
+    if (grid[selected.r][selected.c] !== grid[r][c]) {
+      selected = { r, c };
+      renderGrid();
+      return;
+    }
+
+    const path = findPath(selected.r, selected.c, r, c);
+    if (!path) {
+      const prev = selected;
+      selected = null;
+      const el1 = document.querySelector(`[data-r="${prev.r}"][data-c="${prev.c}"]`);
+      const el2 = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+      if (el1) el1.classList.add("invalid-flash");
+      if (el2) el2.classList.add("invalid-flash");
+      setTimeout(() => {
+        if (el1) el1.classList.remove("invalid-flash");
+        if (el2) el2.classList.remove("invalid-flash");
+      }, 400);
+      return;
+    }
+
+    connecting = true;
+    const sr = selected.r,
+      sc = selected.c;
+    selected = null;
+
+    const el1 = document.querySelector(`[data-r="${sr}"][data-c="${sc}"]`);
+    const el2 = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+    if (el1) el1.classList.add("matched-anim");
+    if (el2) el2.classList.add("matched-anim");
+    drawConnLine(path);
+
+    setTimeout(() => {
+      clearConnLine();
+      grid[sr][sc] = null;
+      grid[r][c] = null;
+      score += SCORE_PER_PAIR;
+      updateScoreDisplay();
+      connecting = false;
+      renderGrid();
+
+      if (isBoardClear()) {
+        levelComplete();
+      } else {
+        checkStuck();
+      }
+    }, 550);
+  }
+
+  function isBoardClear() {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) return false;
+      }
+    }
+    return true;
+  }
+
+  function hasValidMoves() {
+    const cells = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) cells.push({ r, c, e: grid[r][c] });
+      }
+    }
+    for (let i = 0; i < cells.length; i++) {
+      for (let j = i + 1; j < cells.length; j++) {
+        if (cells[i].e === cells[j].e && findPath(cells[i].r, cells[i].c, cells[j].r, cells[j].c)) return true;
+      }
+    }
+    return false;
+  }
+
+  function shuffleGridData() {
+    const tiles = [],
+      positions = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) {
+          tiles.push(grid[r][c]);
+          positions.push({ r, c });
+        }
+      }
+    }
+    shuffleArray(tiles);
+    positions.forEach((p, i) => {
+      grid[p.r][p.c] = tiles[i];
+    });
+    selected = null;
+  }
+
+  function checkStuck() {
+    if (hasValidMoves()) return;
+    if (shuffles > 0) {
+      shuffles--;
+      shuffleGridData();
+      updateActionBtns();
+      renderGrid();
+      showToast("No moves! Auto-shuffled. (" + shuffles + " left)");
+      if (!hasValidMoves() && shuffles > 0) checkStuck();
+      else if (!hasValidMoves()) showGameOver("stuck");
+    } else {
+      showGameOver("stuck");
+    }
+  }
+
+  function levelComplete() {
+    clearInterval(timerInterval);
+    const bonus = 50 + timerSec;
+    score += bonus;
+    updateScoreDisplay();
+    launchConfetti();
+    showToast("Level " + level + " complete! +" + bonus + " bonus");
+
+    setTimeout(() => {
+      level++;
+      document.getElementById("level-display").textContent = level;
+      shuffles = INIT_SHUFFLES;
+      hints = INIT_HINTS;
+      timerSec = TIMER_SEC;
+      updateActionBtns();
+      updateTimerDisplay();
+      makeGrid();
+      renderGrid();
+      startTimer();
+    }, 1600);
+  }
+
+  function showGameOver(reason) {
+    clearInterval(timerInterval);
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    document.getElementById("go-icon").textContent = "💀";
+    document.getElementById("go-title").textContent = "Game Over";
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("go-context").textContent =
+      reason === "stuck" ? "No moves left and no shuffles remaining!" : "Time's up!";
+
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  function startGame() {
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    score = 0;
+    level = 1;
+    shuffles = INIT_SHUFFLES;
+    hints = INIT_HINTS;
+    timerSec = TIMER_SEC;
+    selected = null;
+    connecting = false;
+
+    document.getElementById("level-display").textContent = 1;
+    updateScoreDisplay();
+    updateActionBtns();
+    updateTimerDisplay();
+    makeGrid();
+    renderGrid();
+    startTimer();
+  }
+
+  function startTimer() {
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      timerSec--;
+      updateTimerDisplay();
+      if (timerSec <= 0) {
+        clearInterval(timerInterval);
+        showGameOver("timeout");
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(timerSec / 60);
+    const s = timerSec % 60;
+    const el = document.getElementById("timer-display");
+    el.textContent = m + ":" + String(s).padStart(2, "0");
+    el.className = "stat-value" + (timerSec <= 30 ? " timer-warn" : "");
+  }
+
+  function updateScoreDisplay() {
+    document.getElementById("score").textContent = score;
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+    }
+  }
+
+  function updateActionBtns() {
+    document.getElementById("hints-left").textContent = hints;
+    document.getElementById("shuffles-left").textContent = shuffles;
+    document.getElementById("hint-btn").disabled = hints <= 0;
+    document.getElementById("shuffle-btn").disabled = shuffles <= 0;
+  }
+
+  function useHint() {
+    if (hints <= 0 || connecting) return;
+    const cells = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (grid[r][c]) cells.push({ r, c, e: grid[r][c] });
+      }
+    }
+    for (let i = 0; i < cells.length; i++) {
+      for (let j = i + 1; j < cells.length; j++) {
+        if (cells[i].e !== cells[j].e) continue;
+        if (findPath(cells[i].r, cells[i].c, cells[j].r, cells[j].c)) {
+          hints--;
+          updateActionBtns();
+          const el1 = document.querySelector(`[data-r="${cells[i].r}"][data-c="${cells[i].c}"]`);
+          const el2 = document.querySelector(`[data-r="${cells[j].r}"][data-c="${cells[j].c}"]`);
+          if (el1) el1.classList.add("hint-highlight");
+          if (el2) el2.classList.add("hint-highlight");
+          setTimeout(() => {
+            if (el1) el1.classList.remove("hint-highlight");
+            if (el2) el2.classList.remove("hint-highlight");
+          }, 2000);
+          return;
+        }
+      }
+    }
+    showToast("No valid moves found — try shuffling!");
+  }
+
+  function useShuffle() {
+    if (shuffles <= 0 || connecting) return;
+    shuffles--;
+    shuffleGridData();
+    updateActionBtns();
+    renderGrid();
+    if (!hasValidMoves()) checkStuck();
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+
+  window.addEventListener("resize", () => {
+    if (grid && !connecting) renderGrid();
+  });
+
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+</script>
