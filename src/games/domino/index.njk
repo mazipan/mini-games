@@ -288,16 +288,59 @@ icon: "🎲"
     width: 100%;
     align-items: center;
   }
-  #ai-hand-info {
+  #ai-hand-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  #ai-hand-top {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.85rem;
-    color: #94a3b8;
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 0.4rem 0.9rem;
+    width: 100%;
+    justify-content: space-between;
+  }
+  #ai-hand-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+  }
+  #ai-hand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    padding: 0.5rem;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    min-height: calc(var(--half) * 2 + 28px);
+    width: 100%;
+    align-items: center;
+  }
+  /* Face-down domino back */
+  .domino-back {
+    width: var(--half);
+    height: calc(var(--half) * 2 + 4px);
+    border: 2px solid #475569;
+    border-radius: 5px;
+    flex-shrink: 0;
+    background: repeating-linear-gradient(45deg, #1e3a5f 0, #1e3a5f 3px, #162d4a 3px, #162d4a 9px);
+    position: relative;
+  }
+  .domino-back::after {
+    content: "";
+    position: absolute;
+    left: 15%;
+    right: 15%;
+    top: 50%;
+    height: 2px;
+    background: rgba(148, 163, 184, 0.25);
+    transform: translateY(-50%);
+    border-radius: 1px;
   }
   .boneyard-badge {
     background: #1e293b;
@@ -560,9 +603,12 @@ icon: "🎲"
   </div>
 
   <div id="board-area">
-    <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: space-between">
-      <div id="ai-hand-info">🤖 AI: <strong id="ai-tile-count">7</strong> tiles</div>
-      <div class="boneyard-badge">🃏 Boneyard: <strong id="boneyard-count">14</strong></div>
+    <div id="ai-hand-section">
+      <div id="ai-hand-top">
+        <div id="ai-hand-label">🤖 AI's Hand</div>
+        <div class="boneyard-badge">🃏 Boneyard: <strong id="boneyard-count">14</strong></div>
+      </div>
+      <div id="ai-hand"></div>
     </div>
 
     <div id="chain-scroll">
@@ -917,12 +963,21 @@ icon: "🎲"
       .join("");
   }
 
+  function renderAIHand() {
+    const el = document.getElementById("ai-hand");
+    if (aiHand.length === 0) {
+      el.innerHTML = `<span style="color:#475569;font-size:0.85rem">No tiles</span>`;
+    } else {
+      el.innerHTML = Array(aiHand.length).fill('<div class="domino-back"></div>').join("");
+    }
+  }
+
   function renderStats() {
     document.getElementById("score-player").textContent = playerScore;
     document.getElementById("score-ai").textContent = aiScore;
     document.getElementById("score-best").textContent = best;
-    document.getElementById("ai-tile-count").textContent = aiHand.length;
     document.getElementById("boneyard-count").textContent = boneyard.length;
+    renderAIHand();
   }
 
   function renderActionButtons() {
@@ -978,6 +1033,7 @@ icon: "🎲"
 
   function renderAll() {
     renderChain();
+    renderAIHand();
     renderPlayerHand();
     renderStats();
     renderActionButtons();
