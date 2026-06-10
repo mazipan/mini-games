@@ -535,6 +535,39 @@ icon: "🎲"
     color: white;
     border-color: #1d4ed8;
   }
+  .mode-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+  .mode-btn.active,
+  .mode-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #1d4ed8;
+  }
+  #lobby-mode-desc {
+    font-size: 0.8rem;
+    color: #64748b;
+    text-align: center;
+    max-width: 260px;
+    margin-top: -0.25rem;
+  }
   /* Round history */
   .history-label {
     font-size: 0.65rem;
@@ -645,7 +678,8 @@ icon: "🎲"
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("🙂 You", "score-player", "0") }} {{ statCard("🤖 AI", "score-ai", "0") }} {{ statCard("Best",
-    "score-best", "0") }} {{ statCard("Round", "score-round", "1") }}
+    "score-best", "0") }}
+    <span id="round-card-wrap">{{ statCard("Round", "score-round", "1") }}</span>
   </div>
 
   <div id="board-area">
@@ -741,7 +775,12 @@ icon: "🎲"
 <div id="lobby-overlay">
   <span style="font-size: 3rem">🎲</span>
   <h2>Domino</h2>
-  <p>Match tiles end-to-end. Empty your hand to score your opponent's pips. First to 100 wins!</p>
+  <p>Match tiles end-to-end. Empty your hand to score your opponent's pips.</p>
+  <div class="mode-row">
+    <button class="mode-btn active" id="mode-single" onclick="selectMode('single')">Single Round</button>
+    <button class="mode-btn" id="mode-multi" onclick="selectMode('multi')">Match (to 100)</button>
+  </div>
+  <p id="lobby-mode-desc">One round decides the winner.</p>
   <div class="diff-row">
     <button class="diff-btn active" id="diff-easy" onclick="selectDiff('easy')">Easy</button>
     <button class="diff-btn" id="diff-medium" onclick="selectDiff('medium')">Medium</button>
@@ -859,6 +898,7 @@ icon: "🎲"
 
   // ── Constants ─────────────────────────────────────────────────────────────
   const STORAGE_KEY = "mini-domino-best";
+  const STORAGE_KEY_SINGLE = "mini-domino-best-single";
   const TARGET_SCORE = 100;
 
   // Pip grid positions in a 3×3 grid (index 0-8):
@@ -878,11 +918,14 @@ icon: "🎲"
   let gameOver = false;
   let aiActing = false;
   let difficulty = "easy";
+  let gameMode = "single"; // "single" | "multi"
   let playerScore = 0;
   let aiScore = 0;
   let roundNum = 0;
   let roundHistory = []; // [{num, youPts, aiPts, winner}]
-  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let bestMulti = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let bestSingle = parseInt(localStorage.getItem(STORAGE_KEY_SINGLE) || "0", 10);
+  let best = bestSingle; // updated when mode is selected
 
   // ── Tile helpers ──────────────────────────────────────────────────────────
   function createDominoes() {
@@ -1278,6 +1321,15 @@ icon: "🎲"
     roundHistory.push({ num: roundNum, youPts, aiPts, winner });
     renderStats();
 
+    if (gameMode === "single") {
+      let singleWinner;
+      if (winner === "player") singleWinner = "player";
+      else if (winner === "ai") singleWinner = "ai";
+      else singleWinner = playerScore > aiScore ? "player" : aiScore > playerScore ? "ai" : "draw";
+      endGame(singleWinner);
+      return;
+    }
+
     if (playerScore >= TARGET_SCORE || aiScore >= TARGET_SCORE) {
       endGame(playerScore >= TARGET_SCORE && playerScore > aiScore ? "player" : "ai");
     } else {
@@ -1302,17 +1354,18 @@ icon: "🎲"
   }
 
   function renderRoundHistory() {
-    const showInRound = roundHistory.length > 1;
+    const isMulti = gameMode === "multi";
     const roundWrap = document.getElementById("round-history-wrap");
     if (roundWrap) {
-      roundWrap.style.display = showInRound ? "block" : "none";
-      if (showInRound) document.getElementById("round-history-table").innerHTML = buildHistoryHTML(roundHistory);
+      const show = isMulti && roundHistory.length > 1;
+      roundWrap.style.display = show ? "block" : "none";
+      if (show) document.getElementById("round-history-table").innerHTML = buildHistoryHTML(roundHistory);
     }
     const goWrap = document.getElementById("go-history-wrap");
     if (goWrap) {
-      goWrap.style.display = roundHistory.length > 0 ? "block" : "none";
-      if (roundHistory.length > 0)
-        document.getElementById("go-history-table").innerHTML = buildHistoryHTML(roundHistory);
+      const show = isMulti && roundHistory.length > 0;
+      goWrap.style.display = show ? "block" : "none";
+      if (show) document.getElementById("go-history-table").innerHTML = buildHistoryHTML(roundHistory);
     }
   }
 
@@ -1353,25 +1406,38 @@ icon: "🎲"
 
   function endGame(winner) {
     gameOver = true;
+    const storageKey = gameMode === "single" ? STORAGE_KEY_SINGLE : STORAGE_KEY;
 
-    if (playerScore > best) {
+    if (winner !== "draw" && playerScore > best) {
       best = playerScore;
-      localStorage.setItem(STORAGE_KEY, best);
+      if (gameMode === "single") bestSingle = best;
+      else bestMulti = best;
+      localStorage.setItem(storageKey, best);
       document.getElementById("score-best").textContent = best;
       if (winner === "player") launchConfetti();
     } else if (winner === "player") {
       launchConfetti();
     }
 
-    document.getElementById("go-icon").textContent = winner === "player" ? "🏆" : "🤖";
-    document.getElementById("go-title").textContent = winner === "player" ? "You Win!" : "AI Wins!";
+    const icons = { player: "🏆", ai: "🤖", draw: "🤝" };
+    const titles = { player: "You Win!", ai: "AI Wins!", draw: "It's a Draw!" };
+    const isSingle = gameMode === "single";
+    const contexts = {
+      player: isSingle
+        ? `You scored ${playerScore} point${playerScore !== 1 ? "s" : ""} — well played!`
+        : `You reached ${playerScore} points — well played!`,
+      ai: isSingle
+        ? `AI scored ${aiScore} point${aiScore !== 1 ? "s" : ""}. Better luck next time!`
+        : `AI reached ${aiScore} points. Better luck next time!`,
+      draw: "Both players tied — no points this round.",
+    };
+
+    document.getElementById("go-icon").textContent = icons[winner] || "💀";
+    document.getElementById("go-title").textContent = titles[winner] || "Game Over";
     document.getElementById("go-player").textContent = playerScore;
     document.getElementById("go-ai").textContent = aiScore;
     document.getElementById("go-best").textContent = best;
-    document.getElementById("go-context").textContent =
-      winner === "player"
-        ? `You reached ${playerScore} points — well played!`
-        : `AI reached ${aiScore} points. Better luck next time!`;
+    document.getElementById("go-context").textContent = contexts[winner] || "";
 
     renderRoundHistory();
     document.getElementById("gameover-overlay").style.display = "flex";
@@ -1414,6 +1480,17 @@ icon: "🎲"
     }
   }
 
+  function selectMode(m) {
+    gameMode = m;
+    ["single", "multi"].forEach((x) => {
+      document.getElementById("mode-" + x).classList.toggle("active", x === m);
+    });
+    best = gameMode === "single" ? bestSingle : bestMulti;
+    document.getElementById("score-best").textContent = best;
+    document.getElementById("lobby-mode-desc").textContent =
+      m === "single" ? "One round decides the winner." : "Accumulate points across rounds. First to 100 wins!";
+  }
+
   function startGame() {
     document.getElementById("lobby-overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
@@ -1422,6 +1499,8 @@ icon: "🎲"
     aiScore = 0;
     roundNum = 0;
     roundHistory = [];
+    // Show/hide Round card based on mode
+    document.getElementById("round-card-wrap").style.display = gameMode === "multi" ? "" : "none";
     renderStats();
     startRound();
   }
@@ -1433,6 +1512,7 @@ icon: "🎲"
     document.getElementById("round-overlay").style.display = "none";
     document.getElementById("lobby-overlay").style.display = "flex";
     selectDiff(difficulty);
+    selectMode(gameMode);
   }
 
   function selectDiff(d) {
@@ -1444,5 +1524,6 @@ icon: "🎲"
 
   // ── Init ──────────────────────────────────────────────────────────────────
   document.getElementById("score-best").textContent = best;
+  document.getElementById("round-card-wrap").style.display = "none"; // hidden until multi mode starts
   showLobby();
 </script>
