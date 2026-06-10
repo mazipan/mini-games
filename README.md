@@ -25,6 +25,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game                    | Difficulty |
 | ----------------------- | ---------- |
 | 🔢 2048                 | Medium     |
+| 🍬 Match Three          | Medium     |
 | 🀄 Onet Connect Classic | Medium     |
 | 🔲 Sliding Puzzle       | Medium     |
 | 💣 Minesweeper          | Hard       |

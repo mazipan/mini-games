@@ -73,6 +73,15 @@ module.exports = [
     tags: ["flying", "tap", "canvas"],
   },
   {
+    slug: "hangman",
+    name: "Hangman",
+    description: "Guess the hidden word letter by letter before the hangman is complete!",
+    category: "word",
+    difficulty: "easy",
+    icon: "🪢",
+    tags: ["word", "guessing", "classic"],
+  },
+  {
     slug: "mancala",
     name: "Mancala",
     description:
@@ -83,13 +92,14 @@ module.exports = [
     tags: ["strategy", "classic", "board", "two-player"],
   },
   {
-    slug: "hangman",
-    name: "Hangman",
-    description: "Guess the hidden word letter by letter before the hangman is complete!",
-    category: "word",
-    difficulty: "easy",
-    icon: "🪢",
-    tags: ["word", "guessing", "classic"],
+    slug: "match-three",
+    name: "Match Three",
+    description:
+      "Swap adjacent tiles to line up 3 or more of the same color and chain reactions for big scores!",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🍬",
+    tags: ["match", "swap", "grid", "casual"],
   },
   {
     slug: "memory-match",
