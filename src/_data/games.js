@@ -45,6 +45,16 @@ module.exports = [
     tags: ["strategy", "two-player", "grid"],
   },
   {
+    slug: "domino",
+    name: "Domino",
+    description:
+      "Match tiles end-to-end to build the chain — empty your hand or score the most points to win!",
+    category: "board",
+    difficulty: "medium",
+    icon: "🎲",
+    tags: ["tiles", "classic", "board", "two-player"],
+  },
+  {
     slug: "flappy-bird",
     name: "Flappy Bird",
     description: "Tap to flap — guide the bird through the pipes without crashing!",

@@ -1,0 +1,1112 @@
+---
+layout: layouts/game.njk
+title: Domino
+description: Match tiles end-to-end to build the chain — empty your hand or score the most points to win!
+category: board
+difficulty: medium
+icon: "🎲"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  :root {
+    --pip: clamp(8px, 2.4vw, 11px);
+    --half: calc(var(--pip) * 3 + 10px);
+    --tile-w: calc(var(--half) * 2 + 4px);
+    --tile-h: var(--half);
+  }
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 64px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #board-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 640px;
+  }
+  #chain-scroll {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0.5rem 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 #0f172a;
+  }
+  #chain-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+  #chain-scroll::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+  #chain-scroll::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 2px;
+  }
+  #chain {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-height: calc(var(--tile-h) + 20px);
+    padding: 6px 12px;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    width: max-content;
+    min-width: 100%;
+  }
+  #chain-empty {
+    color: #475569;
+    font-size: 0.85rem;
+    width: 100%;
+    text-align: center;
+    padding: 0.25rem 0;
+  }
+  .chain-end-label {
+    font-size: 0.65rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  /* Domino tile */
+  .domino {
+    display: inline-flex;
+    flex-direction: row;
+    border: 2px solid #94a3b8;
+    border-radius: 5px;
+    background: #e2e8f0;
+    cursor: default;
+    user-select: none;
+    flex-shrink: 0;
+    transition:
+      transform 0.1s,
+      box-shadow 0.1s,
+      border-color 0.1s;
+  }
+  .domino.hand-tile {
+    cursor: pointer;
+    border-color: #64748b;
+  }
+  .domino.hand-tile:hover {
+    border-color: #94a3b8;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+  .domino.selected {
+    border-color: #3b82f6;
+    box-shadow:
+      0 0 0 2px rgba(59, 130, 246, 0.4),
+      0 4px 12px rgba(0, 0, 0, 0.4);
+    transform: translateY(-5px);
+  }
+  .domino.valid-hint {
+    border-color: #22c55e;
+  }
+  .domino.invalid-tile {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .domino.invalid-tile:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: #64748b;
+  }
+  .d-half {
+    width: var(--half);
+    height: var(--half);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 2px;
+    padding: 3px;
+    box-sizing: border-box;
+  }
+  .d-half + .d-half {
+    border-left: 2px solid #94a3b8;
+  }
+  .domino.selected .d-half + .d-half,
+  .domino.valid-hint .d-half + .d-half {
+    border-left-color: inherit;
+  }
+  .d-dot {
+    border-radius: 50%;
+    background: #1e293b;
+  }
+  /* Status and actions */
+  #status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    text-align: center;
+    min-height: 1.5rem;
+  }
+  #action-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 2.5rem;
+    align-items: center;
+  }
+  .action-btn {
+    padding: 0.4rem 1rem;
+    background: #1e40af;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .action-btn:hover {
+    background: #1d4ed8;
+  }
+  .action-btn.draw-btn {
+    background: #0f766e;
+  }
+  .action-btn.draw-btn:hover {
+    background: #0d9488;
+  }
+  .action-btn.pass-btn {
+    background: #6b21a8;
+  }
+  .action-btn.pass-btn:hover {
+    background: #7e22ce;
+  }
+  .action-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  #hand-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  #hand-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+  }
+  #player-hand {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    padding: 0.5rem;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    min-height: calc(var(--tile-h) + 24px);
+    width: 100%;
+    align-items: center;
+  }
+  #ai-hand-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+  }
+  .boneyard-badge {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+  }
+  .controls-hint {
+    font-size: 0.78rem;
+    color: #475569;
+    text-align: center;
+    max-width: 380px;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #1e40af;
+  }
+  /* Game Over overlay */
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #go-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #go-context {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 0;
+    max-width: 300px;
+  }
+  /* Lobby overlay */
+  #lobby-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 200;
+    padding: 1rem;
+  }
+  #lobby-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+    max-width: 280px;
+  }
+  .diff-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .diff-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+  .diff-btn.active,
+  .diff-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #1d4ed8;
+  }
+  /* Info section */
+  .info-section {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("🙂 You", "score-player", "0") }} {{ statCard("🤖 AI", "score-ai", "0") }} {{ statCard("Best",
+    "score-best", "0") }} {{ statCard("Target", "score-target", "100") }}
+  </div>
+
+  <div id="board-area">
+    <div style="display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: space-between">
+      <div id="ai-hand-info">🤖 AI: <strong id="ai-tile-count">7</strong> tiles</div>
+      <div class="boneyard-badge">🃏 Boneyard: <strong id="boneyard-count">14</strong></div>
+    </div>
+
+    <div id="chain-scroll">
+      <div id="chain">
+        <span id="chain-empty">Place your first tile to start the chain…</span>
+      </div>
+    </div>
+
+    <div id="status">Your turn</div>
+
+    <div id="action-row"></div>
+
+    <div id="hand-section">
+      <div id="hand-label">Your Hand</div>
+      <div id="player-hand"></div>
+    </div>
+  </div>
+
+  <p class="controls-hint">Click a tile to select it, then choose ← Left or Right → to place.</p>
+
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="gameover-overlay" style="display: none">
+  <span id="go-icon">💀</span>
+  <h2 id="go-title">Game Over</h2>
+  <div class="summary-row">
+    <div class="summary-stat">
+      <div class="summary-label">🙂 You</div>
+      <div class="summary-value" id="go-player">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">🤖 AI</div>
+      <div class="summary-value" id="go-ai">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Best</div>
+      <div class="summary-value" id="go-best">0</div>
+    </div>
+  </div>
+  <p id="go-context"></p>
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="lobby-overlay">
+  <span style="font-size: 3rem">🎲</span>
+  <h2>Domino</h2>
+  <p>Match tiles end-to-end. Empty your hand to score your opponent's pips. First to 100 wins!</p>
+  <div class="diff-row">
+    <button class="diff-btn active" id="diff-easy" onclick="selectDiff('easy')">Easy</button>
+    <button class="diff-btn" id="diff-medium" onclick="selectDiff('medium')">Medium</button>
+    <button class="diff-btn" id="diff-hard" onclick="selectDiff('hard')">Hard</button>
+  </div>
+  <button class="play-btn" onclick="startGame()">Play Game</button>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>
+    Be the first to reach <strong>100 points</strong> across multiple rounds. Empty your hand each round to score the
+    total pip value of your opponent's remaining tiles.
+  </p>
+  <h4>Placing Tiles</h4>
+  <p>
+    Click a tile to select it, then click <strong>← Left</strong> or <strong>Right →</strong> to place it on the
+    matching open end of the chain. The touching pips must match.
+  </p>
+  <h4>Drawing</h4>
+  <p>
+    If you have no valid tile to play, click <strong>Draw</strong> to take a tile from the boneyard. Keep drawing until
+    you can play or the boneyard is empty.
+  </p>
+  <h4>Blocked Game</h4>
+  <p>
+    If both players are stuck (no valid plays, empty boneyard), the player with the lower pip total wins and scores the
+    difference.
+  </p>
+  <h4>Difficulty</h4>
+  <ul>
+    <li><strong>Easy</strong> — AI plays a random valid tile</li>
+    <li><strong>Medium</strong> — AI prefers highest-value valid tile</li>
+    <li><strong>Hard</strong> — AI plays strategically, minimizing exposed ends and blocking</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Who goes first?</h4>
+  <p>
+    The player holding the highest double (6-6, then 5-5, etc.) places it first. If neither player has a double, the
+    player with the highest-valued tile goes first.
+  </p>
+  <h4>Can I place a tile on both ends?</h4>
+  <p>
+    Yes! If your tile matches both open ends, you choose which side to play. Both buttons (← Left and Right →) will
+    appear.
+  </p>
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your highest total score is saved in your browser's local storage between sessions.</p>
+  <h4>What happens when the boneyard is empty?</h4>
+  <p>
+    If you can't play and there are no tiles left to draw, you must pass. If both players pass consecutively, the game
+    is blocked and the lower-pip-count player wins the round.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  // ── Confetti ──────────────────────────────────────────────────────────────
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#ef4444", "#fbbf24", "#10b981", "#3b82f6", "#a78bfa", "#f97316", "#ec4899"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  // ── Constants ─────────────────────────────────────────────────────────────
+  const STORAGE_KEY = "mini-domino-best";
+  const TARGET_SCORE = 100;
+
+  // Pip grid positions in a 3×3 grid (index 0-8):
+  // 0 1 2
+  // 3 4 5
+  // 6 7 8
+  const PIPS = [[], [4], [2, 6], [2, 4, 6], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 3, 6, 2, 5, 8]];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let boneyard = [];
+  let playerHand = [];
+  let aiHand = [];
+  let chain = []; // [{left, right}] where left/right are pip values as displayed
+  let currentTurn = "player";
+  let selectedIdx = -1;
+  let passCount = 0;
+  let gameOver = false;
+  let aiActing = false;
+  let difficulty = "easy";
+  let playerScore = 0;
+  let aiScore = 0;
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+  // ── Tile helpers ──────────────────────────────────────────────────────────
+  function createDominoes() {
+    const tiles = [];
+    for (let a = 0; a <= 6; a++) {
+      for (let b = a; b <= 6; b++) {
+        tiles.push({ a, b });
+      }
+    }
+    return tiles;
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function pipSum(hand) {
+    return hand.reduce((s, t) => s + t.a + t.b, 0);
+  }
+
+  function getChainEnds() {
+    if (chain.length === 0) return { left: null, right: null };
+    return { left: chain[0].left, right: chain[chain.length - 1].right };
+  }
+
+  function canPlace(tile) {
+    const { left, right } = getChainEnds();
+    if (left === null) return { canLeft: true, canRight: true };
+    return {
+      canLeft: tile.a === left || tile.b === left,
+      canRight: tile.a === right || tile.b === right,
+    };
+  }
+
+  function hasValidMove(hand) {
+    return hand.some((t) => {
+      const { canLeft, canRight } = canPlace(t);
+      return canLeft || canRight;
+    });
+  }
+
+  function placeTileOnChain(tile, side) {
+    if (chain.length === 0) {
+      chain.push({ left: tile.a, right: tile.b });
+      return;
+    }
+    const { left, right } = getChainEnds();
+    if (side === "left") {
+      // New tile's right face must match chain's left open end
+      if (tile.a === left) {
+        chain.unshift({ left: tile.b, right: tile.a });
+      } else {
+        chain.unshift({ left: tile.a, right: tile.b });
+      }
+    } else {
+      // New tile's left face must match chain's right open end
+      if (tile.a === right) {
+        chain.push({ left: tile.a, right: tile.b });
+      } else {
+        chain.push({ left: tile.b, right: tile.a });
+      }
+    }
+  }
+
+  // ── Rendering ─────────────────────────────────────────────────────────────
+  function makeHalfHTML(val) {
+    const pips = new Set(PIPS[val]);
+    let cells = "";
+    for (let i = 0; i < 9; i++) {
+      cells += `<span class="${pips.has(i) ? "d-dot" : ""}"></span>`;
+    }
+    return `<div class="d-half">${cells}</div>`;
+  }
+
+  function makeTileHTML(l, r, extraClass = "") {
+    return `<div class="domino${extraClass ? " " + extraClass : ""}">${makeHalfHTML(l)}${makeHalfHTML(r)}</div>`;
+  }
+
+  function renderChain() {
+    const el = document.getElementById("chain");
+    if (chain.length === 0) {
+      el.innerHTML = `<span id="chain-empty">Place your first tile to start the chain…</span>`;
+      return;
+    }
+    const { left, right } = getChainEnds();
+    let html = `<span class="chain-end-label">◀ ${left}</span>`;
+    for (const t of chain) {
+      html += makeTileHTML(t.left, t.right, "chain-tile");
+    }
+    html += `<span class="chain-end-label">${right} ▶</span>`;
+    el.innerHTML = html;
+    // Scroll to end of chain when new tile is added
+    const scroll = document.getElementById("chain-scroll");
+    scroll.scrollLeft = scroll.scrollWidth;
+  }
+
+  function renderPlayerHand() {
+    const el = document.getElementById("player-hand");
+    if (playerHand.length === 0) {
+      el.innerHTML = `<span style="color:#475569;font-size:0.85rem">No tiles</span>`;
+      return;
+    }
+    const { left, right } = getChainEnds();
+    const isPlayerTurn = currentTurn === "player" && !gameOver && !aiActing;
+
+    el.innerHTML = playerHand
+      .map((t, i) => {
+        const { canLeft, canRight } = canPlace(t);
+        const valid = canLeft || canRight;
+        let cls = "hand-tile";
+        if (!isPlayerTurn) cls += " invalid-tile";
+        else if (i === selectedIdx) cls += " selected";
+        else if (valid) cls += " valid-hint";
+        else cls += " invalid-tile";
+
+        const tile = makeTileHTML(t.a, t.b, cls);
+        // Wrap in a button-like div for click handling
+        return tile.replace('class="domino', `onclick="selectTile(${i})" class="domino`);
+      })
+      .join("");
+  }
+
+  function renderStats() {
+    document.getElementById("score-player").textContent = playerScore;
+    document.getElementById("score-ai").textContent = aiScore;
+    document.getElementById("score-best").textContent = best;
+    document.getElementById("ai-tile-count").textContent = aiHand.length;
+    document.getElementById("boneyard-count").textContent = boneyard.length;
+  }
+
+  function renderActionButtons() {
+    const el = document.getElementById("action-row");
+    if (gameOver || currentTurn !== "player" || aiActing) {
+      el.innerHTML = "";
+      return;
+    }
+
+    const { canLeft, canRight } =
+      selectedIdx >= 0 ? canPlace(playerHand[selectedIdx]) : { canLeft: false, canRight: false };
+
+    let html = "";
+
+    if (selectedIdx >= 0) {
+      if (canLeft) {
+        html += `<button class="action-btn" onclick="playerPlace('left')">← Left</button>`;
+      }
+      if (canRight) {
+        html += `<button class="action-btn" onclick="playerPlace('right')">Right →</button>`;
+      }
+    }
+
+    if (!hasValidMove(playerHand)) {
+      if (boneyard.length > 0) {
+        html += `<button class="action-btn draw-btn" onclick="playerDraw()">Draw 🃏</button>`;
+      } else {
+        html += `<button class="action-btn pass-btn" onclick="playerPass()">Pass</button>`;
+      }
+    }
+
+    el.innerHTML = html;
+  }
+
+  function renderStatus() {
+    if (gameOver) return;
+    const el = document.getElementById("status");
+    if (aiActing) {
+      el.textContent = "AI is thinking…";
+    } else if (currentTurn === "player") {
+      if (!hasValidMove(playerHand)) {
+        el.textContent = boneyard.length > 0 ? "No valid tile — draw from boneyard!" : "No valid tile — you must pass.";
+      } else if (selectedIdx >= 0) {
+        const { canLeft, canRight } = canPlace(playerHand[selectedIdx]);
+        if (canLeft && canRight) el.textContent = "Choose which end to place on.";
+        else if (canLeft) el.textContent = "Place on the left end.";
+        else el.textContent = "Place on the right end.";
+      } else {
+        el.textContent = "Your turn — select a tile.";
+      }
+    }
+  }
+
+  function renderAll() {
+    renderChain();
+    renderPlayerHand();
+    renderStats();
+    renderActionButtons();
+    renderStatus();
+  }
+
+  // ── Player actions ────────────────────────────────────────────────────────
+  function selectTile(idx) {
+    if (currentTurn !== "player" || gameOver || aiActing) return;
+    const { canLeft, canRight } = canPlace(playerHand[idx]);
+    if (!canLeft && !canRight) return;
+
+    if (selectedIdx === idx) {
+      selectedIdx = -1;
+    } else {
+      selectedIdx = idx;
+      // Auto-place if only one valid side
+      const { canLeft: cL, canRight: cR } = canPlace(playerHand[idx]);
+      if (cL && !cR) {
+        playerPlace("left");
+        return;
+      } else if (!cL && cR) {
+        playerPlace("right");
+        return;
+      }
+    }
+    renderAll();
+  }
+
+  function playerPlace(side) {
+    if (selectedIdx < 0 || currentTurn !== "player" || gameOver || aiActing) return;
+    const tile = playerHand[selectedIdx];
+    const { canLeft, canRight } = canPlace(tile);
+    if (side === "left" && !canLeft) return;
+    if (side === "right" && !canRight) return;
+
+    placeTileOnChain(tile, side);
+    playerHand.splice(selectedIdx, 1);
+    selectedIdx = -1;
+    passCount = 0;
+
+    if (playerHand.length === 0) {
+      endRound("player");
+      return;
+    }
+    currentTurn = "ai";
+    renderAll();
+    scheduleAI();
+  }
+
+  function playerDraw() {
+    if (boneyard.length === 0 || currentTurn !== "player" || gameOver || aiActing) return;
+    const drawn = boneyard.pop();
+    playerHand.push(drawn);
+    passCount = 0;
+    renderStats();
+    // Check if newly drawn tile can be played
+    if (hasValidMove(playerHand)) {
+      renderAll();
+    } else if (boneyard.length > 0) {
+      renderAll();
+    } else {
+      renderAll();
+    }
+  }
+
+  function playerPass() {
+    if (currentTurn !== "player" || gameOver || aiActing) return;
+    passCount++;
+    if (passCount >= 2) {
+      endRound("blocked");
+      return;
+    }
+    currentTurn = "ai";
+    renderAll();
+    scheduleAI();
+  }
+
+  // ── AI logic ──────────────────────────────────────────────────────────────
+  function scheduleAI() {
+    aiActing = true;
+    renderStatus();
+    setTimeout(aiTurn, 900);
+  }
+
+  function aiChooseMove() {
+    const { left, right } = getChainEnds();
+    const valid = [];
+    for (let i = 0; i < aiHand.length; i++) {
+      const t = aiHand[i];
+      const { canLeft, canRight } = canPlace(t);
+      if (canLeft || canRight) {
+        valid.push({ i, t, canLeft, canRight, score: t.a + t.b });
+      }
+    }
+    if (valid.length === 0) return null;
+
+    if (difficulty === "easy") {
+      return valid[Math.floor(Math.random() * valid.length)];
+    }
+
+    if (difficulty === "medium") {
+      // Greedy: pick highest pip sum
+      valid.sort((a, b) => b.score - a.score);
+      return valid[0];
+    }
+
+    // Hard: prefer doubles, then highest value; prefer side that limits opponent options
+    valid.sort((a, b) => {
+      const aDouble = a.t.a === a.t.b ? 1 : 0;
+      const bDouble = b.t.a === b.t.b ? 1 : 0;
+      if (bDouble !== aDouble) return bDouble - aDouble;
+      return b.score - a.score;
+    });
+    return valid[0];
+  }
+
+  function aiTurn() {
+    if (gameOver) return;
+    const move = aiChooseMove();
+
+    if (move) {
+      const side = move.canRight ? "right" : "left";
+      placeTileOnChain(move.t, side);
+      aiHand.splice(move.i, 1);
+      passCount = 0;
+      aiActing = false;
+
+      if (aiHand.length === 0) {
+        endRound("ai");
+        return;
+      }
+      currentTurn = "player";
+      renderAll();
+    } else if (boneyard.length > 0) {
+      // AI draws one tile and tries again
+      const drawn = boneyard.pop();
+      aiHand.push(drawn);
+      renderStats();
+      // Try to play the drawn tile
+      const { canLeft, canRight } = canPlace(drawn);
+      if (canLeft || canRight) {
+        setTimeout(aiTurn, 500);
+      } else if (boneyard.length > 0) {
+        setTimeout(aiTurn, 400);
+      } else {
+        // Boneyard now empty, try one more time
+        setTimeout(aiTurn, 400);
+      }
+    } else {
+      // Must pass
+      passCount++;
+      aiActing = false;
+      if (passCount >= 2) {
+        endRound("blocked");
+      } else {
+        currentTurn = "player";
+        renderAll();
+      }
+    }
+  }
+
+  // ── Round & Game end ──────────────────────────────────────────────────────
+  function endRound(winner) {
+    aiActing = false;
+    let roundPoints = 0;
+
+    if (winner === "player") {
+      roundPoints = pipSum(aiHand);
+      playerScore += roundPoints;
+    } else if (winner === "ai") {
+      roundPoints = pipSum(playerHand);
+      aiScore += roundPoints;
+    } else {
+      // blocked: lower pip total wins
+      const pp = pipSum(playerHand);
+      const ap = pipSum(aiHand);
+      roundPoints = Math.abs(pp - ap);
+      if (pp < ap) playerScore += roundPoints;
+      else if (ap < pp) aiScore += roundPoints;
+      // equal: no points scored
+    }
+
+    renderStats();
+
+    if (playerScore >= TARGET_SCORE || aiScore >= TARGET_SCORE) {
+      endGame(playerScore >= TARGET_SCORE && playerScore > aiScore ? "player" : "ai");
+    } else {
+      // Start new round after short delay
+      setTimeout(startRound, 1200);
+    }
+  }
+
+  function endGame(winner) {
+    gameOver = true;
+
+    if (winner === "player") {
+      if (playerScore > best) {
+        best = playerScore;
+        localStorage.setItem(STORAGE_KEY, best);
+        document.getElementById("score-best").textContent = best;
+        launchConfetti();
+      }
+    }
+
+    document.getElementById("go-icon").textContent = winner === "player" ? "🏆" : "🤖";
+    document.getElementById("go-title").textContent = winner === "player" ? "You Win!" : "AI Wins!";
+    document.getElementById("go-player").textContent = playerScore;
+    document.getElementById("go-ai").textContent = aiScore;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-context").textContent =
+      winner === "player"
+        ? `You reached ${playerScore} points — well played!`
+        : `AI reached ${aiScore} points. Better luck next time!`;
+
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  // ── Game setup ────────────────────────────────────────────────────────────
+  function initRound() {
+    const all = shuffle(createDominoes());
+    playerHand = all.slice(0, 7);
+    aiHand = all.slice(7, 14);
+    boneyard = all.slice(14);
+    chain = [];
+    selectedIdx = -1;
+    passCount = 0;
+    aiActing = false;
+
+    // Determine first player: highest double, else highest pip sum
+    currentTurn = "player";
+    let bestDouble = -1;
+    for (const t of playerHand) {
+      if (t.a === t.b && t.a > bestDouble) bestDouble = t.a;
+    }
+    let aiBestDouble = -1;
+    for (const t of aiHand) {
+      if (t.a === t.b && t.a > aiBestDouble) aiBestDouble = t.a;
+    }
+
+    if (aiBestDouble > bestDouble) {
+      // AI goes first, auto-play the best double
+      currentTurn = "ai";
+    }
+  }
+
+  function startRound() {
+    initRound();
+    renderAll();
+    if (currentTurn === "ai") {
+      scheduleAI();
+    }
+  }
+
+  function startGame() {
+    document.getElementById("lobby-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    gameOver = false;
+    playerScore = 0;
+    aiScore = 0;
+    renderStats();
+    startRound();
+  }
+
+  function showLobby() {
+    gameOver = true;
+    aiActing = false;
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("lobby-overlay").style.display = "flex";
+    selectDiff(difficulty);
+  }
+
+  function selectDiff(d) {
+    difficulty = d;
+    ["easy", "medium", "hard"].forEach((x) => {
+      document.getElementById("diff-" + x).classList.toggle("active", x === d);
+    });
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  document.getElementById("score-best").textContent = best;
+  document.getElementById("score-target").textContent = TARGET_SCORE;
+  showLobby();
+</script>
