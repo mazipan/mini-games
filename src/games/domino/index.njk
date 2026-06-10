@@ -535,6 +535,49 @@ icon: "🎲"
     color: white;
     border-color: #1d4ed8;
   }
+  /* Round history */
+  .history-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #64748b;
+    margin-bottom: 0.4rem;
+    text-align: center;
+  }
+  .history-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 5px;
+    background: #1e293b;
+    margin-bottom: 3px;
+  }
+  .history-round {
+    color: #64748b;
+    width: 2.5rem;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+  }
+  .history-pts {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    gap: 0.25rem;
+  }
+  .history-you {
+    color: #60a5fa;
+    font-weight: 600;
+  }
+  .history-ai {
+    color: #f87171;
+    font-weight: 600;
+  }
+  .history-result {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
   /* Info section */
   .info-section {
     width: 100%;
@@ -602,7 +645,7 @@ icon: "🎲"
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("🙂 You", "score-player", "0") }} {{ statCard("🤖 AI", "score-ai", "0") }} {{ statCard("Best",
-    "score-best", "0") }} {{ statCard("Target", "score-target", "100") }}
+    "score-best", "0") }} {{ statCard("Round", "score-round", "1") }}
   </div>
 
   <div id="board-area">
@@ -664,6 +707,10 @@ icon: "🎲"
     </div>
   </div>
   <p id="go-context"></p>
+  <div id="go-history-wrap" style="width: 100%; max-width: 300px; display: none">
+    <div class="history-label">Round History</div>
+    <div id="go-history-table"></div>
+  </div>
   <button class="play-btn" onclick="showLobby()">New Game</button>
 </div>
 
@@ -680,10 +727,10 @@ icon: "🎲"
       <div class="summary-label">🤖 AI</div>
       <div class="summary-value" id="round-ai">0</div>
     </div>
-    <div class="summary-stat">
-      <div class="summary-label">Target</div>
-      <div class="summary-value">100</div>
-    </div>
+  </div>
+  <div id="round-history-wrap" style="width: 100%; max-width: 300px; display: none">
+    <div class="history-label">Round History</div>
+    <div id="round-history-table"></div>
   </div>
   <div class="round-btn-row">
     <button class="play-btn" onclick="nextRound()">Next Round</button>
@@ -833,6 +880,8 @@ icon: "🎲"
   let difficulty = "easy";
   let playerScore = 0;
   let aiScore = 0;
+  let roundNum = 0;
+  let roundHistory = []; // [{num, youPts, aiPts, winner}]
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
 
   // ── Tile helpers ──────────────────────────────────────────────────────────
@@ -978,6 +1027,7 @@ icon: "🎲"
     document.getElementById("score-player").textContent = playerScore;
     document.getElementById("score-ai").textContent = aiScore;
     document.getElementById("score-best").textContent = best;
+    document.getElementById("score-round").textContent = roundNum;
     document.getElementById("boneyard-count").textContent = boneyard.length;
     renderAIHand();
   }
@@ -1201,50 +1251,89 @@ icon: "🎲"
   // ── Round & Game end ──────────────────────────────────────────────────────
   function endRound(winner) {
     aiActing = false;
-    let roundPoints = 0;
+    let youPts = 0;
+    let aiPts = 0;
 
     if (winner === "player") {
-      roundPoints = pipSum(aiHand);
-      playerScore += roundPoints;
+      youPts = pipSum(aiHand);
+      playerScore += youPts;
     } else if (winner === "ai") {
-      roundPoints = pipSum(playerHand);
-      aiScore += roundPoints;
+      aiPts = pipSum(playerHand);
+      aiScore += aiPts;
     } else {
       // blocked: lower pip total wins
       const pp = pipSum(playerHand);
       const ap = pipSum(aiHand);
-      roundPoints = Math.abs(pp - ap);
-      if (pp < ap) playerScore += roundPoints;
-      else if (ap < pp) aiScore += roundPoints;
+      const diff = Math.abs(pp - ap);
+      if (pp < ap) {
+        youPts = diff;
+        playerScore += diff;
+      } else if (ap < pp) {
+        aiPts = diff;
+        aiScore += diff;
+      }
       // equal: no points scored
     }
 
+    roundHistory.push({ num: roundNum, youPts, aiPts, winner });
     renderStats();
 
     if (playerScore >= TARGET_SCORE || aiScore >= TARGET_SCORE) {
       endGame(playerScore >= TARGET_SCORE && playerScore > aiScore ? "player" : "ai");
     } else {
-      showRoundSummary(winner, roundPoints);
+      showRoundSummary(winner, youPts, aiPts);
     }
   }
 
-  function showRoundSummary(winner, roundPoints) {
+  function buildHistoryHTML(history) {
+    return history
+      .map((r) => {
+        const badge = r.winner === "player" ? "🎉" : r.winner === "ai" ? "😤" : "🤝";
+        return `<div class="history-row">
+          <span class="history-round">Rnd ${r.num}</span>
+          <span class="history-pts">
+            <span class="history-you">You +${r.youPts}</span>
+            <span class="history-ai">AI +${r.aiPts}</span>
+          </span>
+          <span class="history-result">${badge}</span>
+        </div>`;
+      })
+      .join("");
+  }
+
+  function renderRoundHistory() {
+    const showInRound = roundHistory.length > 1;
+    const roundWrap = document.getElementById("round-history-wrap");
+    if (roundWrap) {
+      roundWrap.style.display = showInRound ? "block" : "none";
+      if (showInRound) document.getElementById("round-history-table").innerHTML = buildHistoryHTML(roundHistory);
+    }
+    const goWrap = document.getElementById("go-history-wrap");
+    if (goWrap) {
+      goWrap.style.display = roundHistory.length > 0 ? "block" : "none";
+      if (roundHistory.length > 0)
+        document.getElementById("go-history-table").innerHTML = buildHistoryHTML(roundHistory);
+    }
+  }
+
+  function showRoundSummary(winner, youPts, aiPts) {
     gameOver = true;
     let icon, title, desc;
+    const roundPts = youPts || aiPts;
     if (winner === "player") {
       icon = "🎉";
       title = "Round Won!";
-      desc = `You scored ${roundPoints} point${roundPoints !== 1 ? "s" : ""} from the AI's remaining tiles.`;
+      desc = `You scored ${youPts} point${youPts !== 1 ? "s" : ""} from the AI's remaining tiles.`;
     } else if (winner === "ai") {
       icon = "😤";
       title = "Round Lost";
-      desc = `AI scored ${roundPoints} point${roundPoints !== 1 ? "s" : ""} from your remaining tiles.`;
+      desc = `AI scored ${aiPts} point${aiPts !== 1 ? "s" : ""} from your remaining tiles.`;
     } else {
-      icon = roundPoints > 0 ? (playerScore > aiScore ? "🎉" : "😤") : "🤝";
+      icon = roundPts > 0 ? (playerScore > aiScore ? "🎉" : "😤") : "🤝";
       title = "Round Blocked";
       desc =
-        roundPoints > 0
-          ? `${playerScore > aiScore ? "You" : "AI"} scored ${roundPoints} pts (lower pip count).`
+        roundPts > 0
+          ? `${playerScore > aiScore ? "You" : "AI"} scored ${roundPts} pts (lower pip count).`
           : "Both hands tied — no points scored this round.";
     }
     document.getElementById("round-icon").textContent = icon;
@@ -1252,6 +1341,7 @@ icon: "🎲"
     document.getElementById("round-desc").textContent = desc;
     document.getElementById("round-player").textContent = playerScore;
     document.getElementById("round-ai").textContent = aiScore;
+    renderRoundHistory();
     document.getElementById("round-overlay").style.display = "flex";
   }
 
@@ -1264,13 +1354,13 @@ icon: "🎲"
   function endGame(winner) {
     gameOver = true;
 
-    if (winner === "player") {
-      if (playerScore > best) {
-        best = playerScore;
-        localStorage.setItem(STORAGE_KEY, best);
-        document.getElementById("score-best").textContent = best;
-        launchConfetti();
-      }
+    if (playerScore > best) {
+      best = playerScore;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("score-best").textContent = best;
+      if (winner === "player") launchConfetti();
+    } else if (winner === "player") {
+      launchConfetti();
     }
 
     document.getElementById("go-icon").textContent = winner === "player" ? "🏆" : "🤖";
@@ -1283,6 +1373,7 @@ icon: "🎲"
         ? `You reached ${playerScore} points — well played!`
         : `AI reached ${aiScore} points. Better luck next time!`;
 
+    renderRoundHistory();
     document.getElementById("gameover-overlay").style.display = "flex";
   }
 
@@ -1315,6 +1406,7 @@ icon: "🎲"
   }
 
   function startRound() {
+    roundNum++;
     initRound();
     renderAll();
     if (currentTurn === "ai") {
@@ -1328,6 +1420,8 @@ icon: "🎲"
     gameOver = false;
     playerScore = 0;
     aiScore = 0;
+    roundNum = 0;
+    roundHistory = [];
     renderStats();
     startRound();
   }
@@ -1350,6 +1444,5 @@ icon: "🎲"
 
   // ── Init ──────────────────────────────────────────────────────────────────
   document.getElementById("score-best").textContent = best;
-  document.getElementById("score-target").textContent = TARGET_SCORE;
   showLobby();
 </script>
