@@ -532,6 +532,7 @@ icon: "🍬"
   }
 
   function renderBoard() {
+    selected = null;
     boardEl.innerHTML = "";
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
@@ -678,14 +679,11 @@ icon: "🍬"
       }
       await delay(170);
 
-      const dropCounts = Array.from({ length: COLS }, (_, ci) =>
-        board.reduce((sum, row) => sum + (row[ci] === null ? 1 : 0), 0)
-      );
-
+      const drops = computeDropDistances();
       applyGravity();
       refillBoard();
       renderBoard();
-      await animateDrop(dropCounts);
+      await animateDrop(drops);
 
       multiplier++;
       matches = findMatches(board);
@@ -804,14 +802,11 @@ icon: "🍬"
       board[nr][nc] = null;
     }
 
-    const bombDropCounts = Array.from({ length: COLS }, (_, ci) =>
-      board.reduce((sum, row) => sum + (row[ci] === null ? 1 : 0), 0)
-    );
-
+    const drops = computeDropDistances();
     applyGravity();
     refillBoard();
     renderBoard();
-    await animateDrop(bombDropCounts);
+    await animateDrop(drops);
 
     const matches = findMatches(board);
     if (matches.size > 0) {
@@ -839,45 +834,64 @@ icon: "🍬"
     boardEl.querySelectorAll(".bomb-preview").forEach((el) => el.classList.remove("bomb-preview"));
   }
 
-  async function animateDrop(dropCounts) {
+  function computeDropDistances() {
+    // Call before applyGravity() — board has null for cleared tiles.
+    // Returns { "newRow,col": cellsFallen } only for tiles that actually moved.
+    const drops = {};
+    for (let c = 0; c < COLS; c++) {
+      let nullsBelow = 0;
+      for (let r = ROWS - 1; r >= 0; r--) {
+        if (board[r][c] === null) {
+          nullsBelow++;
+        } else if (nullsBelow > 0) {
+          drops[`${r + nullsBelow},${c}`] = nullsBelow;
+        }
+      }
+      // nullsBelow is now the total null count for this column.
+      // In normal mode, new tiles fill from the top — all start from the same
+      // height above (nullsBelow cells) so the drop distance is uniform.
+      if (!clearingMode) {
+        for (let r = 0; r < nullsBelow; r++) {
+          drops[`${r},${c}`] = nullsBelow;
+        }
+      }
+    }
+    return drops;
+  }
+
+  async function animateDrop(drops) {
+    const entries = Object.entries(drops);
+    if (entries.length === 0) return;
     const firstTile = boardEl.querySelector(".tile");
     if (!firstTile) return;
     const cellH = firstTile.getBoundingClientRect().height;
     const step = cellH + 3;
 
-    for (let c = 0; c < COLS; c++) {
-      const dc = dropCounts[c];
-      if (dc === 0) continue;
-      for (let r = 0; r < ROWS; r++) {
-        const el = getTileEl(r, c);
-        if (!el) continue;
-        const offset = r < dc ? (dc - r) * step : dc * step;
-        el.style.transition = "none";
-        el.style.transform = `translateY(${-offset}px)`;
-      }
+    for (const [key, dist] of entries) {
+      const [r, c] = key.split(",").map(Number);
+      const el = getTileEl(r, c);
+      if (!el || !el.classList.contains("tile")) continue;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${-dist * step}px)`;
     }
 
     boardEl.offsetHeight;
 
-    for (let c = 0; c < COLS; c++) {
-      if (dropCounts[c] === 0) continue;
-      for (let r = 0; r < ROWS; r++) {
-        const el = getTileEl(r, c);
-        if (!el) continue;
-        el.style.transition = "transform 0.38s ease-in";
-        el.style.transform = "";
-      }
+    for (const [key] of entries) {
+      const [r, c] = key.split(",").map(Number);
+      const el = getTileEl(r, c);
+      if (!el || !el.classList.contains("tile")) continue;
+      el.style.transition = "transform 0.38s ease-in";
+      el.style.transform = "";
     }
 
     await delay(400);
 
-    for (let c = 0; c < COLS; c++) {
-      if (dropCounts[c] === 0) continue;
-      for (let r = 0; r < ROWS; r++) {
-        const el = getTileEl(r, c);
-        if (!el) continue;
-        el.style.transition = "";
-      }
+    for (const [key] of entries) {
+      const [r, c] = key.split(",").map(Number);
+      const el = getTileEl(r, c);
+      if (!el) continue;
+      el.style.transition = "";
     }
   }
 
