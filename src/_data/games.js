@@ -45,6 +45,16 @@ module.exports = [
     tags: ["blocks", "casual", "puzzle", "placement"],
   },
   {
+    slug: "color-connect",
+    name: "Color Connect",
+    description:
+      "Connect matching colored dots by drawing paths — fill every cell without crossing lines.",
+    category: "puzzle",
+    difficulty: "medium",
+    icon: "🔗",
+    tags: ["puzzle", "connect", "grid", "logic"],
+  },
+  {
     slug: "connect-four",
     name: "Connect Four",
     description: "Drop colored discs into a 7×6 grid and connect four in a row to win.",
