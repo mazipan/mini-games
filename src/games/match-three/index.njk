@@ -197,11 +197,10 @@ icon: "🍬"
     background: #f97316;
   }
 
-  #overlay,
-  #gameover-overlay {
-    position: absolute;
+  #overlay {
+    position: fixed;
     inset: 0;
-    border-radius: 10px;
+    border-radius: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -209,14 +208,22 @@ icon: "🍬"
     gap: 0.75rem;
     text-align: center;
     padding: 1.5rem;
-    z-index: 10;
-  }
-  #overlay {
-    background: rgba(15, 23, 42, 0.84);
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.97);
   }
   #gameover-overlay {
-    background: rgba(15, 23, 42, 0.96);
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
     display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 1.5rem;
+    z-index: 10;
+    background: rgba(15, 23, 42, 0.96);
   }
   #overlay h2,
   #gameover-overlay h2 {
@@ -327,17 +334,10 @@ icon: "🍬"
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("Score", "score-display", "0") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level",
-    "level-display", "1") }} {{ statCard("Moves", "moves-display", "20") }} {{ statCard("Target", "target-display",
-    "500") }}
+    "level-display", "1") }} {{ statCard("Moves", "moves-display", "20") }}
   </div>
 
   <div id="status-banner"></div>
-
-  <div id="tools-row">
-    <button class="bomb-btn" id="bomb-btn" onclick="toggleBombMode()" title="Bomb: blasts a 5×5 area">
-      💣 Bomb ×<span id="bomb-count">3</span>
-    </button>
-  </div>
 
   <div id="board-container">
     <div id="board"></div>
@@ -358,6 +358,12 @@ icon: "🍬"
       </div>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
+  </div>
+
+  <div id="tools-row">
+    <button class="bomb-btn" id="bomb-btn" onclick="toggleBombMode()" title="Bomb: blasts a 5×5 area">
+      💣 Bomb ×<span id="bomb-count">3</span>
+    </button>
   </div>
 
   <div class="info-section">
@@ -434,7 +440,6 @@ icon: "🍬"
   const bestEl = document.getElementById("best-display");
   const levelEl = document.getElementById("level-display");
   const movesEl = document.getElementById("moves-display");
-  const targetEl = document.getElementById("target-display");
   const overlayEl = document.getElementById("overlay");
   const gameoverEl = document.getElementById("gameover-overlay");
   const statusBannerEl = document.getElementById("status-banner");
@@ -906,7 +911,6 @@ icon: "🍬"
         target = targetForLevel(level);
         levelEl.textContent = level;
         movesEl.textContent = moves;
-        targetEl.textContent = target;
         updateStatusBanner();
         updateBombDisplay();
         board = makeBoard();
@@ -918,7 +922,6 @@ icon: "🍬"
     }
     if (score >= target) {
       clearingMode = true;
-      targetEl.textContent = "✓";
       updateStatusBanner();
       return;
     }
@@ -954,7 +957,6 @@ icon: "🍬"
     scoreEl.textContent = 0;
     levelEl.textContent = 1;
     movesEl.textContent = moves;
-    targetEl.textContent = target;
     updateStatusBanner();
     updateBombDisplay();
     boardEl.style.cursor = "";
