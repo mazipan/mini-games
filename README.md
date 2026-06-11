@@ -25,6 +25,8 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game                    | Difficulty |
 | ----------------------- | ---------- |
 | 🔢 2048                 | Medium     |
+| 🟦 Color Block          | Medium     |
+| 🔗 Color Connect        | Medium     |
 | 🍬 Match Three          | Medium     |
 | 🀄 Onet Connect Classic | Medium     |
 | 🔲 Sliding Puzzle       | Medium     |
