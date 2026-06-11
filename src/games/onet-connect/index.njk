@@ -401,7 +401,7 @@ icon: "🀄"
     game ends.
   </p>
   <h4>Do hints and shuffles reset each level?</h4>
-  <p>Yes — both reset to 10 when you advance to the next level.</p>
+  <p>No — your remaining hints and shuffles carry over, and you earn +1 of each when you complete a level.</p>
   <h4>Is my best score saved?</h4>
   <p>Yes — your highest cumulative score is stored in your browser's local storage.</p>
   {% endcall %}
@@ -741,13 +741,13 @@ icon: "🀄"
     score += bonus;
     updateScoreDisplay();
     launchConfetti();
-    showToast("Level " + level + " complete! +" + bonus + " bonus");
+    showToast("Level " + level + " complete! +" + bonus + " bonus · +1 hint & shuffle");
 
     setTimeout(() => {
       level++;
       document.getElementById("level-display").textContent = level;
-      shuffles = INIT_SHUFFLES;
-      hints = INIT_HINTS;
+      shuffles += 1;
+      hints += 1;
       timerSec = TIMER_SEC;
       updateActionBtns();
       updateTimerDisplay();
