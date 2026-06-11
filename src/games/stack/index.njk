@@ -222,19 +222,47 @@ icon: "📦"
 
   <div class="info-section">
     {% call infoDetails("How to Play") %}
-    <h4>Goal</h4>
-    <p>Stack blocks as high as possible. Each overhang is cut off — keep stacking!</p>
-    <h4>Controls</h4>
-    <p>Click / tap anywhere to drop the sliding block.</p>
-    <h4>Scoring</h4>
-    <p>10 points per block. Perfect placement (≤2px overhang): 20 points + bonus!</p>
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>
+        Stack blocks as high as possible. A sliding block moves back and forth — tap to drop it. Any part that overhangs
+        the block below is cut off, making each new block narrower. The game ends when a block misses completely.
+      </p>
+      <h4>Controls</h4>
+      <p>Click or tap anywhere to drop the sliding block.</p>
+      <h4>Perfect Placement</h4>
+      <p>
+        A <strong style="color: #22c55e">dashed green outline</strong> shows the perfect target — the exact position
+        where the sliding block lines up with the top of the stack. Drop the block inside that outline and it counts as
+        a <strong style="color: #22c55e">Perfect!</strong>
+      </p>
+      <p>
+        Perfect = the block lands with less than 2px of overhang on either side. No cut happens, the block stays full
+        width, and you score <strong style="color: #f0c040">20 pts</strong> instead of 10.
+      </p>
+      <h4>Scoring</h4>
+      <p>
+        Normal placement: <strong style="color: #e2e8f0">10 pts</strong>. Perfect placement:
+        <strong style="color: #22c55e">20 pts</strong>. Speed increases every 10 blocks.
+      </p>
+    </div>
     {% endcall %} {% call infoDetails("FAQ") %}
-    <h4>What is a perfect placement?</h4>
-    <p>If you land within 2 pixels of perfect alignment, the block isn't cut at all!</p>
-    <h4>When does the game end?</h4>
-    <p>When a block completely misses the stack below, it's game over.</p>
-    <h4>Does the speed increase?</h4>
-    <p>Yes — every 10 blocks placed, the sliding speed increases.</p>
+    <div class="info-body">
+      <h4>What is the green dashed box?</h4>
+      <p>
+        That's the perfect zone — it mirrors the exact width and position of the top block. Land your sliding block
+        inside it for a Perfect placement!
+      </p>
+      <h4>What happens when I miss the perfect zone?</h4>
+      <p>
+        The part of the block that sticks out beyond the top block is cut off. The next block you drop will be that
+        narrower width, making it harder over time.
+      </p>
+      <h4>When does the game end?</h4>
+      <p>When the sliding block has zero overlap with the top of the stack — it misses entirely.</p>
+      <h4>Does the speed increase?</h4>
+      <p>Yes — every 10 blocks placed, the sliding speed increases by one level.</p>
+    </div>
     {% endcall %}
   </div>
 </div>
@@ -254,7 +282,7 @@ icon: "📦"
 
   const STORAGE_KEY = "mini-stack-best";
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  let stack, current, score, level, cameraOffset, running, animId, demoMode;
+  let stack, current, score, level, cameraOffset, running, animId, demoMode, perfectFlashTime;
 
   const BLOCK_COLORS = [
     "#ef4444",
@@ -286,6 +314,7 @@ icon: "📦"
     score = 0;
     level = 1;
     cameraOffset = 0;
+    perfectFlashTime = 0;
   }
 
   function blockY(index) {
@@ -325,7 +354,10 @@ icon: "📦"
     stack.push({ x: newX, width: newWidth, color: blockColor(stack.length) });
 
     score += isPerfect ? 20 : 10;
-    if (isPerfect) launchConfetti();
+    if (isPerfect) {
+      perfectFlashTime = performance.now();
+      launchConfetti();
+    }
 
     if (stack.length % 10 === 0) {
       level++;
@@ -362,8 +394,32 @@ icon: "📦"
     }
 
     const currentY = blockY(stack.length);
+
+    // Perfect-zone ghost: dashed outline showing where to aim
+    const top = stack[stack.length - 1];
+    ctx.fillStyle = "rgba(34,197,94,0.08)";
+    ctx.fillRect(top.x, currentY, top.width, BLOCK_H - 2);
+    ctx.strokeStyle = "rgba(34,197,94,0.55)";
+    ctx.lineWidth = 1.5 * S;
+    ctx.setLineDash([4 * S, 3 * S]);
+    ctx.strokeRect(top.x + 1, currentY + 1, top.width - 2, BLOCK_H - 4);
+    ctx.setLineDash([]);
+
+    // Sliding block
     ctx.fillStyle = "#f0c040";
     ctx.fillRect(current.x, currentY, current.width, BLOCK_H - 2);
+
+    // PERFECT! flash text
+    const elapsed = performance.now() - perfectFlashTime;
+    if (elapsed < 800) {
+      const alpha = 1 - elapsed / 800;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = "#22c55e";
+      ctx.font = `bold ${Math.round(18 * S)}px sans-serif`;
+      ctx.textAlign = "center";
+      ctx.fillText("✦ PERFECT!", W / 2, currentY - 8 * S);
+      ctx.globalAlpha = 1;
+    }
   }
 
   function demoAI() {
