@@ -20,7 +20,7 @@ icon: "🎹"
   }
   .score-row {
     display: flex;
-    gap: 1rem;
+    gap: 0.6rem;
     flex-wrap: wrap;
     justify-content: center;
   }
@@ -61,10 +61,12 @@ icon: "🎹"
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 23, 42, 0.82);
+    background: rgba(15, 23, 42, 0.9);
     border-radius: 4px;
-    gap: 0.75rem;
+    gap: 0.65rem;
     line-height: normal;
+    padding: 1rem;
+    overflow-y: auto;
   }
   #overlay h2 {
     font-size: 1.6rem;
@@ -74,7 +76,7 @@ icon: "🎹"
   }
   #overlay p {
     color: #94a3b8;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     margin: 0;
     text-align: center;
   }
@@ -107,6 +109,99 @@ icon: "🎹"
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
+  /* Difficulty buttons (inside overlay) */
+  .diff-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .diff-btn {
+    padding: 0.35rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .diff-btn:hover {
+    background: #334155;
+    color: #e2e8f0;
+  }
+  .diff-btn.active {
+    background: #7c3aed;
+    color: white;
+    border-color: #7c3aed;
+  }
+  /* Song list in overlay */
+  #song-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 240px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .song-option {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 0.4rem 0.75rem;
+    cursor: pointer;
+    text-align: left;
+    color: #e2e8f0;
+    font-size: 0.8rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .song-option:hover {
+    background: #2d3f55;
+  }
+  .song-option .song-opt-artist {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    display: block;
+    margin-top: 0.1rem;
+  }
+  .song-option.random-btn {
+    background: #1e293b;
+    border-color: #7c3aed;
+    color: #a78bfa;
+    text-align: center;
+  }
+  /* Song intro card */
+  #song-card {
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.4);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    max-width: 220px;
+    text-align: center;
+  }
+  #card-song {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    margin-bottom: 0.2rem;
+  }
+  #card-artist {
+    font-size: 0.72rem;
+    color: #a78bfa;
+    margin-bottom: 0.4rem;
+  }
+  #card-fact {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    font-style: italic;
+  }
+  /* Game over overlay */
   #gameover-overlay {
     position: absolute;
     inset: 0;
@@ -118,6 +213,7 @@ icon: "🎹"
     border-radius: 4px;
     gap: 0.75rem;
     line-height: normal;
+    padding: 1rem;
   }
   #gameover-overlay span:first-child {
     font-size: 2.5rem;
@@ -151,6 +247,16 @@ icon: "🎹"
     color: #e2e8f0;
     font-family: monospace;
   }
+  /* Now playing bar */
+  #now-playing {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+  }
+  #now-playing strong {
+    color: #e2e8f0;
+  }
+  /* Info section */
   .info-section {
     width: 100%;
     max-width: 520px;
@@ -192,90 +298,53 @@ icon: "🎹"
     margin: 0.75rem 0 0.25rem;
     font-size: 0.9rem;
   }
-  .difficulty-row {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-  }
-  .diff-btn {
-    padding: 0.35rem 0.9rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: #1e293b;
-    color: #94a3b8;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .diff-btn.active {
-    background: #7c3aed;
-    color: white;
-    border-color: #7c3aed;
-  }
-  #now-playing {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    text-align: center;
-  }
-  #now-playing strong {
-    color: #e2e8f0;
-  }
-  #song-card {
-    background: rgba(124, 58, 237, 0.15);
-    border: 1px solid rgba(124, 58, 237, 0.4);
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
-    max-width: 220px;
-    text-align: center;
-  }
-  #card-song {
-    font-size: 0.95rem;
-    font-weight: bold;
-    color: #e2e8f0;
-    margin-bottom: 0.2rem;
-  }
-  #card-artist {
-    font-size: 0.72rem;
-    color: #a78bfa;
-    margin-bottom: 0.4rem;
-  }
-  #card-fact {
-    font-size: 0.7rem;
-    color: #94a3b8;
-    line-height: 1.4;
-    font-style: italic;
-  }
 </style>
 
 <div id="game-wrapper">
   <div class="score-row">
     {{ statCard("Score", "score-display", "0") }} {{ statCard("Level", "level-display", "1") }} {{ statCard("Best",
-    "best-display", "0") }}
+    "best-display", "0") }} {{ statCard("Lives", "lives-display", "❤️❤️❤️") }}
   </div>
 
-  <div class="difficulty-row">
-    <button class="diff-btn active" id="btn-easy" onclick="setDifficulty('easy')">🎵 Easy</button>
-    <button class="diff-btn" id="btn-medium" onclick="setDifficulty('medium')">🎶 Medium</button>
-    <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">🎸 Hard</button>
-  </div>
-  <div id="now-playing">🎹 <strong id="song-name">Twinkle Twinkle</strong></div>
+  <div id="now-playing">🎹 <strong id="song-name">—</strong></div>
 
   <div class="canvas-wrapper">
     <canvas id="canvas"></canvas>
+
     <div id="overlay">
       <span class="demo-label" id="demo-label">Live Demo</span>
       <span>🎹</span>
       <h2>Piano Tiles</h2>
-      <div id="song-card">
-        <div id="card-song">Twinkle Twinkle Little Star</div>
-        <div id="card-artist">Traditional · ~1806</div>
-        <div id="card-fact">Based on a French melody that Mozart also arranged as famous piano variations.</div>
+
+      <div id="step-diff">
+        <p style="margin-bottom: 0.4rem">Choose difficulty:</p>
+        <div class="diff-row">
+          <button class="diff-btn" id="btn-easy" onclick="showSongStep('easy')">🎵 Easy</button>
+          <button class="diff-btn" id="btn-medium" onclick="showSongStep('medium')">🎶 Medium</button>
+          <button class="diff-btn" id="btn-hard" onclick="showSongStep('hard')">🎸 Hard</button>
+        </div>
       </div>
-      <p>Tap each tile in time with the music!</p>
-      <button class="play-btn" onclick="startGame()">Play Game</button>
+
+      <div id="step-songs" style="display: none">
+        <p style="margin-bottom: 0.4rem">
+          Pick a song — <strong id="step-diff-label" style="color: #a78bfa"></strong>:
+        </p>
+        <div id="song-list"></div>
+        <button class="diff-btn" style="margin-top: 0.3rem" onclick="showDiffStep()">← Back</button>
+      </div>
+
+      <div id="step-play" style="display: none">
+        <div id="song-card">
+          <div id="card-song"></div>
+          <div id="card-artist"></div>
+          <div id="card-fact"></div>
+        </div>
+        <p>Tap each tile in time with the music!</p>
+        <button class="play-btn" onclick="startGame()">Play Game</button>
+        <button class="diff-btn" onclick="showSongStep(currentDifficulty)">← Back</button>
+      </div>
     </div>
+
     <div id="gameover-overlay">
       <span id="go-icon">💀</span>
       <h2 id="go-title">Game Over</h2>
@@ -283,7 +352,8 @@ icon: "🎹"
         {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
         "go-level", "1") }}
       </div>
-      <button class="play-btn" onclick="startGame()">New Game</button>
+      <button class="play-btn" onclick="startGame()">Play Again</button>
+      <button class="diff-btn" onclick="showOverlay()">Change Song</button>
     </div>
   </div>
 
@@ -291,39 +361,62 @@ icon: "🎹"
     {% call infoDetails("How to Play") %}
     <div class="info-body">
       <h4>Goal</h4>
-      <p>Tap colored tiles as they fall in time with the music. Don't miss one or tap empty space!</p>
+      <p>
+        Tap colored tiles as they fall in time with the music. You have <strong>3 lives</strong> — each tile that slips
+        past the bottom costs one life. Game over when all lives are gone.
+      </p>
       <h4>Controls</h4>
-      <p>Click or tap on the colored tiles as they scroll down the screen.</p>
+      <p>
+        Click or tap on the colored tiles as they scroll down the screen. Tapping empty space does nothing — only tiles
+        count!
+      </p>
       <h4>Difficulty &amp; Songs</h4>
       <p>
-        Easy songs (e.g. Twinkle Twinkle) fall slowly. Medium songs fall at a moderate pace. Hard songs (e.g. Für Elise)
-        fall fast. Each difficulty picks a random song from its pool.
+        Easy songs fall slowly (~65–74 BPM). Medium falls at a moderate pace (~96–112 BPM). Hard songs fall fast
+        (140–160 BPM). Each difficulty has 5 songs — pick one or let the demo play.
+      </p>
+      <h4>Lives</h4>
+      <p>
+        You start with 3 ❤️ lives. A tile passing the bottom without being tapped removes one life. Tapping empty space
+        is forgiving — no penalty!
       </p>
       <h4>Scoring &amp; Levels</h4>
-      <p>Each tapped tile scores 10 points. Speed increases every 10 tiles. Level increases every 10 taps.</p>
-      <h4>Column Colors &amp; Notes</h4>
       <p>
-        Lower-pitched notes appear in left columns (blue, green) and higher-pitched notes in right columns (yellow,
-        red). The color helps you identify which note is playing.
+        Each tapped tile scores 10 points. Speed increases every 10 tiles. Best score is saved separately per
+        difficulty.
       </p>
-      <h4>Game Over Conditions</h4>
-      <p>You lose if: an untapped tile passes the bottom of the screen, or you click empty space.</p>
+    </div>
+    {% endcall %} {% call infoDetails("Song List") %}
+    <div class="info-body">
+      <h4>🎵 Easy</h4>
+      <p>
+        Twinkle Twinkle Little Star · Mary Had a Little Lamb · Someone Like You (Adele) · Ode to My Family (The
+        Cranberries) · Let It Be (The Beatles)
+      </p>
+      <h4>🎶 Medium</h4>
+      <p>
+        Ode to Joy (Beethoven) · Jingle Bells · It's My Life (Bon Jovi) · Zombie (The Cranberries) · Rolling in the Deep
+        (Adele)
+      </p>
+      <h4>🎸 Hard</h4>
+      <p>
+        Für Elise (Beethoven) · Canon in D (Pachelbel) · Don't Stop Me Now (Queen) · APT. (Rosé &amp; Bruno Mars) ·
+        Shake It Off (Taylor Swift)
+      </p>
     </div>
     {% endcall %} {% call infoDetails("FAQ") %}
     <div class="info-body">
-      <h4>What counts as a miss?</h4>
-      <p>Any untapped tile that fully passes the bottom of the screen ends the game.</p>
-      <h4>What if I tap empty space?</h4>
-      <p>Game over immediately — only tap the colored tiles!</p>
-      <h4>Why are tiles different colors?</h4>
+      <h4>What happens when I tap empty space?</h4>
       <p>
-        Each column has its own color: blue (col 1), green (col 2), yellow (col 3), red (col 4). Lower notes are on the
-        left, higher notes on the right.
+        Nothing — tapping empty space is harmless. Only tiles that pass the bottom without being tapped cost a life.
       </p>
-      <h4>Is there an end?</h4>
-      <p>No — play until you miss or tap empty space. The tiles keep speeding up with each level.</p>
       <h4>Is my best score saved?</h4>
-      <p>Yes — your best score is stored in your browser's local storage and persists between sessions.</p>
+      <p>Yes — best scores are saved per difficulty (Easy / Medium / Hard) in browser local storage.</p>
+      <h4>Can I pick a specific song?</h4>
+      <p>
+        Yes! The welcome screen lets you choose difficulty first, then pick any song from that difficulty's pool.
+        There's also a Random option.
+      </p>
     </div>
     {% endcall %}
   </div>
@@ -336,15 +429,18 @@ icon: "🎹"
   const DESIGN = 320;
   const SIZE = Math.min(DESIGN, window.innerWidth - 32);
   canvas.width = SIZE;
-  canvas.height = Math.round(SIZE * 1.6); // 320x512 aspect ratio
+  canvas.height = Math.round(SIZE * 1.6);
   const S = SIZE / DESIGN;
 
   const COLS = 4;
   const TILE_W = canvas.width / COLS;
   const TILE_H = Math.round(120 * S);
 
-  const STORAGE_KEY = "mini-piano-tiles-best";
-  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  const BEST_KEYS = {
+    easy: "mini-piano-tiles-best-easy",
+    medium: "mini-piano-tiles-best-medium",
+    hard: "mini-piano-tiles-best-hard",
+  };
 
   const TILE_COLORS = ["#60a5fa", "#4ade80", "#fbbf24", "#f87171"];
   const TILE_TAPPED = [
@@ -354,8 +450,51 @@ icon: "🎹"
     "rgba(248,113,113,0.25)",
   ];
 
-  // Each note: [col (0-3), freq (Hz)]
-  // Column mapping: low notes → left (col 0), high notes → right (col 3)
+  /*
+   * ─────────────────────────────────────────────────────────────────────────────
+   * HOW TO ADD A SONG TO THE COLLECTION
+   * ─────────────────────────────────────────────────────────────────────────────
+   * Each song is an object with these fields:
+   *
+   *   name    — song title shown on the intro card
+   *   artist  — artist / composer name
+   *   year    — release or composition year (string, e.g. "1994" or "~1680")
+   *   fact    — one fun/interesting fact shown on the intro card
+   *   bpm     — tempo that controls tile fall speed:
+   *               easy ≈ 60–80 · medium ≈ 90–120 · hard ≈ 130+
+   *   notes   — array of [col, freq] pairs (see below)
+   *
+   * NOTES FORMAT:  [col, freq]
+   *   col  — which of the 4 columns the tile appears in:
+   *     0 (blue,  left):   lowest-pitch column
+   *     1 (green):         mid-low pitch
+   *     2 (yellow):        mid-high pitch
+   *     3 (red,  right):   highest-pitch column
+   *
+   *   freq — audio frequency in Hz (used to play the note through Web Audio)
+   *
+   * FREQUENCY REFERENCE  (A4 = 440 Hz, equal temperament):
+   *   C4=262  C#4=277  D4=294  Eb4=311  E4=330  F4=349  F#4=370
+   *   G4=392  Ab4=415  A4=440  Bb4=466  B4=494  C5=523  C#5=554
+   *   D5=587  Eb5=622  E5=659  F5=698   G5=784  A5=880
+   *
+   * COLUMN ASSIGNMENT GUIDE (assign based on relative pitch within the song):
+   *   Map the lowest notes in your melody → col 0
+   *   Map the highest notes                → col 3
+   *   Spread the middle notes across col 1 and col 2
+   *   Aim for a roughly even distribution across all 4 columns
+   *   (uneven columns make one hand do all the work!)
+   *
+   * STEP-BY-STEP:
+   *   1. Pick the most recognizable section (verse, chorus, or iconic riff).
+   *   2. Hum or look up the melody note by note.
+   *   3. Convert each note to Hz using the table above.
+   *   4. Assign a col (0–3) based on relative pitch in your melody.
+   *   5. Aim for 30–50 notes that loop cleanly back to the start.
+   *   6. Set bpm to the natural feel — test by counting "1-2-3-4" to the song.
+   *   7. Add the song to the correct difficulty array in SONGS below.
+   * ─────────────────────────────────────────────────────────────────────────────
+   */
   const SONGS = {
     easy: [
       {
@@ -444,13 +583,148 @@ icon: "🎹"
           [0, 262],
         ],
       },
+      {
+        name: "Someone Like You",
+        artist: "Adele",
+        year: "2011",
+        fact: "Written after a breakup, recorded with just piano. It spent 50 weeks in the UK Top 40 and made Adele a global star.",
+        bpm: 68,
+        notes: [
+          // verse "I heard that you're settled down"
+          [2, 440],
+          [2, 440],
+          [3, 494],
+          [2, 440],
+          [1, 330],
+          [0, 294],
+          [0, 277],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [2, 370],
+          [1, 330],
+          [2, 440],
+          [2, 440],
+          [2, 440],
+          [3, 494],
+          [2, 440],
+          [2, 415],
+          [2, 370],
+          [1, 330],
+          // chorus "Never mind, I'll find someone like you"
+          [2, 440],
+          [2, 440],
+          [2, 440],
+          [2, 440],
+          [3, 659],
+          [3, 587],
+          [2, 440],
+          [2, 440],
+          [3, 494],
+          [2, 440],
+          [1, 330],
+          [0, 277],
+          [0, 262],
+        ],
+      },
+      {
+        name: "Ode to My Family",
+        artist: "The Cranberries",
+        year: "1994",
+        fact: "Dolores O'Riordan wrote it as a tribute to her working-class Irish family. It reached #29 in the UK charts.",
+        bpm: 70,
+        notes: [
+          // gentle arpeggio intro
+          [0, 294],
+          [2, 440],
+          [3, 587],
+          [2, 370],
+          [2, 440],
+          [0, 294],
+          [2, 440],
+          [3, 587],
+          [2, 370],
+          [2, 440],
+          // verse "Do you ever feel like breaking down?"
+          [3, 587],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [2, 370],
+          [1, 330],
+          [0, 294],
+          [3, 587],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          // ascending answer phrase
+          [2, 370],
+          [2, 392],
+          [2, 440],
+          [3, 494],
+          [3, 587],
+          [0, 294],
+          [2, 440],
+          [3, 587],
+          [2, 440],
+          [0, 294],
+        ],
+      },
+      {
+        name: "Let It Be",
+        artist: "The Beatles",
+        year: "1970",
+        fact: "Paul McCartney dreamed his late mother Mary visited him and said 'let it be'. It was the Beatles' last recorded single.",
+        bpm: 74,
+        notes: [
+          // verse "When I find myself in times of trouble"
+          [3, 523],
+          [2, 392],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [3, 523],
+          [2, 392],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [1, 330],
+          // "Whisper words of wisdom, let it be"
+          [1, 330],
+          [1, 330],
+          [1, 349],
+          [1, 330],
+          [0, 262],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [0, 262],
+          [1, 330],
+          [1, 349],
+          [2, 392],
+          [2, 440],
+          [3, 523],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+        ],
+      },
     ],
     medium: [
       {
         name: "Ode to Joy",
         artist: "Ludwig van Beethoven",
         year: "1824",
-        fact: "Beethoven was completely deaf when he composed Symphony No. 9. He reportedly wept when he felt the audience's applause through the vibrations.",
+        fact: "Beethoven was completely deaf when he composed Symphony No. 9. He reportedly wept feeling the audience's applause through vibrations.",
         bpm: 108,
         notes: [
           [1, 330],
@@ -506,7 +780,7 @@ icon: "🎹"
         name: "Jingle Bells",
         artist: "James Lord Pierpont",
         year: "1857",
-        fact: "Originally written for Thanksgiving, not Christmas! It was also the first song broadcast from space by Gemini 6 astronauts in 1965.",
+        fact: "Originally written for Thanksgiving! It was also the first song broadcast from space by Gemini 6 astronauts in 1965.",
         bpm: 112,
         notes: [
           [1, 330],
@@ -553,6 +827,159 @@ icon: "🎹"
           [2, 392],
           [1, 349],
           [0, 294],
+          [0, 262],
+        ],
+      },
+      {
+        name: "It's My Life",
+        artist: "Bon Jovi",
+        year: "2000",
+        fact: "Jon Bon Jovi wrote it as an anthem for people who refuse to live by others' rules. The video features a teenager inspired by Tommy & Gina from 'Livin' on a Prayer'.",
+        bpm: 96,
+        notes: [
+          // iconic synth intro riff
+          [0, 247],
+          [0, 247],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [2, 440],
+          [1, 330],
+          [0, 294],
+          [0, 247],
+          [0, 247],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [2, 440],
+          [1, 330],
+          [0, 294],
+          // verse
+          [2, 440],
+          [2, 440],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          [1, 330],
+          [2, 392],
+          [2, 440],
+          // chorus "It's my life / It's now or never"
+          [2, 440],
+          [2, 392],
+          [2, 440],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [2, 440],
+          [2, 392],
+          [2, 440],
+          [1, 330],
+          [0, 294],
+        ],
+      },
+      {
+        name: "Zombie",
+        artist: "The Cranberries",
+        year: "1994",
+        fact: "Written as a protest against IRA violence after the 1993 Warrington bombings. Dolores O'Riordan's vocal became one of rock's most recognizable sounds.",
+        bpm: 98,
+        notes: [
+          // verse "Another head hangs lowly"
+          [1, 330],
+          [0, 294],
+          [0, 247],
+          [1, 330],
+          [0, 294],
+          [0, 220],
+          [0, 247],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [0, 294],
+          [0, 247],
+          [1, 330],
+          [0, 294],
+          [0, 220],
+          // pre-chorus build
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          // chorus "In your head, zombie"
+          [1, 330],
+          [1, 330],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          // outro riff
+          [0, 247],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [2, 392],
+          [2, 440],
+          [3, 494],
+          [2, 440],
+        ],
+      },
+      {
+        name: "Rolling in the Deep",
+        artist: "Adele",
+        year: "2010",
+        fact: "Written after a breakup in just 40 minutes. It became the best-selling single of 2011 worldwide and earned three Grammy Awards.",
+        bpm: 105,
+        notes: [
+          // iconic C-minor riff
+          [0, 262],
+          [2, 392],
+          [2, 466],
+          [3, 523],
+          [0, 262],
+          [2, 392],
+          [2, 466],
+          [3, 523],
+          [0, 262],
+          [2, 392],
+          [2, 466],
+          [3, 523],
+          [2, 466],
+          [2, 392],
+          // verse melody
+          [0, 262],
+          [2, 392],
+          [2, 466],
+          [3, 523],
+          [2, 466],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [0, 262],
+          [2, 392],
+          [2, 466],
+          [3, 523],
+          [2, 466],
+          // chorus "We could have had it all"
+          [2, 392],
+          [2, 392],
+          [2, 392],
+          [2, 466],
+          [2, 392],
+          [1, 349],
+          [1, 349],
+          [3, 523],
+          [2, 466],
+          [2, 392],
+          [1, 349],
+          [1, 311],
           [0, 262],
         ],
       },
@@ -681,16 +1108,176 @@ icon: "🎹"
           [0, 294],
         ],
       },
+      {
+        name: "Don't Stop Me Now",
+        artist: "Queen",
+        year: "1979",
+        fact: "Freddie Mercury wrote it as a celebration of living life to the fullest. Repeatedly voted the greatest driving song of all time in UK polls.",
+        bpm: 156,
+        notes: [
+          // piano intro riff (F major feel)
+          [1, 349],
+          [2, 440],
+          [2, 466],
+          [1, 349],
+          [2, 440],
+          [3, 523],
+          [1, 349],
+          [2, 440],
+          [2, 466],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [2, 440],
+          [2, 466],
+          // verse "Tonight I'm gonna have myself a real good time"
+          [1, 349],
+          [1, 349],
+          [2, 392],
+          [2, 440],
+          [2, 466],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [1, 330],
+          [1, 349],
+          [2, 392],
+          [2, 440],
+          [2, 466],
+          // chorus "Don't stop me now!"
+          [3, 523],
+          [3, 587],
+          [3, 523],
+          [2, 466],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [3, 523],
+          [3, 587],
+          [3, 523],
+          [2, 466],
+          [2, 440],
+          [2, 392],
+        ],
+      },
+      {
+        name: "APT.",
+        artist: "Rosé & Bruno Mars",
+        year: "2024",
+        fact: "Based on a Korean drinking game called 'Apartment'. It became one of the fastest K-pop collabs to reach #1 on the Billboard Global Excl. US chart.",
+        bpm: 140,
+        notes: [
+          // verse riff
+          [1, 330],
+          [2, 392],
+          [2, 440],
+          [3, 523],
+          [2, 440],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          [1, 330],
+          [2, 392],
+          [2, 440],
+          [3, 523],
+          [2, 440],
+          [2, 392],
+          // chorus "APT APT"
+          [2, 392],
+          [2, 440],
+          [3, 523],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [2, 392],
+          [2, 440],
+          [3, 523],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          // bridge run
+          [2, 392],
+          [2, 440],
+          [3, 494],
+          [3, 523],
+          [3, 587],
+          [3, 659],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [2, 440],
+          [3, 494],
+          [3, 523],
+        ],
+      },
+      {
+        name: "Shake It Off",
+        artist: "Taylor Swift",
+        year: "2014",
+        fact: "Taylor wrote it in 30 minutes after reading mean comments online. It spent 50 weeks on the Billboard Hot 100.",
+        bpm: 160,
+        notes: [
+          // horn riff intro
+          [3, 587],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [3, 587],
+          [3, 523],
+          [2, 440],
+          [2, 392],
+          [3, 587],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [3, 587],
+          [3, 523],
+          // verse "I stay out too late…"
+          [2, 392],
+          [2, 392],
+          [2, 392],
+          [2, 440],
+          [2, 440],
+          [3, 494],
+          [2, 392],
+          [2, 392],
+          [2, 440],
+          [2, 440],
+          [3, 494],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          // chorus "Shake it off"
+          [3, 494],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [2, 392],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [3, 494],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [2, 440],
+          [3, 494],
+        ],
+      },
     ],
   };
 
+  // ─── Audio ───────────────────────────────────────────────────────────────────
   let audioCtx = null;
   function getAudioCtx() {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     return audioCtx;
   }
+
   function playNote(freq) {
     if (!freq) return;
     const ac = getAudioCtx();
@@ -718,64 +1305,129 @@ icon: "🎹"
   }
 
   function bpmToSpeed(bpm) {
-    // 65 BPM → speed 2*S (original base), scale linearly
     return (bpm / 65) * 2 * S;
   }
 
-  let score, level, tapsCount, speed, tiles, running, animId, demoMode;
-  let currentSong, noteIndex, difficulty;
+  // ─── State ───────────────────────────────────────────────────────────────────
+  let score, level, tapsCount, speed, tiles, running, animId, demoMode, lives;
+  let currentSong, noteIndex, currentDifficulty;
 
-  function setDifficulty(diff) {
-    difficulty = diff;
-    const pool = SONGS[diff];
-    currentSong = pool[Math.floor(Math.random() * pool.length)];
-    noteIndex = 0;
-    document.getElementById("song-name").textContent = currentSong.name;
-    document.getElementById("card-song").textContent = currentSong.name;
-    document.getElementById("card-artist").textContent = `${currentSong.artist} · ${currentSong.year}`;
-    document.getElementById("card-fact").textContent = currentSong.fact;
+  function bestKey() {
+    return BEST_KEYS[currentDifficulty] || BEST_KEYS.easy;
+  }
+
+  function loadBest() {
+    return parseInt(localStorage.getItem(bestKey()) || "0", 10);
+  }
+
+  function livesDisplay(n) {
+    return "❤️".repeat(Math.max(0, n)) + "🖤".repeat(Math.max(0, 3 - n));
+  }
+
+  // ─── Overlay navigation ──────────────────────────────────────────────────────
+  function showDiffStep() {
+    document.getElementById("step-diff").style.display = "";
+    document.getElementById("step-songs").style.display = "none";
+    document.getElementById("step-play").style.display = "none";
+  }
+
+  function showSongStep(diff) {
+    currentDifficulty = diff;
     ["easy", "medium", "hard"].forEach((d) => {
       document.getElementById("btn-" + d).classList.toggle("active", d === diff);
     });
+    document.getElementById("step-diff-label").textContent = diff.charAt(0).toUpperCase() + diff.slice(1);
+
+    const list = document.getElementById("song-list");
+    list.innerHTML = "";
+
+    // Random option
+    const rnd = document.createElement("button");
+    rnd.className = "song-option random-btn";
+    rnd.textContent = "🎲 Random";
+    rnd.onclick = () => selectSong(null);
+    list.appendChild(rnd);
+
+    SONGS[diff].forEach((song) => {
+      const btn = document.createElement("button");
+      btn.className = "song-option";
+      btn.innerHTML = `<span>${song.name}</span><span class="song-opt-artist">${song.artist} · ${song.year}</span>`;
+      btn.onclick = () => selectSong(song);
+      list.appendChild(btn);
+    });
+
+    document.getElementById("step-diff").style.display = "none";
+    document.getElementById("step-songs").style.display = "";
+    document.getElementById("step-play").style.display = "none";
   }
 
+  function selectSong(song) {
+    const pool = SONGS[currentDifficulty];
+    currentSong = song || pool[Math.floor(Math.random() * pool.length)];
+    noteIndex = 0;
+
+    document.getElementById("card-song").textContent = currentSong.name;
+    document.getElementById("card-artist").textContent = `${currentSong.artist} · ${currentSong.year}`;
+    document.getElementById("card-fact").textContent = currentSong.fact;
+    document.getElementById("song-name").textContent = currentSong.name;
+
+    const best = loadBest();
+    document.getElementById("best-display").textContent = best;
+
+    document.getElementById("step-diff").style.display = "none";
+    document.getElementById("step-songs").style.display = "none";
+    document.getElementById("step-play").style.display = "";
+  }
+
+  function showOverlay() {
+    cancelAnimationFrame(animId);
+    running = false;
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("overlay").style.display = "flex";
+    document.getElementById("demo-label").style.display = "";
+    showDiffStep();
+    startDemo();
+  }
+
+  // ─── Spawning ─────────────────────────────────────────────────────────────────
   function spawnTile() {
     const note = currentSong.notes[noteIndex % currentSong.notes.length];
     noteIndex++;
     tiles.push({ col: note[0], freq: note[1], y: -TILE_H, tapped: false });
   }
 
+  // ─── Game loop ───────────────────────────────────────────────────────────────
   function update() {
     tiles.forEach((t) => {
       t.y += speed;
     });
 
-    // Check miss: untapped tile fully passed bottom
     for (const t of tiles) {
       if (!t.tapped && t.y > canvas.height) {
         if (!demoMode) {
-          endGame();
-          return;
+          t.tapped = true; // mark so we don't count it again
+          lives--;
+          document.getElementById("lives-display").textContent = livesDisplay(lives);
+          if (lives <= 0) {
+            endGame();
+            return;
+          }
+        } else {
+          t.tapped = true;
         }
-        // Demo mode: silently resolve so the loop keeps running
-        t.tapped = true;
       }
     }
 
-    // Remove old tapped tiles off screen
     tiles = tiles.filter((t) => t.y < canvas.height + TILE_H);
 
-    // Spawn new tile when last tile has entered the screen
     const last = tiles[tiles.length - 1];
     if (!last || last.y > 0) spawnTile();
   }
 
   function draw() {
-    // Dark background
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw column dividers
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = 1;
     for (let i = 1; i < COLS; i++) {
@@ -785,7 +1437,6 @@ icon: "🎹"
       ctx.stroke();
     }
 
-    // Draw hit line at 85% height
     const hitY = canvas.height * 0.85;
     ctx.strokeStyle = "#7c3aed";
     ctx.lineWidth = 2 * S;
@@ -794,7 +1445,6 @@ icon: "🎹"
     ctx.lineTo(canvas.width, hitY);
     ctx.stroke();
 
-    // Draw tiles
     tiles.forEach((t) => {
       ctx.fillStyle = t.tapped ? TILE_TAPPED[t.col] : TILE_COLORS[t.col];
       ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
@@ -803,14 +1453,11 @@ icon: "🎹"
 
   function runDemo() {
     if (!running) return;
-    // Auto-tap the lowest visible untapped tile
-    if (tiles.length > 0) {
-      const lowest = tiles.filter((t) => !t.tapped).sort((a, b) => b.y - a.y)[0];
-      if (lowest && lowest.y + TILE_H > canvas.height * 0.5) {
-        lowest.tapped = true;
-        score += 10;
-        tapsCount++;
-      }
+    const lowest = tiles.filter((t) => !t.tapped).sort((a, b) => b.y - a.y)[0];
+    if (lowest && lowest.y + TILE_H > canvas.height * 0.5) {
+      lowest.tapped = true;
+      score += 10;
+      tapsCount++;
     }
   }
 
@@ -821,6 +1468,7 @@ icon: "🎹"
     if (running) animId = requestAnimationFrame(loop);
   }
 
+  // ─── Input ───────────────────────────────────────────────────────────────────
   canvas.addEventListener("click", (e) => {
     if (!running || demoMode) return;
     const rect = canvas.getBoundingClientRect();
@@ -841,9 +1489,8 @@ icon: "🎹"
       }
       document.getElementById("score-display").textContent = score;
       document.getElementById("level-display").textContent = level;
-    } else {
-      endGame();
     }
+    // wrong tap: no penalty (just ignore)
   });
 
   canvas.addEventListener(
@@ -856,15 +1503,15 @@ icon: "🎹"
     { passive: false }
   );
 
+  // ─── Game control ─────────────────────────────────────────────────────────────
   function startGame() {
     score = 0;
     level = 1;
     tapsCount = 0;
+    lives = 3;
     tiles = [];
     running = true;
     demoMode = false;
-
-    setDifficulty(difficulty); // picks a random song for current difficulty
     speed = bpmToSpeed(currentSong.bpm);
     noteIndex = 0;
 
@@ -873,6 +1520,7 @@ icon: "🎹"
     document.getElementById("demo-label").style.display = "none";
     document.getElementById("score-display").textContent = "0";
     document.getElementById("level-display").textContent = "1";
+    document.getElementById("lives-display").textContent = livesDisplay(3);
 
     spawnTile();
     cancelAnimationFrame(animId);
@@ -883,27 +1531,31 @@ icon: "🎹"
     running = false;
     cancelAnimationFrame(animId);
 
+    const best = loadBest();
     if (score > best) {
-      best = score;
-      localStorage.setItem(STORAGE_KEY, best);
-      document.getElementById("best-display").textContent = best;
+      localStorage.setItem(bestKey(), score);
+      document.getElementById("best-display").textContent = score;
       launchConfetti();
     }
 
     document.getElementById("go-score").textContent = score;
-    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-best").textContent = Math.max(score, best);
     document.getElementById("go-level").textContent = level;
     document.getElementById("gameover-overlay").style.display = "flex";
   }
 
   function startDemo() {
+    // Start demo with first easy song
+    const pool = SONGS[currentDifficulty || "easy"];
+    currentSong = pool[0];
+    document.getElementById("song-name").textContent = currentSong.name;
     score = 0;
     level = 1;
     tapsCount = 0;
+    lives = 3;
     tiles = [];
     running = true;
     demoMode = true;
-
     speed = bpmToSpeed(currentSong.bpm);
     noteIndex = 0;
 
@@ -912,6 +1564,7 @@ icon: "🎹"
     animId = requestAnimationFrame(loop);
   }
 
+  // ─── Confetti ─────────────────────────────────────────────────────────────────
   function launchConfetti() {
     const confCanvas = document.createElement("canvas");
     confCanvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
@@ -953,9 +1606,12 @@ icon: "🎹"
     requestAnimationFrame(drawConf);
   }
 
-  document.getElementById("best-display").textContent = best;
+  // ─── Init ─────────────────────────────────────────────────────────────────────
   document.getElementById("score-display").textContent = "0";
   document.getElementById("level-display").textContent = "1";
-  setDifficulty("easy"); // sets currentSong before startDemo
+  document.getElementById("best-display").textContent = loadBest();
+  document.getElementById("lives-display").textContent = livesDisplay(3);
+  currentDifficulty = "easy";
+  showDiffStep();
   startDemo();
 </script>
