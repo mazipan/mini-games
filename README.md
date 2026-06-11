@@ -22,12 +22,13 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 
 ### 🧩 Puzzle
 
-| Game              | Difficulty |
-| ----------------- | ---------- |
-| 🔢 2048           | Medium     |
-| 🔲 Sliding Puzzle | Medium     |
-| 💣 Minesweeper    | Hard       |
-| 🔢 Sudoku         | Hard       |
+| Game                    | Difficulty |
+| ----------------------- | ---------- |
+| 🔢 2048                 | Medium     |
+| 🀄 Onet Connect Classic | Medium     |
+| 🔲 Sliding Puzzle       | Medium     |
+| 💣 Minesweeper          | Hard       |
+| 🔢 Sudoku               | Hard       |
 
 ### ♟️ Board
 
