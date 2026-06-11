@@ -888,6 +888,7 @@ icon: "🟦"
         wrapper.addEventListener("pointercancel", (e) => {
           if (!e.isPrimary || !isDragging) return;
           isDragging = false;
+          dragRafPending = false;
           dragPieceIdx = null;
           hoverCell = null;
           hideDragGhost();
@@ -941,7 +942,7 @@ icon: "🟦"
       dragRafPending = true;
       requestAnimationFrame(() => {
         dragRafPending = false;
-        renderGrid();
+        if (isDragging) renderGrid(); // skip if drag already ended
       });
     }
   }
@@ -951,21 +952,14 @@ icon: "🟦"
     const cell = getPlacementCell(clientX, clientY);
     hideDragGhost();
     isDragging = false;
+    dragRafPending = false; // discard any pending preview render
 
-    // Only place if drop lands on the grid AND the position is valid
-    // commitPlace runs canPlace internally — returns false and leaves piece on shelf if invalid
+    // commitPlace validates via canPlace — returns false and leaves piece on shelf if invalid
     const placed = cell && commitPlace(dragPieceIdx, cell.r, cell.c);
-    if (!placed) {
-      // Invalid or off-grid drop: piece stays on shelf, just re-render to clear preview
-      dragPieceIdx = null;
-      selectedPiece = null;
-      hoverCell = null;
-      render();
-    } else {
-      dragPieceIdx = null;
-      selectedPiece = null;
-      hoverCell = null;
-    }
+    dragPieceIdx = null;
+    selectedPiece = null;
+    hoverCell = null;
+    if (!placed) render(); // commitPlace already calls render() on success
   }
 
 
