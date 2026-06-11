@@ -873,6 +873,8 @@ icon: "🟦"
           dragAnchorDc = Math.max(0, Math.min(cols - 1, Math.floor((e.clientX - miniLeft) / 14)));
           dragAnchorDr = Math.max(0, Math.min(rows - 1, Math.floor((e.clientY - miniTop) / 14)));
           startDrag(i, e.clientX, e.clientY);
+          // Apply dragging style directly — avoids recreating this element and losing pointer capture
+          wrapper.classList.add("dragging");
         });
 
         wrapper.addEventListener("pointermove", (e) => {
@@ -922,10 +924,11 @@ icon: "🟦"
   function startDrag(pieceIdx, clientX, clientY) {
     isDragging = true;
     dragPieceIdx = pieceIdx;
-    selectedPiece = pieceIdx; // also select for fallback
+    selectedPiece = pieceIdx;
     hoverCell = null;
     showDragGhost(pieceIdx, clientX, clientY);
-    renderShelf();
+    // Do NOT call renderShelf() here — it would recreate the wrapper DOM node
+    // and detach the setPointerCapture binding, freezing all subsequent pointermove events.
   }
 
   function onDragMove(clientX, clientY) {
