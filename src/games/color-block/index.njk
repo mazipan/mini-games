@@ -50,6 +50,7 @@ icon: "🟦"
   #game-area {
     position: relative;
     user-select: none;
+    touch-action: none;
   }
   #grid {
     display: grid;
@@ -60,6 +61,7 @@ icon: "🟦"
     background: #0f172a;
     border-radius: 10px;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    touch-action: none;
   }
   .grid-cell {
     width: var(--grid-cell);
@@ -874,38 +876,44 @@ icon: "🟦"
       wrapper.className = cls;
 
       if (!used) {
-        // Tap/click to select — shows blue border; drag starts only after selection
+        wrapper.addEventListener("pointerdown", (e) => {
+          if (!e.isPrimary || !gameActive) return;
+          e.preventDefault();
+          wrapper.setPointerCapture(e.pointerId);
+          dragWasStarted = true;
+          startDrag(i, e.clientX, e.clientY);
+        });
+
+        wrapper.addEventListener("pointermove", (e) => {
+          if (!e.isPrimary) return;
+          onDragMove(e.clientX, e.clientY);
+        });
+
+        wrapper.addEventListener("pointerup", (e) => {
+          if (!e.isPrimary) return;
+          onDragEnd(e.clientX, e.clientY);
+        });
+
+        wrapper.addEventListener("pointercancel", (e) => {
+          if (!e.isPrimary || !isDragging) return;
+          isDragging = false;
+          dragPieceIdx = null;
+          dragWasStarted = false;
+          hoverCell = null;
+          hideDragGhost();
+          render();
+        });
+
         wrapper.addEventListener("click", (e) => {
           if (!gameActive) return;
           if (dragWasStarted) {
             dragWasStarted = false;
-            return; // swallow the click that fires after a mousedown-drag
+            return;
           }
           selectedPiece = selectedPiece === i ? null : i;
           hoverCell = null;
           render();
         });
-
-        // Mouse: only begin drag when this piece is already selected (has blue border)
-        wrapper.addEventListener("mousedown", (e) => {
-          if (!gameActive || selectedPiece !== i) return;
-          e.preventDefault();
-          dragWasStarted = true;
-          startDrag(i, e.clientX, e.clientY);
-        });
-
-        // Touch: only begin drag when this piece is already selected
-        wrapper.addEventListener(
-          "touchstart",
-          (e) => {
-            if (!gameActive || selectedPiece !== i) return;
-            e.preventDefault();
-            const t = e.touches[0];
-            dragWasStarted = true;
-            startDrag(i, t.clientX, t.clientY);
-          },
-          { passive: false }
-        );
       }
 
       const miniGrid = document.createElement("div");
@@ -979,46 +987,6 @@ icon: "🟦"
     render();
   }
 
-  // Mouse events on document
-  document.addEventListener("mousemove", (e) => {
-    if (isDragging) onDragMove(e.clientX, e.clientY);
-  });
-  document.addEventListener("mouseup", (e) => {
-    if (isDragging) onDragEnd(e.clientX, e.clientY);
-  });
-
-  // Touch events on document
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const t = e.touches[0];
-      onDragMove(t.clientX, t.clientY);
-    },
-    { passive: false }
-  );
-
-  document.addEventListener(
-    "touchend",
-    (e) => {
-      if (!isDragging) return;
-      e.preventDefault();
-      const t = e.changedTouches[0];
-      onDragEnd(t.clientX, t.clientY);
-    },
-    { passive: false }
-  );
-
-  document.addEventListener("touchcancel", (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    dragPieceIdx = null;
-    dragWasStarted = false;
-    hoverCell = null;
-    hideDragGhost();
-    render();
-  });
 
   // ── Init ──────────────────────────────────────────────────────────────────
   grid = emptyGrid();
