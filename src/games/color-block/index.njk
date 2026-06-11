@@ -84,6 +84,17 @@ icon: "🟦"
     outline: 2px solid rgba(239, 68, 68, 0.6);
     outline-offset: -2px;
   }
+  @keyframes cell-clear {
+    0%   { opacity: 1; }
+    25%  { opacity: 0.1; }
+    50%  { opacity: 0.85; }
+    75%  { opacity: 0.05; }
+    100% { opacity: 0; }
+  }
+  .grid-cell.clearing {
+    animation: cell-clear 0.45s ease-in-out forwards;
+    pointer-events: none;
+  }
   #shelf {
     display: flex;
     gap: 1rem;
@@ -565,11 +576,13 @@ icon: "🟦"
   let grid = [];
   let score = 0;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let gameStartBest = 0; // best score at the moment the current game began
   let shelfPieces = [];
   let shelfUsed = [false, false, false];
   let selectedPiece = null;
   let hoverCell = null; // { r, c } — grid cell currently hovered/dragged over
   let gameActive = false;
+  let clearingCells = new Set(); // "r,c" keys of cells mid-blink animation
 
   // Drag state
   let isDragging = false;
@@ -612,21 +625,16 @@ icon: "🟦"
     for (const [dr, dc] of shape) grid[r + dr][c + dc] = color;
   }
 
-  function clearLines() {
-    let bonus = 0;
-    const rowsToClear = [],
-      colsToClear = [];
+  function findLinesToClear() {
+    const rowsToClear = [], colsToClear = [];
     for (let r = 0; r < GRID_SIZE; r++) if (grid[r].every((cell) => cell !== 0)) rowsToClear.push(r);
     for (let c = 0; c < GRID_SIZE; c++) if (grid.every((row) => row[c] !== 0)) colsToClear.push(c);
-    for (const r of rowsToClear) {
-      for (let c = 0; c < GRID_SIZE; c++) grid[r][c] = 0;
-      bonus += 10;
-    }
-    for (const c of colsToClear) {
-      for (let r = 0; r < GRID_SIZE; r++) grid[r][c] = 0;
-      bonus += 10;
-    }
-    return bonus;
+    return { rowsToClear, colsToClear };
+  }
+
+  function applyLineClear(rowsToClear, colsToClear) {
+    for (const r of rowsToClear) for (let c = 0; c < GRID_SIZE; c++) grid[r][c] = 0;
+    for (const c of colsToClear) for (let r = 0; r < GRID_SIZE; r++) grid[r][c] = 0;
   }
 
   // ── Game-over check ───────────────────────────────────────────────────────
@@ -647,7 +655,8 @@ icon: "🟦"
     if (!canPlace(shape, r, c)) return false;
 
     placePiece(shape, color, r, c);
-    const bonus = clearLines();
+    const { rowsToClear, colsToClear } = findLinesToClear();
+    const bonus = (rowsToClear.length + colsToClear.length) * 10;
     score += shape.length + bonus;
 
     if (score > best) {
@@ -662,16 +671,48 @@ icon: "🟦"
     hoverCell = null;
 
     if (shelfUsed.every((u) => u)) generateShelf();
-    if (isGameOver()) {
-      endGame();
-      return true;
+
+    if (rowsToClear.length > 0 || colsToClear.length > 0) {
+      // Render the filled piece first, then blink the cells that will be cleared
+      render();
+      const gridEl = document.getElementById("grid");
+      let idx = 0;
+      for (let row = 0; row < GRID_SIZE; row++) {
+        for (let col = 0; col < GRID_SIZE; col++) {
+          const key = `${row},${col}`;
+          if (
+            rowsToClear.includes(row) ||
+            colsToClear.includes(col)
+          ) {
+            gridEl.children[idx].classList.add("clearing");
+            clearingCells.add(key);
+          }
+          idx++;
+        }
+      }
+      setTimeout(() => {
+        applyLineClear(rowsToClear, colsToClear);
+        clearingCells.clear();
+        if (isGameOver()) {
+          endGame();
+        } else {
+          renderGrid();
+        }
+      }, 450);
+    } else {
+      if (isGameOver()) {
+        endGame();
+      } else {
+        render();
+      }
     }
-    render();
+
     return true;
   }
 
   function endGame() {
     gameActive = false;
+    if (score > gameStartBest) launchConfetti();
     document.getElementById("go-score").textContent = score;
     document.getElementById("go-best").textContent = best;
     document.getElementById("go-context").textContent = "No remaining pieces can fit on the board.";
@@ -684,10 +725,12 @@ icon: "🟦"
   // ── Start ─────────────────────────────────────────────────────────────────
   function startGame() {
     grid = emptyGrid();
+    gameStartBest = best;
     score = 0;
     gameActive = true;
     selectedPiece = null;
     hoverCell = null;
+    clearingCells = new Set();
     isDragging = false;
     dragPieceIdx = null;
     dragAnchorDr = 0;
@@ -824,6 +867,7 @@ icon: "🟦"
       for (let c = 0; c < GRID_SIZE; c++) {
         const cell = cells[idx++];
         const key = `${r},${c}`;
+        if (clearingCells.has(key)) continue; // let CSS animation run undisturbed
         cell.className = "grid-cell";
         cell.style.outline = "";
 
