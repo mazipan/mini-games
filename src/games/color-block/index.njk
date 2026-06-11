@@ -114,17 +114,12 @@ icon: "🟦"
   .piece-slot:active {
     cursor: grabbing;
   }
-  .piece-slot.selected {
-    border-color: #3b82f6;
-    background: #1e3a5f;
-    transform: scale(1.05);
-  }
   .piece-slot.used {
     opacity: 0.2;
     cursor: default;
     pointer-events: none;
   }
-  .piece-slot:not(.used):not(.selected):hover {
+  .piece-slot:not(.used):hover {
     border-color: #475569;
     background: #263447;
   }
@@ -337,13 +332,13 @@ icon: "🟦"
     <div id="start-overlay">
       <span style="font-size: 2.5rem">🟦</span>
       <h2>Color Block</h2>
-      <p>Tap a piece to select it (blue border), then drag it onto the grid!</p>
+      <p>Drag a piece from the shelf onto the grid to place it!</p>
       <button class="play-btn" onclick="startGame()">New Game</button>
     </div>
   </div>
 
   <div id="shelf"></div>
-  <p class="hint-text">Tap a piece to select it · then drag onto the grid to place</p>
+  <p class="hint-text">Drag a piece onto the grid to place it</p>
 </div>
 
 <div id="drag-ghost">
@@ -376,10 +371,8 @@ icon: "🟦"
   </p>
   <h4>Controls</h4>
   <ul>
-    <li><strong>Tap/click a piece</strong> to select it — it gets a blue border</li>
-    <li><strong>Drag the selected piece</strong> onto the grid to place it</li>
+    <li><strong>Drag a piece</strong> directly from the shelf onto the grid to place it</li>
     <li>A <strong>shadow preview</strong> shows where the piece will land — green tint = valid, red = invalid</li>
-    <li>You can also <strong>tap/click a grid cell</strong> to place the selected piece there</li>
   </ul>
   <h4>Scoring</h4>
   <ul>
@@ -677,12 +670,6 @@ icon: "🟦"
     return true;
   }
 
-  function handleCellClick(r, c) {
-    if (!gameActive || isDragging) return;
-    if (selectedPiece === null) return;
-    commitPlace(selectedPiece, r, c);
-  }
-
   function endGame() {
     gameActive = false;
     document.getElementById("go-score").textContent = score;
@@ -704,7 +691,6 @@ icon: "🟦"
     isDragging = false;
     dragPieceIdx = null;
     dragRafPending = false;
-    dragWasStarted = false;
     hideDragGhost();
     generateShelf();
     document.getElementById("score").textContent = 0;
@@ -717,7 +703,6 @@ icon: "🟦"
   const dragGhostEl = document.getElementById("drag-ghost");
   const dragGhostInner = document.getElementById("drag-ghost-inner");
   let dragRafPending = false;
-  let dragWasStarted = false; // suppresses the click that fires after a mousedown-drag
 
   function showDragGhost(pieceIdx, clientX, clientY) {
     const { shape, color } = shelfPieces[pieceIdx];
@@ -794,19 +779,6 @@ icon: "🟦"
           cell.className = "grid-cell";
           cell.dataset.r = r;
           cell.dataset.c = c;
-          cell.addEventListener("click", () => handleCellClick(r, c));
-          cell.addEventListener("mouseenter", () => {
-            if (!gameActive || isDragging) return;
-            if (selectedPiece === null) return;
-            hoverCell = { r, c };
-            renderGrid();
-          });
-          cell.addEventListener("mouseleave", () => {
-            if (!gameActive || isDragging) return;
-            if (selectedPiece === null) return;
-            hoverCell = null;
-            renderGrid();
-          });
           gridEl.appendChild(cell);
         }
       }
@@ -863,7 +835,6 @@ icon: "🟦"
     for (let i = 0; i < 3; i++) {
       const { shape, color } = shelfPieces[i];
       const used = shelfUsed[i];
-      const isSelected = selectedPiece === i;
       const draggingThis = isDragging && dragPieceIdx === i;
       const { rows, cols } = getPieceBoundingBox(shape);
       const cellSet = new Set(shape.map(([dr, dc]) => `${dr},${dc}`));
@@ -872,7 +843,6 @@ icon: "🟦"
       let cls = "piece-slot";
       if (used) cls += " used";
       else if (draggingThis) cls += " dragging";
-      else if (isSelected) cls += " selected";
       wrapper.className = cls;
 
       if (!used) {
@@ -880,7 +850,6 @@ icon: "🟦"
           if (!e.isPrimary || !gameActive) return;
           e.preventDefault();
           wrapper.setPointerCapture(e.pointerId);
-          dragWasStarted = true;
           startDrag(i, e.clientX, e.clientY);
         });
 
@@ -898,20 +867,8 @@ icon: "🟦"
           if (!e.isPrimary || !isDragging) return;
           isDragging = false;
           dragPieceIdx = null;
-          dragWasStarted = false;
           hoverCell = null;
           hideDragGhost();
-          render();
-        });
-
-        wrapper.addEventListener("click", (e) => {
-          if (!gameActive) return;
-          if (dragWasStarted) {
-            dragWasStarted = false;
-            return;
-          }
-          selectedPiece = selectedPiece === i ? null : i;
-          hoverCell = null;
           render();
         });
       }
@@ -973,16 +930,10 @@ icon: "🟦"
     hideDragGhost();
     isDragging = false;
 
-    if (cell) {
-      const placed = commitPlace(dragPieceIdx, cell.r, cell.c);
-      if (!placed) {
-        // Invalid drop — keep piece selected so user can try again
-        selectedPiece = dragPieceIdx;
-      }
-    }
-    // else dropped outside grid — keep selected
+    if (cell) commitPlace(dragPieceIdx, cell.r, cell.c);
 
     dragPieceIdx = null;
+    selectedPiece = null;
     hoverCell = null;
     render();
   }
