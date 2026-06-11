@@ -136,6 +136,7 @@ icon: "🀄"
   #game-area {
     position: relative;
     flex-shrink: 0;
+    max-width: 100%;
   }
   #grid {
     display: grid;
@@ -467,8 +468,11 @@ icon: "🀄"
   document.getElementById("best-display").textContent = best;
 
   function computeCellSize() {
-    const maxW = Math.min(540, window.innerWidth - 32);
-    CELL_SIZE = Math.floor((maxW - GAP * (COLS - 1)) / COLS);
+    const wrapper = document.getElementById("game-wrapper");
+    const cs = getComputedStyle(wrapper);
+    const availW = wrapper.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const maxW = Math.min(540, availW);
+    CELL_SIZE = Math.max(1, Math.floor((maxW - GAP * (COLS - 1)) / COLS));
   }
 
   // BFS: find a connecting path with ≤ 2 turns through empty cells.
@@ -581,8 +585,6 @@ icon: "🀄"
     svg.setAttribute("width", gridW);
     svg.setAttribute("height", gridH);
     svg.setAttribute("viewBox", `0 0 ${gridW} ${gridH}`);
-
-    document.getElementById("game-area").style.width = gridW + "px";
 
     const fontSize = Math.max(12, Math.floor(CELL_SIZE * 0.48)) + "px";
     gridEl.innerHTML = "";
