@@ -724,15 +724,21 @@ icon: "🍬"
 
   async function resolveBoard() {
     let multiplier = 1;
+    let shuffles = 0;
     for (;;) {
       const matches = findMatches(board);
       if (matches.size === 0) {
-        if (!isBoardEmpty() && !hasValidMoves(board)) {
+        // Only shuffle when the player still has moves left and we haven't
+        // already shuffled too many times (prevents infinite loop on
+        // genuinely unwinnable clearing-mode boards).
+        if (!isBoardEmpty() && !hasValidMoves(board) && moves > 0 && shuffles < 3) {
+          shuffles++;
           await shuffleWithAnimation();
-          continue; // re-check after shuffle (shuffle may create new matches)
+          continue;
         }
         break;
       }
+      shuffles = 0; // new cascade wave — reset the shuffle guard
       const grouped = new Map();
       for (const key of matches) {
         const [r, c] = key.split(",").map(Number);
