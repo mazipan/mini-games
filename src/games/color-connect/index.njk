@@ -330,6 +330,7 @@ icon: "🔗"
     <button class="hint-btn" id="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">10</span>)</button>
     <button class="new-game-btn" onclick="newGame()">New Game</button>
   </div>
+  <div id="status-line" style="font-size: 0.8rem; color: #64748b; min-height: 1.2em; text-align: center"></div>
 </div>
 
 <div class="info-section">
@@ -695,6 +696,7 @@ icon: "🔗"
       document.getElementById("moves-display").textContent = moves;
       updateFilledDisplay();
       renderGrid();
+      updateStatusLine();
       if (isSolved()) handleWin();
     }
   }
@@ -703,19 +705,32 @@ icon: "🔗"
     activeColor = null;
   }
 
-  function filledCount() {
-    let count = 0;
-    for (let r = 0; r < size; r++) for (let c = 0; c < size; c++) if (grid[r][c].color) count++;
-    return count;
-  }
-
   function updateFilledDisplay() {
-    const pct = Math.round((filledCount() / (size * size)) * 100);
+    const totalPathCells = Object.values(paths).reduce((sum, p) => sum + p.length, 0);
+    const pct = Math.round((totalPathCells / (size * size)) * 100);
     document.getElementById("filled-display").textContent = pct + "%";
   }
 
-  function isSolved() {
-    const allConnected = Object.entries(currentLevel.dots).every(([color, [a, b]]) => {
+  function updateStatusLine() {
+    const el = document.getElementById("status-line");
+    if (gameWon) {
+      el.textContent = "";
+      return;
+    }
+    const connected = allColorsConnected();
+    const totalPathCells = Object.values(paths).reduce((sum, p) => sum + p.length, 0);
+    const full = totalPathCells === size * size;
+    if (connected && !full) {
+      el.style.color = "#22c55e";
+      el.textContent = "All colors connected! Fill every cell to win.";
+    } else {
+      el.style.color = "#64748b";
+      el.textContent = "";
+    }
+  }
+
+  function allColorsConnected() {
+    return Object.entries(currentLevel.dots).every(([color, [a, b]]) => {
       const p = paths[color];
       if (!p || p.length < 2) return false;
       const s = p[0],
@@ -725,7 +740,15 @@ icon: "🔗"
         (s[0] === b[0] && s[1] === b[1] && e[0] === a[0] && e[1] === a[1])
       );
     });
-    return allConnected && filledCount() === size * size;
+  }
+
+  function isSolved() {
+    if (!allColorsConnected()) return false;
+    // Use path-length sum as the definitive fill check — counts only cells
+    // actually drawn by the user/hints, not grid color state which persists
+    // on endpoint cells even when their path is cleared.
+    const totalPathCells = Object.values(paths).reduce((sum, p) => sum + p.length, 0);
+    return totalPathCells === size * size;
   }
 
   function applyHintPath(color) {
@@ -767,11 +790,13 @@ icon: "🔗"
     document.getElementById("hint-btn").disabled = hintsLeft <= 0;
     updateFilledDisplay();
     renderGrid();
+    updateStatusLine();
     if (isSolved()) handleWin();
   }
 
   function handleWin() {
     gameWon = true;
+    document.getElementById("status-line").textContent = "";
     const isNewBest = bests[difficulty] === null || moves < bests[difficulty];
     if (isNewBest) {
       bests[difficulty] = moves;
@@ -952,6 +977,7 @@ icon: "🔗"
     document.getElementById("hints-left").textContent = "10";
     document.getElementById("hint-btn").disabled = false;
     document.getElementById("win-overlay").style.display = "none";
+    document.getElementById("status-line").textContent = "";
     const levels = LEVELS[difficulty];
     currentLevel = levels[levelIdx[difficulty] % levels.length];
     levelIdx[difficulty] = (levelIdx[difficulty] + 1) % levels.length;
