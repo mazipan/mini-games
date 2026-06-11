@@ -47,21 +47,13 @@ icon: "🍬"
     color: #e2e8f0;
     font-family: monospace;
   }
-  #status-banner {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #f59e0b;
-    min-height: 1.2em;
-    text-align: center;
-    transition: opacity 0.3s;
-  }
   #tools-row {
     display: flex;
     gap: 0.75rem;
     justify-content: center;
     align-items: center;
   }
-  .bomb-btn {
+  .tool-btn {
     background: #1e293b;
     border: 2px solid #334155;
     border-radius: 8px;
@@ -80,6 +72,10 @@ icon: "🍬"
       background 0.15s,
       transform 0.1s;
   }
+  .tool-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
   .bomb-btn:hover:not(:disabled) {
     border-color: #ef4444;
     background: #2d1b1b;
@@ -89,10 +85,6 @@ icon: "🍬"
     background: #2d1b1b;
     animation: pulse-bomb 0.7s ease-in-out infinite;
   }
-  .bomb-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-  }
   @keyframes pulse-bomb {
     0%,
     100% {
@@ -100,6 +92,24 @@ icon: "🍬"
     }
     50% {
       transform: scale(1.06);
+    }
+  }
+  .hint-btn:hover:not(:disabled) {
+    border-color: #f59e0b;
+    background: #1c1a0a;
+  }
+  .tile.hint-highlight {
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.9);
+    animation: hint-pulse 0.55s ease-in-out infinite;
+    z-index: 3;
+  }
+  @keyframes hint-pulse {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.45);
     }
   }
   #board-container {
@@ -337,8 +347,6 @@ icon: "🍬"
     "level-display", "1") }} {{ statCard("Moves", "moves-display", "20") }}
   </div>
 
-  <div id="status-banner"></div>
-
   <div id="board-container">
     <div id="board"></div>
 
@@ -361,8 +369,11 @@ icon: "🍬"
   </div>
 
   <div id="tools-row">
-    <button class="bomb-btn" id="bomb-btn" onclick="toggleBombMode()" title="Bomb: blasts a 5×5 area">
+    <button class="tool-btn bomb-btn" id="bomb-btn" onclick="toggleBombMode()" title="Bomb: blasts a 5×5 area">
       💣 Bomb ×<span id="bomb-count">3</span>
+    </button>
+    <button class="tool-btn hint-btn" id="hint-btn" onclick="useHint()" title="Hint: shows a valid swap">
+      💡 Hint ×<span id="hint-count">3</span>
     </button>
   </div>
 
@@ -370,8 +381,8 @@ icon: "🍬"
     {% call infoDetails("How to Play") %}
     <h4>Goal</h4>
     <p>
-      Reach the target score, then clear every tile from the board to advance to the next level. No new tiles drop once
-      the target is hit!
+      Match tiles to score points. Once you've scored enough, new tiles stop dropping — clear the remaining tiles to
+      advance to the next level.
     </p>
     <h4>Controls — Desktop</h4>
     <ul>
@@ -384,9 +395,11 @@ icon: "🍬"
       <li>Tap to select, tap adjacent to swap — or swipe directly from one tile to a neighbor</li>
     </ul>
     <h4>Bomb</h4>
+    <p>Press 💣 Bomb, then click any tile to blast a 5×5 area. You start with 3 and earn +1 per level (max 3).</p>
+    <h4>Hint</h4>
     <p>
-      Press 💣 Bomb, then click any tile to blast a 5×5 area around it. You start with 3 bombs and earn +1 per level
-      (max 3).
+      Press 💡 Hint to see a valid swap highlighted in gold — the tiles slowly animate to show the move. You start with
+      3 hints and earn +1 per level (max 3).
     </p>
     <h4>Scoring</h4>
     <ul>
@@ -394,16 +407,10 @@ icon: "🍬"
       <li>Each cascade step doubles the multiplier</li>
     </ul>
     <h4>Level Progression</h4>
-    <p>
-      Each level raises the target by 300 and reduces moves by 1 (min 12). Once the target is reached, stop adding new
-      tiles and clear the board completely to advance.
-    </p>
+    <p>Each level is harder and gives you fewer moves (min 12). Clear the board to advance.</p>
     {% endcall %} {% call infoDetails("FAQ") %}
     <h4>Why did tiles stop dropping from the top?</h4>
-    <p>
-      You hit the target score — the board is now in "clear" mode. Match the remaining tiles until the board is empty to
-      advance to the next level.
-    </p>
+    <p>You've scored enough — match the remaining tiles until the board is empty to advance to the next level.</p>
     <h4>Why can't I swap these two tiles?</h4>
     <p>Only swaps that immediately create a match of 3 or more are allowed. Invalid swaps animate back.</p>
     <h4>What if there are no valid moves left during clearing?</h4>
@@ -434,6 +441,7 @@ icon: "🍬"
   let clearingMode = false;
   let bombs = 3;
   let bombMode = false;
+  let hints = 3;
 
   const boardEl = document.getElementById("board");
   const scoreEl = document.getElementById("score-display");
@@ -442,7 +450,6 @@ icon: "🍬"
   const movesEl = document.getElementById("moves-display");
   const overlayEl = document.getElementById("overlay");
   const gameoverEl = document.getElementById("gameover-overlay");
-  const statusBannerEl = document.getElementById("status-banner");
 
   bestEl.textContent = best;
 
@@ -749,19 +756,82 @@ icon: "🍬"
     }
   }
 
-  function updateStatusBanner() {
-    if (clearingMode) {
-      statusBannerEl.textContent = "🎯 Target reached! Clear all tiles to advance!";
-    } else {
-      statusBannerEl.textContent = "";
-    }
-  }
-
   function updateBombDisplay() {
     document.getElementById("bomb-count").textContent = bombs;
     const btn = document.getElementById("bomb-btn");
     btn.disabled = bombs <= 0;
     btn.classList.toggle("active", bombMode);
+  }
+
+  function updateHintDisplay() {
+    document.getElementById("hint-count").textContent = hints;
+    document.getElementById("hint-btn").disabled = hints <= 0;
+  }
+
+  function findHintMove() {
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c] === null) continue;
+        if (c + 1 < COLS && board[r][c + 1] !== null && wouldMatch(board, r, c, r, c + 1))
+          return { r1: r, c1: c, r2: r, c2: c + 1 };
+        if (r + 1 < ROWS && board[r + 1][c] !== null && wouldMatch(board, r, c, r + 1, c))
+          return { r1: r, c1: c, r2: r + 1, c2: c };
+      }
+    }
+    return null;
+  }
+
+  async function useHint() {
+    if (busy || hints <= 0) return;
+    busy = true;
+    hints--;
+    updateHintDisplay();
+
+    const move = findHintMove();
+    if (!move) {
+      busy = false;
+      return;
+    }
+
+    const { r1, c1, r2, c2 } = move;
+    const el1 = getTileEl(r1, c1);
+    const el2 = getTileEl(r2, c2);
+    if (!el1 || !el2) {
+      busy = false;
+      return;
+    }
+
+    el1.classList.add("hint-highlight");
+    el2.classList.add("hint-highlight");
+    await delay(350);
+
+    const rect1 = el1.getBoundingClientRect();
+    const rect2 = el2.getBoundingClientRect();
+    const dx = rect2.left - rect1.left;
+    const dy = rect2.top - rect1.top;
+
+    el1.style.transition = "transform 0.55s ease-in-out";
+    el2.style.transition = "transform 0.55s ease-in-out";
+    el1.style.zIndex = "5";
+    el2.style.zIndex = "5";
+    el1.style.transform = `translate(${dx}px, ${dy}px)`;
+    el2.style.transform = `translate(${-dx}px, ${-dy}px)`;
+    await delay(650);
+
+    await delay(180);
+
+    el1.style.transform = "";
+    el2.style.transform = "";
+    await delay(650);
+
+    el1.style.transition = "";
+    el2.style.transition = "";
+    el1.style.zIndex = "";
+    el2.style.zIndex = "";
+    el1.classList.remove("hint-highlight");
+    el2.classList.remove("hint-highlight");
+
+    busy = false;
   }
 
   function toggleBombMode() {
@@ -907,12 +977,13 @@ icon: "🍬"
         clearingMode = false;
         level++;
         bombs = Math.min(bombs + 1, 3);
+        hints = Math.min(hints + 1, 3);
         moves = movesForLevel(level);
         target = targetForLevel(level);
         levelEl.textContent = level;
         movesEl.textContent = moves;
-        updateStatusBanner();
         updateBombDisplay();
+        updateHintDisplay();
         board = makeBoard();
         renderBoard();
       } else if (moves <= 0) {
@@ -922,7 +993,6 @@ icon: "🍬"
     }
     if (score >= target) {
       clearingMode = true;
-      updateStatusBanner();
       return;
     }
     if (moves <= 0) {
@@ -953,12 +1023,13 @@ icon: "🍬"
     clearingMode = false;
     bombs = 3;
     bombMode = false;
+    hints = 3;
     board = makeBoard();
     scoreEl.textContent = 0;
     levelEl.textContent = 1;
     movesEl.textContent = moves;
-    updateStatusBanner();
     updateBombDisplay();
+    updateHintDisplay();
     boardEl.style.cursor = "";
     overlayEl.style.display = "none";
     gameoverEl.style.display = "none";
