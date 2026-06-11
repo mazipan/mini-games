@@ -133,6 +133,17 @@ icon: "🀄"
     color: #f87171;
   }
 
+  #game-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+  }
+  #game-content[hidden] {
+    display: none !important;
+  }
+
   #game-area {
     position: relative;
     flex-shrink: 0;
@@ -338,21 +349,23 @@ icon: "🀄"
     <button class="play-btn" onclick="startGame()">New Game</button>
   </div>
 
-  <div class="score-row">
-    {{ statCard("Score", "score") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level", "level-display",
-    "1") }} {{ statCard("Time", "timer-display", "5:00") }}
-  </div>
+  <div id="game-content" hidden>
+    <div class="score-row">
+      {{ statCard("Score", "score") }} {{ statCard("Best", "best-display", "0") }} {{ statCard("Level", "level-display",
+      "1") }} {{ statCard("Time", "timer-display", "10:00") }}
+    </div>
 
-  <div id="game-area">
-    <div id="grid"></div>
-    <svg id="conn-svg"></svg>
-  </div>
+    <div id="game-area">
+      <div id="grid"></div>
+      <svg id="conn-svg"></svg>
+    </div>
 
-  <div class="action-row">
-    <button class="action-btn" id="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">3</span>)</button>
-    <button class="action-btn" id="shuffle-btn" onclick="useShuffle()">
-      🔀 Shuffle (<span id="shuffles-left">3</span>)
-    </button>
+    <div class="action-row">
+      <button class="action-btn" id="hint-btn" onclick="useHint()">💡 Hint (<span id="hints-left">10</span>)</button>
+      <button class="action-btn" id="shuffle-btn" onclick="useShuffle()">
+        🔀 Shuffle (<span id="shuffles-left">10</span>)
+      </button>
+    </div>
   </div>
 </div>
 
@@ -783,6 +796,7 @@ icon: "🀄"
   function startGame() {
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("game-content").hidden = false;
 
     score = 0;
     level = 1;
