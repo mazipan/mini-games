@@ -863,7 +863,6 @@ icon: "🟦"
         wrapper.addEventListener("pointerdown", (e) => {
           if (!e.isPrimary || !gameActive) return;
           e.preventDefault();
-          wrapper.setPointerCapture(e.pointerId);
           // Identify which cell of the mini-grid the finger landed on
           const slotRect = wrapper.getBoundingClientRect();
           const miniW = cols * 12 + (cols - 1) * 2;
@@ -873,28 +872,7 @@ icon: "🟦"
           dragAnchorDc = Math.max(0, Math.min(cols - 1, Math.floor((e.clientX - miniLeft) / 14)));
           dragAnchorDr = Math.max(0, Math.min(rows - 1, Math.floor((e.clientY - miniTop) / 14)));
           startDrag(i, e.clientX, e.clientY);
-          // Apply dragging style directly — avoids recreating this element and losing pointer capture
           wrapper.classList.add("dragging");
-        });
-
-        wrapper.addEventListener("pointermove", (e) => {
-          if (!e.isPrimary) return;
-          onDragMove(e.clientX, e.clientY);
-        });
-
-        wrapper.addEventListener("pointerup", (e) => {
-          if (!e.isPrimary) return;
-          onDragEnd(e.clientX, e.clientY);
-        });
-
-        wrapper.addEventListener("pointercancel", (e) => {
-          if (!e.isPrimary || !isDragging) return;
-          isDragging = false;
-          dragRafPending = false;
-          dragPieceIdx = null;
-          hoverCell = null;
-          hideDragGhost();
-          render();
         });
       }
 
@@ -965,10 +943,31 @@ icon: "🟦"
     if (!placed) render(); // commitPlace already calls render() on success
   }
 
+  // Document-level pointer handlers drive the drag after it leaves the shelf element.
+  // Per-element capture is unreliable across Android versions; listening at document
+  // level with an isPrimary + isDragging guard is simpler and works everywhere.
+  document.addEventListener("pointermove", (e) => {
+    if (!e.isPrimary || !isDragging) return;
+    e.preventDefault();
+    onDragMove(e.clientX, e.clientY);
+  }, { passive: false });
+
+  document.addEventListener("pointerup", (e) => {
+    if (!e.isPrimary || !isDragging) return;
+    onDragEnd(e.clientX, e.clientY);
+  });
+
+  document.addEventListener("pointercancel", (e) => {
+    if (!e.isPrimary || !isDragging) return;
+    isDragging = false;
+    dragRafPending = false;
+    dragPieceIdx = null;
+    hoverCell = null;
+    hideDragGhost();
+    render();
+  });
 
   // ── Init ──────────────────────────────────────────────────────────────────
   grid = emptyGrid();
-  generateShelf();
-  renderGrid();
-  renderShelf();
+  renderGrid(); // shelf stays empty until startGame()
 </script>
