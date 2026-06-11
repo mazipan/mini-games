@@ -166,6 +166,48 @@ icon: "🍬"
     background: rgba(15, 23, 42, 0.3);
     border: 1px dashed #1e293b;
   }
+  .tile.bonus-tile {
+    animation: bonus-pulse 0.3s ease-in-out infinite;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.85);
+  }
+  @keyframes bonus-pulse {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.7);
+    }
+  }
+  .bonus-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .bonus-text {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fbbf24;
+    text-shadow:
+      0 0 24px rgba(251, 191, 36, 0.9),
+      0 2px 4px rgba(0, 0, 0, 0.8);
+    animation: bonus-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+  @keyframes bonus-pop {
+    from {
+      transform: scale(0.3) rotate(-5deg);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
   .tile.shuffle-warn {
     animation: shuffle-warn 0.22s ease-in-out 3;
   }
@@ -1031,20 +1073,9 @@ icon: "🍬"
     if (clearingMode) {
       if (isBoardEmpty()) {
         launchConfetti();
-        clearingMode = false;
-        level++;
-        bombs = Math.min(bombs + 1, 3);
-        hints = Math.min(hints + 1, 3);
-        moves = movesForLevel(level);
-        target = targetForLevel(level);
-        levelEl.textContent = level;
-        movesEl.textContent = moves;
-        updateBombDisplay();
-        updateHintDisplay();
-        board = makeBoard();
-        renderBoard();
+        advanceLevel();
       } else if (moves <= 0) {
-        showEnd(false);
+        bonusBlast(); // target reached but moves exhausted — bonus clear
       }
       return;
     }
@@ -1055,6 +1086,74 @@ icon: "🍬"
     if (moves <= 0) {
       showEnd(false);
     }
+  }
+
+  function advanceLevel() {
+    clearingMode = false;
+    level++;
+    bombs = Math.min(bombs + 1, 3);
+    hints = Math.min(hints + 1, 3);
+    moves = movesForLevel(level);
+    target = targetForLevel(level);
+    levelEl.textContent = level;
+    movesEl.textContent = moves;
+    updateBombDisplay();
+    updateHintDisplay();
+    board = makeBoard();
+    renderBoard();
+  }
+
+  async function bonusBlast() {
+    busy = true;
+
+    const remaining = [];
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c] !== null) remaining.push([r, c]);
+      }
+    }
+
+    // Show BONUS! text over the board
+    const bonusEl = document.createElement("div");
+    bonusEl.className = "bonus-overlay";
+    bonusEl.innerHTML = '<span class="bonus-text">🎉 Bonus!</span>';
+    boardEl.parentElement.appendChild(bonusEl);
+
+    // Gold flash on all remaining tiles
+    remaining.forEach(([r, c]) => {
+      const el = getTileEl(r, c);
+      if (el) el.classList.add("bonus-tile");
+    });
+    await delay(520);
+
+    // Award bonus points (20 per tile cleared)
+    score += remaining.length * 20;
+    updateScoreDisplay();
+
+    // Staggered diagonal blast
+    remaining.forEach(([r, c]) => {
+      setTimeout(
+        () => {
+          const el = getTileEl(r, c);
+          if (el) {
+            el.classList.remove("bonus-tile");
+            el.classList.add("blasting");
+          }
+          board[r][c] = null;
+        },
+        (r + c) * 40
+      );
+    });
+
+    const maxBlastDelay = remaining.reduce((mx, [r, c]) => Math.max(mx, (r + c) * 40), 0);
+    await delay(maxBlastDelay + 300);
+
+    launchConfetti();
+    await delay(450);
+
+    bonusEl.remove();
+    advanceLevel();
+    busy = false;
   }
 
   function showEnd(isWin) {
