@@ -283,11 +283,10 @@ icon: "🎹"
       if (!t.tapped && t.y > canvas.height) {
         if (!demoMode) {
           endGame();
-        } else {
-          // Demo mode: auto-resolve before missing
-          t.tapped = true;
+          return;
         }
-        return;
+        // Demo mode: silently resolve so the loop keeps running
+        t.tapped = true;
       }
     }
 
@@ -326,12 +325,11 @@ icon: "🎹"
     // Draw tiles
     tiles.forEach((t) => {
       if (t.tapped) {
-        // Brief flash effect — show faint highlight
-        ctx.fillStyle = "rgba(124,58,237,0.18)";
+        ctx.fillStyle = "rgba(124,58,237,0.3)";
         ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
         return;
       }
-      ctx.fillStyle = "#111827"; // near-black tile
+      ctx.fillStyle = "#e2e8f0"; // white tile, clearly visible on dark background
       ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
     });
   }
