@@ -630,13 +630,26 @@ icon: "🔗"
     }
   }
 
+  function straightLineCells([r1, c1], [r2, c2]) {
+    const cells = [];
+    if (r1 === r2) {
+      const step = c2 > c1 ? 1 : -1;
+      for (let c = c1 + step; step > 0 ? c <= c2 : c >= c2; c += step) cells.push([r1, c]);
+    } else {
+      const step = r2 > r1 ? 1 : -1;
+      for (let r = r1 + step; step > 0 ? r <= r2 : r >= r2; r += step) cells.push([r, c1]);
+    }
+    return cells;
+  }
+
   function extendDraw(row, col) {
     if (!activeColor || gameWon) return;
     const path = paths[activeColor];
     if (!path.length) return;
-    const head = path[path.length - 1];
-    if (head[0] === row && head[1] === col) return;
+    const [hr, hc] = path[path.length - 1];
+    if (hr === row && hc === col) return;
 
+    // Backtrack: target is already in our path
     const prevIdx = path.findIndex(([r, c]) => r === row && c === col);
     if (prevIdx !== -1) {
       const removed = path.splice(prevIdx + 1);
@@ -647,23 +660,43 @@ icon: "🔗"
       return;
     }
 
-    if (!isAdjacent(head, [row, col])) return;
-
-    const cell = grid[row][col];
-    if (cell.isEndpoint && cell.color !== activeColor) return;
-
-    if (cell.color && cell.color !== activeColor) {
-      clearPathFromCell(cell.color, row, col);
+    // Build cells to visit: adjacent OR straight-line interpolation on same row/col
+    let toAdd;
+    if (isAdjacent([hr, hc], [row, col])) {
+      toAdd = [[row, col]];
+    } else if (hr === row || hc === col) {
+      toAdd = straightLineCells([hr, hc], [row, col]);
+    } else {
+      return;
     }
 
-    path.push([row, col]);
-    grid[row][col].color = activeColor;
-    moves++;
-    document.getElementById("moves-display").textContent = moves;
-    updateFilledDisplay();
-    renderGrid();
+    let didAdd = false;
+    for (const [r, c] of toAdd) {
+      // Mid-interpolation backtrack check
+      const idx = paths[activeColor].findIndex(([pr, pc]) => pr === r && pc === c);
+      if (idx !== -1) {
+        const removed = paths[activeColor].splice(idx + 1);
+        for (const [rr, cc] of removed) {
+          if (!grid[rr][cc].isEndpoint) grid[rr][cc].color = null;
+        }
+        didAdd = true;
+        break;
+      }
+      const cell = grid[r][c];
+      if (cell.isEndpoint && cell.color !== activeColor) break;
+      if (cell.color && cell.color !== activeColor) clearPathFromCell(cell.color, r, c);
+      paths[activeColor].push([r, c]);
+      grid[r][c].color = activeColor;
+      moves++;
+      didAdd = true;
+    }
 
-    if (isSolved()) handleWin();
+    if (didAdd) {
+      document.getElementById("moves-display").textContent = moves;
+      updateFilledDisplay();
+      renderGrid();
+      if (isSolved()) handleWin();
+    }
   }
 
   function stopDraw() {
