@@ -650,6 +650,17 @@ icon: "🔗"
     const [hr, hc] = path[path.length - 1];
     if (hr === row && hc === col) return;
 
+    // Snap diagonal positions to the dominant axis so a slightly off-axis
+    // swipe doesn't silently abort. Equal delta → prefer horizontal.
+    if (hr !== row && hc !== col) {
+      if (Math.abs(row - hr) > Math.abs(col - hc)) {
+        col = hc; // constrain to vertical
+      } else {
+        row = hr; // constrain to horizontal
+      }
+      if (hr === row && hc === col) return;
+    }
+
     // Backtrack: target is already in our path
     const prevIdx = path.findIndex(([r, c]) => r === row && c === col);
     if (prevIdx !== -1) {
@@ -665,10 +676,8 @@ icon: "🔗"
     let toAdd;
     if (isAdjacent([hr, hc], [row, col])) {
       toAdd = [[row, col]];
-    } else if (hr === row || hc === col) {
-      toAdd = straightLineCells([hr, hc], [row, col]);
     } else {
-      return;
+      toAdd = straightLineCells([hr, hc], [row, col]);
     }
 
     let didAdd = false;
@@ -950,11 +959,12 @@ icon: "🔗"
     { passive: false }
   );
 
-  gridEl.addEventListener(
+  // Use window so drag keeps firing when the finger drifts outside the grid element
+  window.addEventListener(
     "touchmove",
     (e) => {
+      if (!activeColor) return; // let normal page scroll happen when not drawing
       e.preventDefault();
-      if (!activeColor) return;
       const t = e.touches[0];
       const pos = cellFromPoint(t.clientX, t.clientY);
       if (pos) extendDraw(pos.row, pos.col);
