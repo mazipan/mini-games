@@ -166,6 +166,19 @@ icon: "🍬"
     background: rgba(15, 23, 42, 0.3);
     border: 1px dashed #1e293b;
   }
+  .tile.shuffle-warn {
+    animation: shuffle-warn 0.22s ease-in-out 3;
+  }
+  @keyframes shuffle-warn {
+    0%,
+    100% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.55);
+      box-shadow: 0 0 10px rgba(251, 191, 36, 0.75);
+    }
+  }
   .tile.bomb-preview {
     outline: 2px solid rgba(239, 68, 68, 0.85);
     outline-offset: -2px;
@@ -702,9 +715,56 @@ icon: "🍬"
     }
 
     if (!isBoardEmpty() && !hasValidMoves(board)) {
-      shuffleBoard();
-      renderBoard();
+      await shuffleWithAnimation();
     }
+  }
+
+  async function shuffleWithAnimation() {
+    const tiles = [...boardEl.querySelectorAll(".tile")];
+
+    // 1. Amber warning flash ×3 (~660 ms)
+    tiles.forEach((el) => el.classList.add("shuffle-warn"));
+    await delay(660);
+    tiles.forEach((el) => el.classList.remove("shuffle-warn"));
+
+    // 2. Scale every tile out
+    tiles.forEach((el) => {
+      el.style.transition = "transform 0.32s ease-in, opacity 0.32s ease-in";
+      el.style.transform = "scale(0)";
+      el.style.opacity = "0";
+    });
+    await delay(360);
+
+    // 3. Rearrange data, re-render tiles starting invisible
+    shuffleBoard();
+    renderBoard();
+    const fresh = [...boardEl.querySelectorAll(".tile")];
+    fresh.forEach((el) => {
+      el.style.transition = "none";
+      el.style.transform = "scale(0)";
+      el.style.opacity = "0";
+    });
+    boardEl.offsetHeight;
+
+    // 4. Staggered diagonal pop-in with spring easing
+    const maxDelay = (ROWS - 1 + COLS - 1) * 35;
+    fresh.forEach((el) => {
+      const r = parseInt(el.dataset.row);
+      const c = parseInt(el.dataset.col);
+      setTimeout(
+        () => {
+          el.style.transition = "transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease-out";
+          el.style.transform = "";
+          el.style.opacity = "";
+        },
+        (r + c) * 35
+      );
+    });
+    await delay(maxDelay + 450);
+
+    fresh.forEach((el) => {
+      el.style.transition = "";
+    });
   }
 
   function applyGravity() {
@@ -887,8 +947,7 @@ icon: "🍬"
     if (matches.size > 0) {
       await resolveBoard();
     } else if (!isBoardEmpty() && !hasValidMoves(board)) {
-      shuffleBoard();
-      renderBoard();
+      await shuffleWithAnimation();
     }
 
     busy = false;
