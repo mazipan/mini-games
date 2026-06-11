@@ -335,6 +335,10 @@ icon: "🟦"
       <div class="stat-label">Best</div>
       <div class="stat-value" id="best">0</div>
     </div>
+    <div class="stat">
+      <div class="stat-label">Pieces</div>
+      <div class="stat-value" id="pieces">0</div>
+    </div>
   </div>
 
   <div id="game-area">
@@ -366,6 +370,10 @@ icon: "🟦"
     <div class="summary-stat">
       <div class="summary-label">Best</div>
       <div class="summary-value" id="go-best">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Pieces</div>
+      <div class="summary-value" id="go-pieces">0</div>
     </div>
   </div>
   <p id="go-context">No remaining pieces can fit on the board.</p>
@@ -575,6 +583,7 @@ icon: "🟦"
   // ── State ─────────────────────────────────────────────────────────────────
   let grid = [];
   let score = 0;
+  let pieces = 0;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let gameStartBest = 0; // best score at the moment the current game began
   let shelfPieces = [];
@@ -665,6 +674,8 @@ icon: "🟦"
       document.getElementById("best").textContent = best;
     }
     document.getElementById("score").textContent = score;
+    pieces++;
+    document.getElementById("pieces").textContent = pieces;
 
     shelfUsed[pieceIdx] = true;
     selectedPiece = null;
@@ -715,6 +726,7 @@ icon: "🟦"
     if (score > gameStartBest) launchConfetti();
     document.getElementById("go-score").textContent = score;
     document.getElementById("go-best").textContent = best;
+    document.getElementById("go-pieces").textContent = pieces;
     document.getElementById("go-context").textContent = "No remaining pieces can fit on the board.";
     render();
     setTimeout(() => {
@@ -727,6 +739,7 @@ icon: "🟦"
     grid = emptyGrid();
     gameStartBest = best;
     score = 0;
+    pieces = 0;
     gameActive = true;
     selectedPiece = null;
     hoverCell = null;
@@ -739,6 +752,7 @@ icon: "🟦"
     hideDragGhost();
     generateShelf();
     document.getElementById("score").textContent = 0;
+    document.getElementById("pieces").textContent = 0;
     document.getElementById("start-overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
     render();
