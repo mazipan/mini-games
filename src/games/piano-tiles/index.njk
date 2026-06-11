@@ -192,6 +192,61 @@ icon: "🎹"
     margin: 0.75rem 0 0.25rem;
     font-size: 0.9rem;
   }
+  .difficulty-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .diff-btn {
+    padding: 0.35rem 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .diff-btn.active {
+    background: #7c3aed;
+    color: white;
+    border-color: #7c3aed;
+  }
+  #now-playing {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+  }
+  #now-playing strong {
+    color: #e2e8f0;
+  }
+  #song-card {
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.4);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    max-width: 220px;
+    text-align: center;
+  }
+  #card-song {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    margin-bottom: 0.2rem;
+  }
+  #card-artist {
+    font-size: 0.72rem;
+    color: #a78bfa;
+    margin-bottom: 0.4rem;
+  }
+  #card-fact {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    line-height: 1.4;
+    font-style: italic;
+  }
 </style>
 
 <div id="game-wrapper">
@@ -200,13 +255,25 @@ icon: "🎹"
     "best-display", "0") }}
   </div>
 
+  <div class="difficulty-row">
+    <button class="diff-btn active" id="btn-easy" onclick="setDifficulty('easy')">🎵 Easy</button>
+    <button class="diff-btn" id="btn-medium" onclick="setDifficulty('medium')">🎶 Medium</button>
+    <button class="diff-btn" id="btn-hard" onclick="setDifficulty('hard')">🎸 Hard</button>
+  </div>
+  <div id="now-playing">🎹 <strong id="song-name">Twinkle Twinkle</strong></div>
+
   <div class="canvas-wrapper">
     <canvas id="canvas"></canvas>
     <div id="overlay">
       <span class="demo-label" id="demo-label">Live Demo</span>
       <span>🎹</span>
       <h2>Piano Tiles</h2>
-      <p>Tap the black tiles before they pass!</p>
+      <div id="song-card">
+        <div id="card-song">Twinkle Twinkle Little Star</div>
+        <div id="card-artist">Traditional · ~1806</div>
+        <div id="card-fact">Based on a French melody that Mozart also arranged as famous piano variations.</div>
+      </div>
+      <p>Tap each tile in time with the music!</p>
       <button class="play-btn" onclick="startGame()">Play Game</button>
     </div>
     <div id="gameover-overlay">
@@ -224,22 +291,37 @@ icon: "🎹"
     {% call infoDetails("How to Play") %}
     <div class="info-body">
       <h4>Goal</h4>
-      <p>Tap black tiles as they fall. Don't miss one or tap white space!</p>
+      <p>Tap colored tiles as they fall in time with the music. Don't miss one or tap empty space!</p>
       <h4>Controls</h4>
-      <p>Click or tap on the black tiles as they scroll down the screen.</p>
+      <p>Click or tap on the colored tiles as they scroll down the screen.</p>
+      <h4>Difficulty &amp; Songs</h4>
+      <p>
+        Easy songs (e.g. Twinkle Twinkle) fall slowly. Medium songs fall at a moderate pace. Hard songs (e.g. Für Elise)
+        fall fast. Each difficulty picks a random song from its pool.
+      </p>
       <h4>Scoring &amp; Levels</h4>
       <p>Each tapped tile scores 10 points. Speed increases every 10 tiles. Level increases every 10 taps.</p>
+      <h4>Column Colors &amp; Notes</h4>
+      <p>
+        Lower-pitched notes appear in left columns (blue, green) and higher-pitched notes in right columns (yellow,
+        red). The color helps you identify which note is playing.
+      </p>
       <h4>Game Over Conditions</h4>
-      <p>You lose if: an untapped black tile passes the bottom of the screen, or you click empty (white) space.</p>
+      <p>You lose if: an untapped tile passes the bottom of the screen, or you click empty space.</p>
     </div>
     {% endcall %} {% call infoDetails("FAQ") %}
     <div class="info-body">
       <h4>What counts as a miss?</h4>
-      <p>Any untapped black tile that fully passes the bottom of the screen ends the game.</p>
-      <h4>What if I tap white space?</h4>
-      <p>Game over immediately — only tap the dark tiles!</p>
+      <p>Any untapped tile that fully passes the bottom of the screen ends the game.</p>
+      <h4>What if I tap empty space?</h4>
+      <p>Game over immediately — only tap the colored tiles!</p>
+      <h4>Why are tiles different colors?</h4>
+      <p>
+        Each column has its own color: blue (col 1), green (col 2), yellow (col 3), red (col 4). Lower notes are on the
+        left, higher notes on the right.
+      </p>
       <h4>Is there an end?</h4>
-      <p>No — play until you miss or tap white. The tiles keep speeding up with each level.</p>
+      <p>No — play until you miss or tap empty space. The tiles keep speeding up with each level.</p>
       <h4>Is my best score saved?</h4>
       <p>Yes — your best score is stored in your browser's local storage and persists between sessions.</p>
     </div>
@@ -264,13 +346,403 @@ icon: "🎹"
   const STORAGE_KEY = "mini-piano-tiles-best";
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
 
-  let score, level, tapsCount, speed, tiles, running, animId, demoMode;
+  const TILE_COLORS = ["#60a5fa", "#4ade80", "#fbbf24", "#f87171"];
+  const TILE_TAPPED = [
+    "rgba(96,165,250,0.25)",
+    "rgba(74,222,128,0.25)",
+    "rgba(251,191,36,0.25)",
+    "rgba(248,113,113,0.25)",
+  ];
 
-  document.getElementById("best-display").textContent = best;
+  // Each note: [col (0-3), freq (Hz)]
+  // Column mapping: low notes → left (col 0), high notes → right (col 3)
+  const SONGS = {
+    easy: [
+      {
+        name: "Twinkle Twinkle Little Star",
+        artist: "Traditional",
+        year: "~1806",
+        fact: "Based on a French melody 'Ah! vous dirai-je, maman'. Mozart wrote famous piano variations on the same tune.",
+        bpm: 65,
+        notes: [
+          [0, 262],
+          [0, 262],
+          [2, 392],
+          [2, 392],
+          [2, 440],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [1, 349],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [0, 262],
+          [2, 392],
+          [2, 392],
+          [1, 349],
+          [1, 349],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [2, 392],
+          [2, 392],
+          [1, 349],
+          [1, 349],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 262],
+          [2, 392],
+          [2, 392],
+          [2, 440],
+          [2, 440],
+          [2, 392],
+          [1, 349],
+          [1, 349],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [0, 262],
+        ],
+      },
+      {
+        name: "Mary Had a Little Lamb",
+        artist: "Sarah Josepha Hale",
+        year: "1830",
+        fact: "Thomas Edison used it to test his phonograph in 1877, making it one of the first songs ever recorded.",
+        bpm: 72,
+        notes: [
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [0, 294],
+          [1, 330],
+          [2, 392],
+          [2, 392],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+        ],
+      },
+    ],
+    medium: [
+      {
+        name: "Ode to Joy",
+        artist: "Ludwig van Beethoven",
+        year: "1824",
+        fact: "Beethoven was completely deaf when he composed Symphony No. 9. He reportedly wept when he felt the audience's applause through the vibrations.",
+        bpm: 108,
+        notes: [
+          [1, 330],
+          [1, 330],
+          [1, 349],
+          [2, 392],
+          [2, 392],
+          [1, 349],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [1, 330],
+          [1, 330],
+          [1, 349],
+          [2, 392],
+          [2, 392],
+          [1, 349],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 262],
+          [0, 294],
+          [0, 294],
+          [1, 330],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 349],
+          [1, 330],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 349],
+          [1, 330],
+          [0, 294],
+          [0, 262],
+          [0, 294],
+          [0, 220],
+        ],
+      },
+      {
+        name: "Jingle Bells",
+        artist: "James Lord Pierpont",
+        year: "1857",
+        fact: "Originally written for Thanksgiving, not Christmas! It was also the first song broadcast from space by Gemini 6 astronauts in 1965.",
+        bpm: 112,
+        notes: [
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [2, 392],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 349],
+          [1, 349],
+          [1, 349],
+          [1, 349],
+          [1, 349],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [1, 330],
+          [0, 294],
+          [2, 392],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [1, 330],
+          [2, 392],
+          [0, 262],
+          [0, 294],
+          [1, 330],
+          [1, 349],
+          [1, 349],
+          [1, 349],
+          [1, 349],
+          [2, 392],
+          [2, 392],
+          [1, 349],
+          [0, 294],
+          [0, 262],
+        ],
+      },
+    ],
+    hard: [
+      {
+        name: "Für Elise",
+        artist: "Ludwig van Beethoven",
+        year: "1810",
+        fact: "The identity of 'Elise' remains a mystery. Leading theory: Therese Malfatti, Beethoven's piano student, whom he wished to marry.",
+        bpm: 140,
+        notes: [
+          [2, 330],
+          [1, 311],
+          [2, 330],
+          [1, 311],
+          [2, 330],
+          [0, 247],
+          [1, 294],
+          [0, 262],
+          [0, 220],
+          [0, 262],
+          [1, 294],
+          [2, 330],
+          [3, 440],
+          [1, 294],
+          [1, 330],
+          [2, 392],
+          [3, 440],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [1, 330],
+          [2, 330],
+          [1, 294],
+          [0, 262],
+          [0, 220],
+          [0, 262],
+          [1, 294],
+          [2, 330],
+          [1, 294],
+          [0, 262],
+          [0, 220],
+          [2, 330],
+          [1, 311],
+          [2, 330],
+          [1, 311],
+          [2, 330],
+          [0, 247],
+          [1, 294],
+          [0, 262],
+          [0, 220],
+          [0, 262],
+          [1, 294],
+          [2, 330],
+          [3, 440],
+          [1, 294],
+          [1, 330],
+          [2, 392],
+          [3, 440],
+          [3, 523],
+          [3, 494],
+          [3, 440],
+          [3, 415],
+          [2, 330],
+          [1, 311],
+          [1, 294],
+          [0, 262],
+          [0, 220],
+        ],
+      },
+      {
+        name: "Canon in D",
+        artist: "Johann Pachelbel",
+        year: "~1680",
+        fact: "Its repeating bass line inspired hundreds of pop songs, including Vitamin C's 'Graduation' and Maroon 5's 'Memories'.",
+        bpm: 150,
+        notes: [
+          [0, 294],
+          [2, 440],
+          [3, 494],
+          [1, 370],
+          [2, 392],
+          [0, 294],
+          [2, 392],
+          [2, 440],
+          [0, 294],
+          [2, 440],
+          [3, 494],
+          [1, 370],
+          [2, 392],
+          [0, 294],
+          [2, 392],
+          [2, 440],
+          [1, 370],
+          [2, 440],
+          [3, 494],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 415],
+          [2, 392],
+          [1, 349],
+          [2, 392],
+          [1, 370],
+          [1, 330],
+          [1, 311],
+          [1, 294],
+          [1, 330],
+          [0, 294],
+          [0, 294],
+          [2, 440],
+          [3, 494],
+          [1, 370],
+          [2, 392],
+          [0, 294],
+          [2, 392],
+          [2, 440],
+          [3, 587],
+          [3, 523],
+          [3, 494],
+          [2, 440],
+          [2, 392],
+          [1, 370],
+          [1, 330],
+          [0, 294],
+        ],
+      },
+    ],
+  };
+
+  let audioCtx = null;
+  function getAudioCtx() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+  function playNote(freq) {
+    if (!freq) return;
+    const ac = getAudioCtx();
+    const osc = ac.createOscillator();
+    const osc2 = ac.createOscillator();
+    const gain = ac.createGain();
+    const gain2 = ac.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = freq;
+    osc2.type = "sine";
+    osc2.frequency.value = freq * 2;
+    gain2.gain.value = 0.15;
+    osc.connect(gain);
+    osc2.connect(gain2);
+    gain2.connect(gain);
+    gain.connect(ac.destination);
+    const t = ac.currentTime;
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.linearRampToValueAtTime(0.4, t + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+    osc.start(t);
+    osc2.start(t);
+    osc.stop(t + 0.9);
+    osc2.stop(t + 0.9);
+  }
+
+  function bpmToSpeed(bpm) {
+    // 65 BPM → speed 2*S (original base), scale linearly
+    return (bpm / 65) * 2 * S;
+  }
+
+  let score, level, tapsCount, speed, tiles, running, animId, demoMode;
+  let currentSong, noteIndex, difficulty;
+
+  function setDifficulty(diff) {
+    difficulty = diff;
+    const pool = SONGS[diff];
+    currentSong = pool[Math.floor(Math.random() * pool.length)];
+    noteIndex = 0;
+    document.getElementById("song-name").textContent = currentSong.name;
+    document.getElementById("card-song").textContent = currentSong.name;
+    document.getElementById("card-artist").textContent = `${currentSong.artist} · ${currentSong.year}`;
+    document.getElementById("card-fact").textContent = currentSong.fact;
+    ["easy", "medium", "hard"].forEach((d) => {
+      document.getElementById("btn-" + d).classList.toggle("active", d === diff);
+    });
+  }
 
   function spawnTile() {
-    const col = Math.floor(Math.random() * COLS);
-    tiles.push({ col, y: -TILE_H, tapped: false });
+    const note = currentSong.notes[noteIndex % currentSong.notes.length];
+    noteIndex++;
+    tiles.push({ col: note[0], freq: note[1], y: -TILE_H, tapped: false });
   }
 
   function update() {
@@ -324,12 +796,7 @@ icon: "🎹"
 
     // Draw tiles
     tiles.forEach((t) => {
-      if (t.tapped) {
-        ctx.fillStyle = "rgba(124,58,237,0.3)";
-        ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
-        return;
-      }
-      ctx.fillStyle = "#e2e8f0"; // white tile, clearly visible on dark background
+      ctx.fillStyle = t.tapped ? TILE_TAPPED[t.col] : TILE_COLORS[t.col];
       ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
     });
   }
@@ -365,11 +832,12 @@ icon: "🎹"
 
     if (hit) {
       hit.tapped = true;
+      playNote(hit.freq);
       score += 10;
       tapsCount++;
       if (tapsCount % 10 === 0) {
         level++;
-        speed = 2 + (level - 1) * 0.4;
+        speed = bpmToSpeed(currentSong.bpm) + (level - 1) * 0.4 * S;
       }
       document.getElementById("score-display").textContent = score;
       document.getElementById("level-display").textContent = level;
@@ -392,10 +860,13 @@ icon: "🎹"
     score = 0;
     level = 1;
     tapsCount = 0;
-    speed = 2;
     tiles = [];
     running = true;
     demoMode = false;
+
+    setDifficulty(difficulty); // picks a random song for current difficulty
+    speed = bpmToSpeed(currentSong.bpm);
+    noteIndex = 0;
 
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
@@ -429,10 +900,12 @@ icon: "🎹"
     score = 0;
     level = 1;
     tapsCount = 0;
-    speed = 2;
     tiles = [];
     running = true;
     demoMode = true;
+
+    speed = bpmToSpeed(currentSong.bpm);
+    noteIndex = 0;
 
     spawnTile();
     cancelAnimationFrame(animId);
@@ -480,7 +953,9 @@ icon: "🎹"
     requestAnimationFrame(drawConf);
   }
 
-  // Init best display and start demo
   document.getElementById("best-display").textContent = best;
+  document.getElementById("score-display").textContent = "0";
+  document.getElementById("level-display").textContent = "1";
+  setDifficulty("easy"); // sets currentSong before startDemo
   startDemo();
 </script>

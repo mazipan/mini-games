@@ -230,15 +230,23 @@ icon: "📦"
       </p>
       <h4>Controls</h4>
       <p>Click or tap anywhere to drop the sliding block.</p>
-      <h4>Perfect Placement</h4>
+      <h4>Alignment Meter</h4>
       <p>
-        A <strong style="color: #22c55e">dashed green outline</strong> shows the perfect target — the exact position
-        where the sliding block lines up with the top of the stack. Drop the block inside that outline and it counts as
-        a <strong style="color: #22c55e">Perfect!</strong>
+        Watch the <strong>color bar</strong> at the very bottom of the screen — it shows how well-aligned your sliding
+        block is with the top of the stack:
       </p>
       <p>
-        Perfect = the block lands with less than 2px of overhang on either side. No cut happens, the block stays full
-        width, and you score <strong style="color: #f0c040">20 pts</strong> instead of 10.
+        <strong style="color: #22c55e">Green zone</strong> = perfect alignment.
+        <strong style="color: #f97316">Orange zone</strong> = close but not perfect.
+        <strong style="color: #ef4444">Red zone</strong> = far off target. The
+        <strong style="color: white">white needle</strong> tracks the center of your sliding block — drop when it's in
+        the green!
+      </p>
+      <h4>Perfect Placement</h4>
+      <p>
+        When the needle is in the <strong style="color: #22c55e">green zone</strong>, the block lands with less than 2px
+        of overhang on either side. No cut happens, the block stays full width, and you score
+        <strong style="color: #f0c040">20 pts</strong> instead of 10.
       </p>
       <h4>Scoring</h4>
       <p>
@@ -248,10 +256,10 @@ icon: "📦"
     </div>
     {% endcall %} {% call infoDetails("FAQ") %}
     <div class="info-body">
-      <h4>What is the green dashed box?</h4>
+      <h4>How do I use the alignment meter?</h4>
       <p>
-        That's the perfect zone — it mirrors the exact width and position of the top block. Land your sliding block
-        inside it for a Perfect placement!
+        The color bar at the bottom shows where your block will land relative to the top of the stack. Watch the white
+        needle — drop the block when it's over the green zone for a Perfect placement!
       </p>
       <h4>What happens when I miss the perfect zone?</h4>
       <p>
@@ -408,6 +416,23 @@ icon: "📦"
     // Sliding block
     ctx.fillStyle = "#f0c040";
     ctx.fillRect(current.x, currentY, current.width, BLOCK_H - 2);
+
+    // Precision alignment meter bar at bottom of canvas
+    const barH = Math.round(8 * S);
+    const meterY = H - barH;
+    const meterBuf = Math.round(top.width * 0.4);
+    const needleX = Math.round(current.x + current.width / 2);
+    const nw = Math.max(2, Math.round(2 * S));
+    ctx.fillStyle = "#ef4444";
+    ctx.fillRect(0, meterY, W, barH);
+    const oxLeft = Math.max(0, top.x - meterBuf);
+    const oxRight = Math.min(W, top.x + top.width + meterBuf);
+    ctx.fillStyle = "#f97316";
+    ctx.fillRect(oxLeft, meterY, oxRight - oxLeft, barH);
+    ctx.fillStyle = "#22c55e";
+    ctx.fillRect(top.x, meterY, top.width, barH);
+    ctx.fillStyle = "white";
+    ctx.fillRect(needleX - nw, meterY - Math.round(5 * S), nw * 2, barH + Math.round(5 * S));
 
     // PERFECT! flash text
     const elapsed = performance.now() - perfectFlashTime;
