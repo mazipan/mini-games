@@ -256,9 +256,21 @@ icon: "📦"
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let stack, current, score, level, cameraOffset, running, animId, demoMode;
 
+  const BLOCK_COLORS = [
+    "#ef4444",
+    "#f97316",
+    "#eab308",
+    "#22c55e",
+    "#06b6d4",
+    "#3b82f6",
+    "#8b5cf6",
+    "#ec4899",
+    "#14b8a6",
+    "#f59e0b",
+  ];
+
   function blockColor(index) {
-    const hue = (200 + index * 8) % 360;
-    return `hsl(${hue}, 70%, 55%)`;
+    return BLOCK_COLORS[index % BLOCK_COLORS.length];
   }
 
   function initState() {
