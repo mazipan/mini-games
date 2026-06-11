@@ -711,7 +711,11 @@ icon: "🍬"
         el1.style.zIndex = "";
         el2.style.zIndex = "";
       }
+      // Even on a failed swap, check for stuck state (no valid moves on board).
+      // resolveBoard() will attempt up to 3 shuffles before giving up.
+      await resolveBoard();
       busy = false;
+      checkEndCondition();
       return;
     }
 
@@ -898,7 +902,16 @@ icon: "🍬"
   async function useHint() {
     if (busy || hints <= 0) return;
     const move = findHintMove();
-    if (!move) return; // no valid moves — don't consume hint
+    if (!move) {
+      // No valid moves — attempt shuffle (clearing mode) or just return
+      if (clearingMode && !isBoardEmpty()) {
+        busy = true;
+        await resolveBoard();
+        busy = false;
+        checkEndCondition();
+      }
+      return;
+    }
 
     busy = true;
     hints--;
@@ -1080,13 +1093,16 @@ icon: "🍬"
       if (isBoardEmpty()) {
         launchConfetti();
         advanceLevel();
-      } else if (moves <= 0) {
-        bonusBlast(); // target reached but moves exhausted — bonus clear
+      } else if (moves <= 0 || !hasValidMoves(board)) {
+        // No moves left OR shuffles exhausted with no valid moves → bonus blast
+        bonusBlast();
       }
       return;
     }
     if (score >= target) {
       clearingMode = true;
+      // Edge case: last scoring move also used the last move counter
+      if (moves <= 0) bonusBlast();
       return;
     }
     if (moves <= 0) {
