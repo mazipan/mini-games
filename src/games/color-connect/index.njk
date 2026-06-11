@@ -933,49 +933,31 @@ icon: "🔗"
 
   const gridEl = document.getElementById("grid");
 
-  gridEl.addEventListener("mousedown", (e) => {
+  // Pointer Events unify mouse + touch + stylus and work correctly on Android.
+  // setPointerCapture keeps pointermove firing on gridEl even when the finger
+  // drifts outside, which eliminates the need for window-level fallbacks.
+  gridEl.addEventListener("pointerdown", (e) => {
+    if (!e.isPrimary) return;
     const pos = cellFromPoint(e.clientX, e.clientY);
-    if (pos) startDraw(pos.row, pos.col);
+    if (!pos) return;
+    e.preventDefault();
+    gridEl.setPointerCapture(e.pointerId);
+    startDraw(pos.row, pos.col);
     renderGrid();
   });
 
-  gridEl.addEventListener("mousemove", (e) => {
-    if (!activeColor) return;
+  gridEl.addEventListener("pointermove", (e) => {
+    if (!e.isPrimary || !activeColor) return;
     const pos = cellFromPoint(e.clientX, e.clientY);
     if (pos) extendDraw(pos.row, pos.col);
   });
 
-  window.addEventListener("mouseup", () => stopDraw());
-
-  gridEl.addEventListener(
-    "touchstart",
-    (e) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      const pos = cellFromPoint(t.clientX, t.clientY);
-      if (pos) startDraw(pos.row, pos.col);
-      renderGrid();
-    },
-    { passive: false }
-  );
-
-  // Use window so drag keeps firing when the finger drifts outside the grid element
-  window.addEventListener(
-    "touchmove",
-    (e) => {
-      if (!activeColor) return; // let normal page scroll happen when not drawing
-      e.preventDefault();
-      const t = e.touches[0];
-      const pos = cellFromPoint(t.clientX, t.clientY);
-      if (pos) extendDraw(pos.row, pos.col);
-    },
-    { passive: false }
-  );
-
-  gridEl.addEventListener("touchend", () => stopDraw());
-  gridEl.addEventListener("touchcancel", () => stopDraw());
-  window.addEventListener("touchend", () => stopDraw());
-  window.addEventListener("touchcancel", () => stopDraw());
+  gridEl.addEventListener("pointerup", (e) => {
+    if (e.isPrimary) stopDraw();
+  });
+  gridEl.addEventListener("pointercancel", (e) => {
+    if (e.isPrimary) stopDraw();
+  });
 
   function newGame() {
     gameWon = false;
