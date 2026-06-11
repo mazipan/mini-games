@@ -863,6 +863,10 @@ icon: "🔗"
           const center = document.createElement("div");
           center.className = "center-fill";
           center.style.background = hex;
+          if (conn.left && conn.down && !conn.right && !conn.up) center.style.borderTopRightRadius = "50%";
+          if (conn.right && conn.down && !conn.left && !conn.up) center.style.borderTopLeftRadius = "50%";
+          if (conn.left && conn.up && !conn.right && !conn.down) center.style.borderBottomRightRadius = "50%";
+          if (conn.right && conn.up && !conn.left && !conn.down) center.style.borderBottomLeftRadius = "50%";
           cell.appendChild(center);
 
           if (conn.right) {
