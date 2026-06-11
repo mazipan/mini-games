@@ -322,7 +322,7 @@ icon: "🀄"
     <span class="ov-icon">🀄</span>
     <h2>Onet Connect Classic</h2>
     <p>Connect matching tiles through a path with at most 2 turns to clear the board</p>
-    <p style="font-size: 0.8rem; color: #64748b">5-min timer · 3 hints · 3 shuffles per level</p>
+    <p style="font-size: 0.8rem; color: #64748b">10-min timer · 10 hints · 10 shuffles per level</p>
     <button class="play-btn" onclick="startGame()">Play Game</button>
   </div>
 
@@ -360,7 +360,7 @@ icon: "🀄"
 <div class="info-section">
   {% call infoDetails("How to Play") %}
   <h4>Goal</h4>
-  <p>Clear all tiles from the 8×10 board by connecting matching pairs before the 5-minute timer runs out.</p>
+  <p>Clear all tiles from the 8×10 board by connecting matching pairs before the 10-minute timer runs out.</p>
   <h4>Connection Rules</h4>
   <p>
     Two matching tiles can be connected if a line between them has <strong>at most 2 right-angle turns</strong> and
@@ -375,8 +375,8 @@ icon: "🀄"
   </ul>
   <h4>Power-ups</h4>
   <ul>
-    <li><strong>💡 Hint</strong> — highlights a valid pair you can connect (3 per level)</li>
-    <li><strong>🔀 Shuffle</strong> — rearranges all remaining tiles randomly (3 per level)</li>
+    <li><strong>💡 Hint</strong> — highlights a valid pair you can connect (10 per level)</li>
+    <li><strong>🔀 Shuffle</strong> — rearranges all remaining tiles randomly (10 per level)</li>
   </ul>
   <h4>Scoring</h4>
   <ul>
@@ -401,7 +401,7 @@ icon: "🀄"
     game ends.
   </p>
   <h4>Do hints and shuffles reset each level?</h4>
-  <p>Yes — both reset to 3 when you advance to the next level.</p>
+  <p>Yes — both reset to 10 when you advance to the next level.</p>
   <h4>Is my best score saved?</h4>
   <p>Yes — your highest cumulative score is stored in your browser's local storage.</p>
   {% endcall %}
@@ -410,9 +410,9 @@ icon: "🀄"
 <script>
   const ROWS = 8,
     COLS = 10;
-  const TIMER_SEC = 300;
-  const INIT_SHUFFLES = 3,
-    INIT_HINTS = 3;
+  const TIMER_SEC = 600;
+  const INIT_SHUFFLES = 10,
+    INIT_HINTS = 10;
   const SCORE_PER_PAIR = 10;
   const STORAGE_KEY = "mini-onet-connect-best";
   const GAP = 2;
