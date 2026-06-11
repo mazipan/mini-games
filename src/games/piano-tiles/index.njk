@@ -1,0 +1,488 @@
+---
+layout: layouts/game.njk
+title: Piano Tiles
+description: Tap the falling black tiles before they pass — don't miss one or tap the white!
+category: arcade
+icon: "🎹"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .canvas-wrapper {
+    position: relative;
+    touch-action: none;
+    line-height: 0;
+  }
+  canvas {
+    border: 2px solid #1e3a5f;
+    border-radius: 4px;
+    display: block;
+    cursor: pointer;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin: 0;
+    text-align: center;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .demo-label {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #7c3aed;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  #gameover-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #gameover-overlay span:first-child {
+    font-size: 2.5rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+  }
+  .summary-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 520px;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: #e2e8f0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .info-details summary::before {
+    content: "▶";
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    color: #7c3aed;
+  }
+  .info-details[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .info-body {
+    padding: 0 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.9rem;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Score", "score-display", "0") }} {{ statCard("Level", "level-display", "1") }} {{ statCard("Best",
+    "best-display", "0") }}
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas"></canvas>
+    <div id="overlay">
+      <span class="demo-label" id="demo-label">Live Demo</span>
+      <span>🎹</span>
+      <h2>Piano Tiles</h2>
+      <p>Tap the black tiles before they pass!</p>
+      <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+    <div id="gameover-overlay">
+      <span id="go-icon">💀</span>
+      <h2 id="go-title">Game Over</h2>
+      <div class="summary-row">
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+        "go-level", "1") }}
+      </div>
+      <button class="play-btn" onclick="startGame()">New Game</button>
+    </div>
+  </div>
+
+  <div class="info-section">
+    {% call infoDetails("How to Play") %}
+    <div class="info-body">
+      <h4>Goal</h4>
+      <p>Tap black tiles as they fall. Don't miss one or tap white space!</p>
+      <h4>Controls</h4>
+      <p>Click or tap on the black tiles as they scroll down the screen.</p>
+      <h4>Scoring &amp; Levels</h4>
+      <p>Each tapped tile scores 10 points. Speed increases every 10 tiles. Level increases every 10 taps.</p>
+      <h4>Game Over Conditions</h4>
+      <p>You lose if: an untapped black tile passes the bottom of the screen, or you click empty (white) space.</p>
+    </div>
+    {% endcall %} {% call infoDetails("FAQ") %}
+    <div class="info-body">
+      <h4>What counts as a miss?</h4>
+      <p>Any untapped black tile that fully passes the bottom of the screen ends the game.</p>
+      <h4>What if I tap white space?</h4>
+      <p>Game over immediately — only tap the dark tiles!</p>
+      <h4>Is there an end?</h4>
+      <p>No — play until you miss or tap white. The tiles keep speeding up with each level.</p>
+      <h4>Is my best score saved?</h4>
+      <p>Yes — your best score is stored in your browser's local storage and persists between sessions.</p>
+    </div>
+    {% endcall %}
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const DESIGN = 320;
+  const SIZE = Math.min(DESIGN, window.innerWidth - 32);
+  canvas.width = SIZE;
+  canvas.height = Math.round(SIZE * 1.6); // 320x512 aspect ratio
+  const S = SIZE / DESIGN;
+
+  const COLS = 4;
+  const TILE_W = canvas.width / COLS;
+  const TILE_H = Math.round(120 * S);
+
+  const STORAGE_KEY = "mini-piano-tiles-best";
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+
+  let score, level, tapsCount, speed, tiles, running, animId, demoMode;
+
+  document.getElementById("best-display").textContent = best;
+
+  function spawnTile() {
+    const col = Math.floor(Math.random() * COLS);
+    tiles.push({ col, y: -TILE_H, tapped: false });
+  }
+
+  function update() {
+    tiles.forEach((t) => {
+      t.y += speed;
+    });
+
+    // Check miss: untapped tile fully passed bottom
+    for (const t of tiles) {
+      if (!t.tapped && t.y > canvas.height) {
+        if (!demoMode) {
+          endGame();
+        } else {
+          // Demo mode: auto-resolve before missing
+          t.tapped = true;
+        }
+        return;
+      }
+    }
+
+    // Remove old tapped tiles off screen
+    tiles = tiles.filter((t) => t.y < canvas.height + TILE_H);
+
+    // Spawn new tile when last tile has entered the screen
+    const last = tiles[tiles.length - 1];
+    if (!last || last.y > 0) spawnTile();
+  }
+
+  function draw() {
+    // Dark background
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw column dividers
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < COLS; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * TILE_W, 0);
+      ctx.lineTo(i * TILE_W, canvas.height);
+      ctx.stroke();
+    }
+
+    // Draw hit line at 85% height
+    const hitY = canvas.height * 0.85;
+    ctx.strokeStyle = "#7c3aed";
+    ctx.lineWidth = 2 * S;
+    ctx.beginPath();
+    ctx.moveTo(0, hitY);
+    ctx.lineTo(canvas.width, hitY);
+    ctx.stroke();
+
+    // Draw tiles
+    tiles.forEach((t) => {
+      if (t.tapped) {
+        // Brief flash effect — show faint highlight
+        ctx.fillStyle = "rgba(124,58,237,0.18)";
+        ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
+        return;
+      }
+      ctx.fillStyle = "#111827"; // near-black tile
+      ctx.fillRect(t.col * TILE_W + 1, t.y, TILE_W - 2, TILE_H - 2);
+    });
+  }
+
+  function runDemo() {
+    if (!running) return;
+    // Auto-tap the lowest visible untapped tile
+    if (tiles.length > 0) {
+      const lowest = tiles.filter((t) => !t.tapped).sort((a, b) => b.y - a.y)[0];
+      if (lowest && lowest.y + TILE_H > canvas.height * 0.5) {
+        lowest.tapped = true;
+        score += 10;
+        tapsCount++;
+      }
+    }
+  }
+
+  function loop() {
+    update();
+    if (demoMode) runDemo();
+    draw();
+    if (running) animId = requestAnimationFrame(loop);
+  }
+
+  canvas.addEventListener("click", (e) => {
+    if (!running || demoMode) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const col = Math.floor(x / TILE_W);
+
+    const hit = tiles.filter((t) => t.col === col && !t.tapped).find((t) => y >= t.y && y <= t.y + TILE_H);
+
+    if (hit) {
+      hit.tapped = true;
+      score += 10;
+      tapsCount++;
+      if (tapsCount % 10 === 0) {
+        level++;
+        speed = 2 + (level - 1) * 0.4;
+      }
+      document.getElementById("score-display").textContent = score;
+      document.getElementById("level-display").textContent = level;
+    } else {
+      endGame();
+    }
+  });
+
+  canvas.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      canvas.dispatchEvent(new MouseEvent("click", { clientX: touch.clientX, clientY: touch.clientY }));
+    },
+    { passive: false }
+  );
+
+  function startGame() {
+    score = 0;
+    level = 1;
+    tapsCount = 0;
+    speed = 2;
+    tiles = [];
+    running = true;
+    demoMode = false;
+
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("demo-label").style.display = "none";
+    document.getElementById("score-display").textContent = "0";
+    document.getElementById("level-display").textContent = "1";
+
+    spawnTile();
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    running = false;
+    cancelAnimationFrame(animId);
+
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  function startDemo() {
+    score = 0;
+    level = 1;
+    tapsCount = 0;
+    speed = 2;
+    tiles = [];
+    running = true;
+    demoMode = true;
+
+    spawnTile();
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+  }
+
+  function launchConfetti() {
+    const confCanvas = document.createElement("canvas");
+    confCanvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(confCanvas);
+    const confCtx = confCanvas.getContext("2d");
+    confCanvas.width = window.innerWidth;
+    confCanvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * confCanvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function drawConf(now) {
+      if (now - start > 1500) {
+        confCanvas.remove();
+        return;
+      }
+      confCtx.clearRect(0, 0, confCanvas.width, confCanvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        confCtx.save();
+        confCtx.translate(p.x, p.y);
+        confCtx.rotate(p.angle);
+        confCtx.fillStyle = p.color;
+        confCtx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        confCtx.restore();
+      });
+      requestAnimationFrame(drawConf);
+    }
+    requestAnimationFrame(drawConf);
+  }
+
+  // Init best display and start demo
+  document.getElementById("best-display").textContent = best;
+  startDemo();
+</script>

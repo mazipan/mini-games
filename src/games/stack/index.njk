@@ -1,0 +1,471 @@
+---
+layout: layouts/game.njk
+title: Stack
+description: Tap to stop the sliding block and stack it perfectly — each overhang gets cut off!
+category: arcade
+icon: "📦"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .canvas-wrapper {
+    position: relative;
+    touch-action: none;
+    line-height: 0;
+  }
+  canvas {
+    border: 2px solid #1e3a5f;
+    border-radius: 4px;
+    display: block;
+    cursor: pointer;
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.82);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin: 0;
+    text-align: center;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #7c3aed;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .demo-label {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #7c3aed;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  #gameover-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border-radius: 4px;
+    gap: 0.75rem;
+    line-height: normal;
+  }
+  #gameover-overlay span:first-child {
+    font-size: 2.5rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+  }
+  .summary-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 520px;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: #e2e8f0;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .info-details summary::before {
+    content: "▶";
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    color: #7c3aed;
+  }
+  .info-details[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .info-body {
+    padding: 0 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.9rem;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Score", "score-display", "0") }} {{ statCard("Level", "level-display", "1") }} {{ statCard("Best",
+    "best-display", "0") }}
+  </div>
+
+  <div class="canvas-wrapper">
+    <canvas id="canvas"></canvas>
+    <div id="overlay">
+      <span class="demo-label" id="demo-label">Live Demo</span>
+      <span>📦</span>
+      <h2>Stack</h2>
+      <p>Tap to drop the block onto the stack!</p>
+      <button class="play-btn" onclick="startGame()">Play Game</button>
+    </div>
+    <div id="gameover-overlay">
+      <span>💀</span>
+      <h2>Game Over</h2>
+      <div class="summary-row">
+        {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Level",
+        "go-level", "1") }}
+      </div>
+      <button class="play-btn" onclick="startGame()">New Game</button>
+    </div>
+  </div>
+
+  <div class="info-section">
+    {% call infoDetails("How to Play") %}
+    <h4>Goal</h4>
+    <p>Stack blocks as high as possible. Each overhang is cut off — keep stacking!</p>
+    <h4>Controls</h4>
+    <p>Click / tap anywhere to drop the sliding block.</p>
+    <h4>Scoring</h4>
+    <p>10 points per block. Perfect placement (≤2px overhang): 20 points + bonus!</p>
+    {% endcall %} {% call infoDetails("FAQ") %}
+    <h4>What is a perfect placement?</h4>
+    <p>If you land within 2 pixels of perfect alignment, the block isn't cut at all!</p>
+    <h4>When does the game end?</h4>
+    <p>When a block completely misses the stack below, it's game over.</p>
+    <h4>Does the speed increase?</h4>
+    <p>Yes — every 10 blocks placed, the sliding speed increases.</p>
+    {% endcall %}
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const DESIGN_W = 320;
+  const DESIGN_H = 480;
+  const W = Math.min(DESIGN_W, window.innerWidth - 32);
+  const H = Math.round(W * (DESIGN_H / DESIGN_W));
+  canvas.width = W;
+  canvas.height = H;
+  const S = W / DESIGN_W;
+
+  const BLOCK_H = Math.round(20 * S);
+
+  const STORAGE_KEY = "mini-stack-best";
+  let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+  let stack, current, score, level, cameraOffset, running, animId, demoMode;
+
+  function blockColor(index) {
+    const hue = (200 + index * 8) % 360;
+    return `hsl(${hue}, 70%, 55%)`;
+  }
+
+  function initState() {
+    const startW = Math.round(W * 0.6);
+    const startX = Math.round((W - startW) / 2);
+    stack = [{ x: startX, width: startW, color: blockColor(0) }];
+    current = {
+      x: -startW,
+      width: startW,
+      direction: 1,
+      speed: 3 * S,
+    };
+    score = 0;
+    level = 1;
+    cameraOffset = 0;
+  }
+
+  function blockY(index) {
+    const stackHeight = stack.length;
+    return H - (stackHeight - index) * BLOCK_H - cameraOffset;
+  }
+
+  function update() {
+    current.x += current.direction * current.speed;
+    if (current.x + current.width > W) {
+      current.direction = -1;
+      current.x = W - current.width;
+    }
+    if (current.x < 0) {
+      current.direction = 1;
+      current.x = 0;
+    }
+  }
+
+  function dropBlock() {
+    const top = stack[stack.length - 1];
+    const cur = current;
+
+    const overlapStart = Math.max(cur.x, top.x);
+    const overlapEnd = Math.min(cur.x + cur.width, top.x + top.width);
+    const overlapW = overlapEnd - overlapStart;
+
+    if (overlapW <= 0) {
+      endGame();
+      return;
+    }
+
+    const isPerfect = Math.abs(overlapW - top.width) <= 2 * S;
+    const newWidth = isPerfect ? top.width : overlapW;
+    const newX = isPerfect ? top.x : overlapStart;
+
+    stack.push({ x: newX, width: newWidth, color: blockColor(stack.length) });
+
+    score += isPerfect ? 20 : 10;
+    if (isPerfect) launchConfetti();
+
+    if (stack.length % 10 === 0) {
+      level++;
+      document.getElementById("level-display").textContent = level;
+    }
+
+    document.getElementById("score-display").textContent = score;
+
+    const topY = blockY(stack.length - 1);
+    if (topY < H * 0.3) {
+      cameraOffset += BLOCK_H;
+    }
+
+    current = {
+      x: Math.random() < 0.5 ? -newWidth : W,
+      width: newWidth,
+      direction: Math.random() < 0.5 ? 1 : -1,
+      speed: (3 + (level - 1) * 0.3) * S,
+    };
+    if (current.x === W) current.direction = -1;
+  }
+
+  function draw() {
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, W, H);
+
+    const visibleStart = Math.max(0, stack.length - Math.ceil(H / BLOCK_H) - 2);
+    for (let i = visibleStart; i < stack.length; i++) {
+      const b = stack[i];
+      const y = blockY(i);
+      if (y > H || y + BLOCK_H < 0) continue;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(b.x, y, b.width, BLOCK_H - 2);
+    }
+
+    const currentY = blockY(stack.length);
+    ctx.fillStyle = "#f0c040";
+    ctx.fillRect(current.x, currentY, current.width, BLOCK_H - 2);
+  }
+
+  function demoAI() {
+    if (!running || !demoMode) return;
+    const top = stack[stack.length - 1];
+    const cur = current;
+    const overlapStart = Math.max(cur.x, top.x);
+    const overlapEnd = Math.min(cur.x + cur.width, top.x + top.width);
+    const overlapW = overlapEnd - overlapStart;
+    if (overlapW > top.width * 0.7) {
+      dropBlock();
+    }
+  }
+
+  function loop() {
+    update();
+    if (demoMode) demoAI();
+    draw();
+    if (running) animId = requestAnimationFrame(loop);
+  }
+
+  canvas.addEventListener("click", () => {
+    if (!running) return;
+    if (demoMode) return;
+    dropBlock();
+  });
+
+  canvas.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+      if (!running || demoMode) return;
+      dropBlock();
+    },
+    { passive: false }
+  );
+
+  function startGame() {
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("demo-label").style.display = "none";
+    demoMode = false;
+    initState();
+    running = true;
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+  }
+
+  function endGame() {
+    running = false;
+    cancelAnimationFrame(animId);
+    if (score > best) {
+      best = score;
+      localStorage.setItem(STORAGE_KEY, best);
+      document.getElementById("best-display").textContent = best;
+      launchConfetti();
+    }
+    document.getElementById("go-score").textContent = score;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("go-level").textContent = level;
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  function startDemo() {
+    demoMode = true;
+    initState();
+    running = true;
+    cancelAnimationFrame(animId);
+    animId = requestAnimationFrame(loop);
+  }
+
+  function launchConfetti() {
+    const cc = document.createElement("canvas");
+    cc.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(cc);
+    const cctx = cc.getContext("2d");
+    cc.width = window.innerWidth;
+    cc.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * cc.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function drawC(now) {
+      if (now - start > 1500) {
+        cc.remove();
+        return;
+      }
+      cctx.clearRect(0, 0, cc.width, cc.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        cctx.save();
+        cctx.translate(p.x, p.y);
+        cctx.rotate(p.angle);
+        cctx.fillStyle = p.color;
+        cctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        cctx.restore();
+      });
+      requestAnimationFrame(drawC);
+    }
+    requestAnimationFrame(drawC);
+  }
+
+  document.getElementById("best-display").textContent = best;
+  document.getElementById("score-display").textContent = "0";
+  document.getElementById("level-display").textContent = "1";
+  startDemo();
+</script>

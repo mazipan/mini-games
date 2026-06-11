@@ -149,6 +149,15 @@ module.exports = [
     tags: ["matching", "tiles", "classic", "connect"],
   },
   {
+    slug: "piano-tiles",
+    name: "Piano Tiles",
+    description: "Tap the falling black tiles before they pass — don't miss one or tap the white!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "🎹",
+    tags: ["rhythm", "reflex", "tap", "music"],
+  },
+  {
     slug: "pong",
     name: "Pong",
     description: "Two paddles, one ball — first to 7 points wins. Play vs AI or a friend!",
@@ -196,6 +205,16 @@ module.exports = [
     tags: ["shooter", "classic", "canvas"],
   },
   {
+    slug: "stack",
+    name: "Stack",
+    description:
+      "Tap to stop the sliding block and stack it perfectly — each overhang gets cut off!",
+    category: "arcade",
+    difficulty: "easy",
+    icon: "📦",
+    tags: ["stacking", "reflex", "canvas", "casual"],
+  },
+  {
     slug: "sudoku",
     name: "Sudoku",
     description: "Fill the 9×9 grid so every row, column, and 3×3 box contains digits 1–9.",
@@ -230,5 +249,33 @@ module.exports = [
     difficulty: "easy",
     icon: "🦔",
     tags: ["reflex", "clicking", "casual", "classic"],
+  },
+  {
+    slug: "word-search",
+    name: "Word Search",
+    description: "Find all the hidden words in the letter grid — they can run in any direction!",
+    category: "word",
+    difficulty: "easy",
+    icon: "🔤",
+    tags: ["word", "search", "grid", "puzzle"],
+  },
+  {
+    slug: "wordle",
+    name: "Wordle",
+    description:
+      "Guess the hidden 5-letter word in 6 tries — green means right place, yellow means wrong place!",
+    category: "word",
+    difficulty: "easy",
+    icon: "🟩",
+    tags: ["word", "guessing", "classic"],
+  },
+  {
+    slug: "yahtzee",
+    name: "Yahtzee",
+    description: "Roll 5 dice up to 3 times and score your result in one of 13 categories!",
+    category: "board",
+    difficulty: "easy",
+    icon: "🎲",
+    tags: ["dice", "classic", "strategy", "casual"],
   },
 ];

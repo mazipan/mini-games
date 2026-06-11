@@ -1,0 +1,753 @@
+---
+layout: layouts/game.njk
+title: Wordle
+description: Guess the hidden 5-letter word in 6 tries — green means right place, yellow means wrong place!
+category: word
+icon: "🟩"
+---
+
+{% from "macros/game-components.njk" import statCard, summaryStatCard, infoDetails %}
+
+<style>
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .grid {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .grid-row {
+    display: flex;
+    gap: 5px;
+  }
+  .tile {
+    width: 52px;
+    height: 52px;
+    border: 2px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    text-transform: uppercase;
+    transition: border-color 0.1s;
+    user-select: none;
+  }
+  .tile.filled {
+    border-color: #64748b;
+  }
+  .tile.correct {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: white;
+  }
+  .tile.present {
+    background: #d97706;
+    border-color: #d97706;
+    color: white;
+  }
+  .tile.absent {
+    background: #475569;
+    border-color: #475569;
+    color: white;
+  }
+  .tile.flip {
+    animation: flip 0.4s ease forwards;
+  }
+  @keyframes flip {
+    0% {
+      transform: rotateX(0deg);
+    }
+    50% {
+      transform: rotateX(90deg);
+    }
+    100% {
+      transform: rotateX(0deg);
+    }
+  }
+  .grid-row.shake {
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-6px);
+    }
+    40% {
+      transform: translateX(6px);
+    }
+    60% {
+      transform: translateX(-4px);
+    }
+    80% {
+      transform: translateX(4px);
+    }
+  }
+  .keyboard {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+  }
+  .keyboard-row {
+    display: flex;
+    gap: 4px;
+  }
+  .key {
+    padding: 0.9rem 0.6rem;
+    min-width: 2rem;
+    background: #334155;
+    color: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .key.correct {
+    background: #16a34a;
+    color: white;
+  }
+  .key.present {
+    background: #d97706;
+    color: white;
+  }
+  .key.absent {
+    background: #1e293b;
+    color: #475569;
+  }
+  .key.wide {
+    min-width: 3.5rem;
+    font-size: 0.7rem;
+  }
+  #message-bar {
+    height: 1.5rem;
+    font-size: 0.85rem;
+    color: #f87171;
+    font-weight: 600;
+    text-align: center;
+  }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.93);
+    gap: 0.9rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #overlay span:first-child {
+    font-size: 3rem;
+  }
+  #overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #overlay p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    text-align: center;
+    margin: 0;
+  }
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    gap: 0.9rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #gameover-overlay span:first-child {
+    font-size: 3rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  #go-word-reveal {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    text-align: center;
+  }
+  #go-word-reveal strong {
+    color: #e2e8f0;
+    font-family: monospace;
+    letter-spacing: 0.08em;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    min-width: 72px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #7c3aed;
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #6d28d9;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("Wins", "wins-display", "0") }} {{ statCard("Streak", "streak-display", "0") }} {{ statCard("Best",
+    "best-display", "0") }}
+  </div>
+
+  <div id="message-bar"></div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="keyboard" id="keyboard"></div>
+
+  <div id="overlay">
+    <span>🟩</span>
+    <h2>Wordle</h2>
+    <p>Guess the 5-letter word in 6 tries.<br />Green = right place · Yellow = wrong place · Gray = not in word</p>
+    <button class="play-btn" onclick="startGame()">Play Game</button>
+  </div>
+
+  <div id="gameover-overlay">
+    <span id="go-icon">💀</span>
+    <h2 id="go-title">Game Over</h2>
+    <p id="go-word-reveal"></p>
+    <div class="summary-row">
+      {{ summaryStatCard("Wins", "go-wins") }} {{ summaryStatCard("Streak", "go-streak") }} {{ summaryStatCard("Best",
+      "go-best") }}
+    </div>
+    <button class="play-btn" onclick="startGame()">New Game</button>
+  </div>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Guess the hidden 5-letter word within 6 attempts.</p>
+  <h4>Color Feedback</h4>
+  <ul>
+    <li><strong style="color: #16a34a">Green</strong> — correct letter in the correct position</li>
+    <li><strong style="color: #d97706">Yellow</strong> — correct letter but wrong position</li>
+    <li><strong style="color: #64748b">Gray</strong> — letter not in the word at all</li>
+  </ul>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Keyboard</strong> — type letters, Enter to submit, Backspace to delete</li>
+    <li><strong>On-screen keyboard</strong> — tap letters, ENTER to submit, ⌫ to delete</li>
+  </ul>
+  <h4>Scoring</h4>
+  <p>Win words to build a streak. Your longest streak is saved as your best score.</p>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>Is my best score saved?</h4>
+  <p>Yes — your longest winning streak is saved in your browser's local storage and persists between sessions.</p>
+  <h4>What happens to my streak when I lose?</h4>
+  <p>Losing resets the current streak to zero. Click "New Game" to start fresh with a new word.</p>
+  <h4>What if my guess isn't in the word list?</h4>
+  <p>
+    Only words from the built-in word list are accepted. If your 5-letter guess isn't valid, the row will shake and a
+    message will appear.
+  </p>
+  <h4>Can a letter appear more than once in the word?</h4>
+  <p>
+    Yes! Words can have repeated letters. Yellow/green feedback accounts for duplicates — if you've already placed a
+    letter correctly, extra occurrences may show gray even if the letter exists.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  // prettier-ignore
+  const WORDS = [
+    "CRANE", "SLATE", "TRACE", "CRATE", "RAISE", "ARISE", "STARE", "SNARE", "SHARE", "GRAZE",
+    "BLAZE", "FLAME", "GRACE", "PLACE", "SPACE", "PEACE", "TEACH", "REACH", "BEACH", "PEACH",
+    "LEACH", "GRAPE", "DRAPE", "SHAPE", "SHAME", "BLAME", "BRAVE", "GRAVE", "SHAVE",
+    "SLAVE", "STAVE", "KNAVE", "GLARE", "FLARE", "SPARE", "STALE", "SCALE", "WHALE", "SHALE",
+    "TRAIL", "GRAIL", "QUAIL", "FRAIL", "SNAIL", "CHAIR", "FLAIR", "PLAIN", "BRAIN", "TRAIN",
+    "DRAIN", "GRAIN", "CHAIN", "PAINT", "FAINT", "SAINT", "TAINT", "PLAIT", "BRAID",
+    "BLOCK", "CLOCK", "FLOCK", "KNOCK", "STOCK", "SHOCK", "SMOCK", "FROCK", "TRUCK", "PLUCK",
+    "CLUCK", "STUCK", "SNUCK", "STUNK", "SKUNK", "DRUNK", "TRUNK", "FLUNK", "SPUNK",
+    "CHUNK", "CLUNK", "BLEND", "BLOND", "BLAND", "BRAND", "GRAND", "STAND", "GLAND",
+    "BRUSH", "CRUSH", "FLUSH", "PLUSH", "SLUSH", "BLUSH", "TRUSS", "CROSS", "GLOSS",
+    "FLOSS", "FROST", "CRUST", "TRUST", "GROUT", "TROUT", "SNOUT", "SCOUT", "STOUT",
+    "ABOUT", "SHOUT", "CLOUT", "TROVE", "GROVE", "STOVE", "DROVE", "CLOVE", "GLOVE",
+    "PROVE", "GRUEL", "CRUEL", "PIXEL", "LEVEL", "NOVEL", "TOWEL", "VOWEL", "JEWEL",
+    "ABIDE", "BRIDE", "GLIDE", "GUIDE", "PRIDE", "SLIDE", "SNIDE", "TRIBE", "GRIPE",
+    "SWIPE", "TRIPE", "WHILE", "SMILE", "STILE", "SPILE", "EXILE", "AISLE", "TWIRL",
+    "SHIRT", "SKIRT", "BIRTH", "FIRST", "THIRST", "SPIRT", "GIRTH", "MIRTH", "FLIRT",
+    "CHOIR", "THEIR", "WEIRD", "FIEND", "FIELD", "YIELD", "WIELD", "BRIEF", "CHIEF",
+    "THIEF", "GRIEF", "PIECE", "NIECE", "SIEGE", "LIEGE", "GEESE", "FLEECE", "KNEEL",
+    "STEEL", "WHEEL", "QUEER", "SHEER", "STEER", "SNEER", "QUEEN", "SCREEN", "GREEN",
+    "CHEST", "CREST", "QUEST", "GUEST", "GUESS", "PRESS", "DRESS", "BLESS", "CHESS",
+    "FLESH", "FRESH", "MESH", "PLUSH", "BRUSH", "CRASH", "FLASH", "CLASH", "SLASH",
+    "GNASH", "STASH", "SWASH", "BRASH", "TRASH", "THRASH", "SMASH",
+    "TRAMP", "CRAMP", "CLAMP", "STAMP", "SWAMP", "CHAMP", "CLAMP", "CRIMP", "BLIMP",
+    "SKIMP", "PRIMP", "SHRIMP", "STOMP", "TRUMP", "STUMP", "CLUMP", "SLUMP", "PLUMP",
+    "FRUMP", "GRUMP", "CRISP", "GRASP", "CLASP", "CLASP", "WASP",
+    "STING", "SWING", "THING", "BRING", "CLING", "FLING", "SLING", "WRING", "WRONG",
+    "PRONG", "TONGS", "ALONG", "AMONG", "BONGO", "TANGO", "LINGO",
+    "THINK", "DRINK", "BRINK", "CLINK", "FLINK", "SLINK", "STINK", "SWINK", "WINK",
+    "BLINK", "PLONK", "BONK", "CONK", "HONK", "MONK", "FUNK", "DUNK", "BUNK", "JUNK",
+    "PUNK", "SUNK", "HUNK", "GUNK", "CLUNK", "FLUNK", "PLUNK", "STUNK", "DRUNK",
+  ];
+
+  const WORD_SET = new Set(WORDS);
+
+  const STORAGE_BEST_KEY = "mini-wordle-best";
+  const STORAGE_WINS_KEY = "mini-wordle-wins";
+  const MAX_GUESSES = 6;
+  const WORD_LENGTH = 5;
+  const KB_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"];
+
+  let answer = "";
+  let currentRow = 0;
+  let currentCol = 0;
+  let board = [];
+  let keyState = {};
+  let wins = 0;
+  let streak = 0;
+  let best = parseInt(localStorage.getItem(STORAGE_BEST_KEY) || "0", 10);
+  let gameActive = false;
+  let revealing = false;
+
+  // Initialize display values on load
+  document.getElementById("wins-display").textContent = wins;
+  document.getElementById("streak-display").textContent = streak;
+  document.getElementById("best-display").textContent = best;
+
+  function pickWord() {
+    const filtered = WORDS.filter((w) => w.length === WORD_LENGTH);
+    return filtered[Math.floor(Math.random() * filtered.length)];
+  }
+
+  function buildGrid() {
+    const grid = document.getElementById("grid");
+    grid.innerHTML = "";
+    board = [];
+    for (let r = 0; r < MAX_GUESSES; r++) {
+      const row = document.createElement("div");
+      row.className = "grid-row";
+      row.id = "row-" + r;
+      const rowTiles = [];
+      for (let c = 0; c < WORD_LENGTH; c++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.id = "tile-" + r + "-" + c;
+        row.appendChild(tile);
+        rowTiles.push({ letter: "", state: "empty" });
+      }
+      grid.appendChild(row);
+      board.push(rowTiles);
+    }
+  }
+
+  function buildKeyboard() {
+    const kb = document.getElementById("keyboard");
+    kb.innerHTML = "";
+    keyState = {};
+
+    const addRow = (keys) => {
+      const row = document.createElement("div");
+      row.className = "keyboard-row";
+      keys.forEach((k) => {
+        const btn = document.createElement("button");
+        btn.className = "key" + (k.length > 1 ? " wide" : "");
+        btn.textContent = k;
+        btn.id = "key-" + k;
+        btn.addEventListener("click", () => handleKey(k));
+        row.appendChild(btn);
+      });
+      kb.appendChild(row);
+    };
+
+    addRow(KB_ROWS[0].split(""));
+    addRow(KB_ROWS[1].split(""));
+    addRow(["ENTER", ...KB_ROWS[2].split(""), "⌫"]);
+  }
+
+  function startGame() {
+    answer = pickWord();
+    currentRow = 0;
+    currentCol = 0;
+    gameActive = false;
+    revealing = false;
+
+    buildGrid();
+    buildKeyboard();
+
+    document.getElementById("message-bar").textContent = "";
+    document.getElementById("overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+
+    gameActive = true;
+  }
+
+  function showMessage(msg, duration) {
+    const bar = document.getElementById("message-bar");
+    bar.textContent = msg;
+    if (duration) {
+      setTimeout(() => {
+        if (bar.textContent === msg) bar.textContent = "";
+      }, duration);
+    }
+  }
+
+  function handleKey(key) {
+    if (!gameActive || revealing) return;
+
+    if (key === "⌫" || key === "BACKSPACE") {
+      deleteLetter();
+    } else if (key === "ENTER") {
+      submitGuess();
+    } else if (/^[A-Z]$/.test(key)) {
+      addLetter(key);
+    }
+  }
+
+  function addLetter(letter) {
+    if (currentCol >= WORD_LENGTH) return;
+    board[currentRow][currentCol].letter = letter;
+    const tile = document.getElementById("tile-" + currentRow + "-" + currentCol);
+    tile.textContent = letter;
+    tile.classList.add("filled");
+    currentCol++;
+  }
+
+  function deleteLetter() {
+    if (currentCol <= 0) return;
+    currentCol--;
+    board[currentRow][currentCol].letter = "";
+    const tile = document.getElementById("tile-" + currentRow + "-" + currentCol);
+    tile.textContent = "";
+    tile.classList.remove("filled");
+  }
+
+  function submitGuess() {
+    if (currentCol < WORD_LENGTH) {
+      showMessage("Not enough letters", 1200);
+      shakeRow(currentRow);
+      return;
+    }
+
+    const guess = board[currentRow].map((t) => t.letter).join("");
+
+    if (!WORD_SET.has(guess)) {
+      showMessage("Not a valid word", 1200);
+      shakeRow(currentRow);
+      return;
+    }
+
+    const result = scoreGuess(guess);
+    revealRow(currentRow, result, () => {
+      const won = result.every((r) => r === "correct");
+      if (won) {
+        gameActive = false;
+        wins++;
+        streak++;
+        document.getElementById("wins-display").textContent = wins;
+        document.getElementById("streak-display").textContent = streak;
+
+        if (streak > best) {
+          best = streak;
+          localStorage.setItem(STORAGE_BEST_KEY, best);
+          document.getElementById("best-display").textContent = best;
+        }
+        localStorage.setItem(STORAGE_WINS_KEY, wins);
+
+        launchConfetti();
+
+        setTimeout(() => showEnd(true), 600);
+      } else {
+        currentRow++;
+        currentCol = 0;
+
+        if (currentRow >= MAX_GUESSES) {
+          gameActive = false;
+          streak = 0;
+          document.getElementById("streak-display").textContent = streak;
+          setTimeout(() => showEnd(false), 400);
+        }
+      }
+    });
+  }
+
+  function scoreGuess(guess) {
+    const result = Array(WORD_LENGTH).fill("absent");
+    const answerArr = answer.split("");
+    const guessArr = guess.split("");
+
+    // First pass: mark correct positions
+    const answerRemaining = [];
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (guessArr[i] === answerArr[i]) {
+        result[i] = "correct";
+        answerRemaining.push(null);
+      } else {
+        answerRemaining.push(answerArr[i]);
+      }
+    }
+
+    // Second pass: mark present letters
+    for (let i = 0; i < WORD_LENGTH; i++) {
+      if (result[i] === "correct") continue;
+      const idx = answerRemaining.indexOf(guessArr[i]);
+      if (idx !== -1) {
+        result[i] = "present";
+        answerRemaining[idx] = null;
+      }
+    }
+
+    return result;
+  }
+
+  function revealRow(rowIdx, result, onDone) {
+    revealing = true;
+    const guess = board[rowIdx].map((t) => t.letter).join("");
+    const delay = 350;
+
+    result.forEach((state, col) => {
+      setTimeout(() => {
+        const tile = document.getElementById("tile-" + rowIdx + "-" + col);
+        tile.classList.add("flip");
+
+        setTimeout(() => {
+          tile.classList.remove("filled");
+          tile.classList.add(state);
+          board[rowIdx][col].state = state;
+
+          // Update keyboard key color (green > yellow > gray priority)
+          const letter = guess[col];
+          const prev = keyState[letter];
+          if (prev !== "correct") {
+            if (state === "correct" || prev !== "present") {
+              keyState[letter] = state;
+              const keyEl = document.getElementById("key-" + letter);
+              if (keyEl) {
+                keyEl.classList.remove("correct", "present", "absent");
+                keyEl.classList.add(state);
+              }
+            }
+          }
+
+          if (col === WORD_LENGTH - 1) {
+            setTimeout(() => {
+              revealing = false;
+              if (onDone) onDone();
+            }, 100);
+          }
+        }, delay / 2);
+      }, col * delay);
+    });
+  }
+
+  function shakeRow(rowIdx) {
+    const row = document.getElementById("row-" + rowIdx);
+    row.classList.add("shake");
+    row.addEventListener("animationend", () => row.classList.remove("shake"), { once: true });
+  }
+
+  function showEnd(won) {
+    document.getElementById("go-icon").textContent = won ? "🏆" : "💀";
+    document.getElementById("go-title").textContent = won ? "You Win!" : "Game Over";
+    document.getElementById("go-word-reveal").innerHTML = won
+      ? `The word was <strong>${answer}</strong> — well done!`
+      : `The word was <strong>${answer}</strong>`;
+    document.getElementById("go-wins").textContent = wins;
+    document.getElementById("go-streak").textContent = streak;
+    document.getElementById("go-best").textContent = best;
+    document.getElementById("gameover-overlay").style.display = "flex";
+  }
+
+  // Physical keyboard support
+  document.addEventListener("keydown", (e) => {
+    if (!gameActive || revealing) return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    const key = e.key.toUpperCase();
+    if (key === "ENTER") {
+      e.preventDefault();
+      handleKey("ENTER");
+    } else if (key === "BACKSPACE") {
+      handleKey("BACKSPACE");
+    } else if (/^[A-Z]$/.test(key)) {
+      handleKey(key);
+    }
+  });
+
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#7c3aed", "#db2777", "#f59e0b", "#10b981", "#3b82f6", "#ef4444", "#fbbf24"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 1500) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+</script>
