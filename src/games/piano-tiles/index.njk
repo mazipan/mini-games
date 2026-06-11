@@ -95,20 +95,6 @@ icon: "🎹"
   .play-btn:hover {
     background: #6d28d9;
   }
-  .demo-label {
-    position: absolute;
-    top: 0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #7c3aed;
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
   /* Difficulty buttons (inside overlay) */
   .diff-row {
     display: flex;
@@ -311,7 +297,6 @@ icon: "🎹"
     <canvas id="canvas"></canvas>
 
     <div id="overlay">
-      <span class="demo-label" id="demo-label">Live Demo</span>
       <span>🎹</span>
       <h2>Piano Tiles</h2>
 
@@ -338,9 +323,11 @@ icon: "🎹"
           <div id="card-artist"></div>
           <div id="card-fact"></div>
         </div>
-        <p>Tap each tile in time with the music!</p>
-        <button class="play-btn" onclick="startGame()">Play Game</button>
-        <button class="diff-btn" onclick="showSongStep(currentDifficulty)">← Back</button>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; margin-top: 0.5rem">
+          <p>Tap each tile in time with the music!</p>
+          <button class="play-btn" onclick="startGame()">Play Game</button>
+          <button class="diff-btn" onclick="showSongStep(currentDifficulty)">← Back</button>
+        </div>
       </div>
     </div>
 
@@ -1308,7 +1295,7 @@ icon: "🎹"
   }
 
   // ─── State ───────────────────────────────────────────────────────────────────
-  let score, level, tapsCount, speed, tiles, running, animId, demoMode, lives;
+  let score, level, tapsCount, speed, tiles, running, animId, lives;
   let currentSong, noteIndex, currentDifficulty;
 
   function bestKey() {
@@ -1383,9 +1370,7 @@ icon: "🎹"
     running = false;
     document.getElementById("gameover-overlay").style.display = "none";
     document.getElementById("overlay").style.display = "flex";
-    document.getElementById("demo-label").style.display = "";
     showDiffStep();
-    startDemo();
   }
 
   // ─── Spawning ─────────────────────────────────────────────────────────────────
@@ -1403,16 +1388,12 @@ icon: "🎹"
 
     for (const t of tiles) {
       if (!t.tapped && t.y > canvas.height) {
-        if (!demoMode) {
-          t.tapped = true; // mark so we don't count it again
-          lives--;
-          document.getElementById("lives-display").textContent = livesDisplay(lives);
-          if (lives <= 0) {
-            endGame();
-            return;
-          }
-        } else {
-          t.tapped = true;
+        t.tapped = true;
+        lives--;
+        document.getElementById("lives-display").textContent = livesDisplay(lives);
+        if (lives <= 0) {
+          endGame();
+          return;
         }
       }
     }
@@ -1450,26 +1431,15 @@ icon: "🎹"
     });
   }
 
-  function runDemo() {
-    if (!running) return;
-    const lowest = tiles.filter((t) => !t.tapped).sort((a, b) => b.y - a.y)[0];
-    if (lowest && lowest.y + TILE_H > canvas.height * 0.5) {
-      lowest.tapped = true;
-      score += 10;
-      tapsCount++;
-    }
-  }
-
   function loop() {
     update();
-    if (demoMode) runDemo();
     draw();
     if (running) animId = requestAnimationFrame(loop);
   }
 
   // ─── Input ───────────────────────────────────────────────────────────────────
   canvas.addEventListener("click", (e) => {
-    if (!running || demoMode) return;
+    if (!running) return;
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (canvas.width / rect.width);
     const y = (e.clientY - rect.top) * (canvas.height / rect.height);
@@ -1510,13 +1480,11 @@ icon: "🎹"
     lives = 3;
     tiles = [];
     running = true;
-    demoMode = false;
     speed = bpmToSpeed(currentSong.bpm);
     noteIndex = 0;
 
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
-    document.getElementById("demo-label").style.display = "none";
     document.getElementById("score-display").textContent = "0";
     document.getElementById("level-display").textContent = "1";
     document.getElementById("lives-display").textContent = livesDisplay(3);
@@ -1541,26 +1509,6 @@ icon: "🎹"
     document.getElementById("go-best").textContent = Math.max(score, best);
     document.getElementById("go-level").textContent = level;
     document.getElementById("gameover-overlay").style.display = "flex";
-  }
-
-  function startDemo() {
-    // Start demo with first easy song
-    const pool = SONGS[currentDifficulty || "easy"];
-    currentSong = pool[0];
-    document.getElementById("song-name").textContent = currentSong.name;
-    score = 0;
-    level = 1;
-    tapsCount = 0;
-    lives = 3;
-    tiles = [];
-    running = true;
-    demoMode = true;
-    speed = bpmToSpeed(currentSong.bpm);
-    noteIndex = 0;
-
-    spawnTile();
-    cancelAnimationFrame(animId);
-    animId = requestAnimationFrame(loop);
   }
 
   // ─── Confetti ─────────────────────────────────────────────────────────────────
@@ -1612,5 +1560,4 @@ icon: "🎹"
   document.getElementById("lives-display").textContent = livesDisplay(3);
   currentDifficulty = "easy";
   showDiffStep();
-  startDemo();
 </script>
