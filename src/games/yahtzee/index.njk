@@ -210,10 +210,10 @@ icon: "🎲"
     background: #0f172a;
     border: 1px solid #334155;
     border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem 1.25rem;
     text-align: center;
     width: 100%;
-    max-width: 360px;
+    max-width: 400px;
   }
   #win-overlay span:first-child {
     font-size: 3rem;
@@ -222,6 +222,58 @@ icon: "🎲"
     color: white;
     font-size: 1.4rem;
     margin: 0;
+  }
+  /* Score breakdown table */
+  #score-breakdown {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+    text-align: left;
+  }
+  .bd-title {
+    padding: 0.28rem 0.75rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #7c3aed;
+    background: #0f172a;
+  }
+  .bd-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.22rem 0.75rem;
+    border-bottom: 1px solid #1a2840;
+    font-size: 0.78rem;
+    color: #cbd5e1;
+  }
+  .bd-row.bd-bonus {
+    background: rgba(124, 58, 237, 0.1);
+    color: #a78bfa;
+  }
+  .bd-row.bd-total {
+    background: #0f172a;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #e2e8f0;
+    padding: 0.4rem 0.75rem;
+    border-bottom: none;
+  }
+  .bd-val {
+    font-family: monospace;
+    font-weight: 600;
+    color: #22c55e;
+    min-width: 2.5rem;
+    text-align: right;
+  }
+  .bd-val.zero {
+    color: #475569;
+  }
+  .bd-val.bonus {
+    color: #a78bfa;
   }
   .summary-row {
     display: flex;
@@ -395,12 +447,13 @@ icon: "🎲"
   </div>
 
   <div id="win-overlay">
-    <span>🏆</span>
-    <h2>Game Complete!</h2>
+    <span id="win-icon">🏆</span>
+    <h2 id="win-title">Game Complete!</h2>
     <div class="summary-row">
       {{ summaryStatCard("Score", "go-score") }} {{ summaryStatCard("Best", "go-best") }} {{ summaryStatCard("Yahtzees",
       "go-yahtzees") }}
     </div>
+    <div id="score-breakdown"></div>
     <button class="play-btn" onclick="startGame()">New Game</button>
   </div>
 </div>
@@ -736,19 +789,65 @@ icon: "🎲"
     resetScorecard();
   }
 
+  function buildBreakdown() {
+    const upper = ["ones", "twos", "threes", "fours", "fives", "sixes"];
+    const upperLabels = ["Ones", "Twos", "Threes", "Fours", "Fives", "Sixes"];
+    const lower = ["threeOfAKind", "fourOfAKind", "fullHouse", "smallStraight", "largeStraight", "yahtzee", "chance"];
+    const lowerLabels = [
+      "Three of a Kind",
+      "Four of a Kind",
+      "Full House",
+      "Small Straight",
+      "Large Straight",
+      "Yahtzee!",
+      "Chance",
+    ];
+
+    const upperTotal = upper.reduce((s, c) => s + (scores[c] || 0), 0);
+    const bonus = upperTotal >= 63 ? 35 : 0;
+    const lowerTotal = lower.reduce((s, c) => s + (scores[c] || 0), 0);
+    const yahtzeeBonus = scores._yahtzeeBonuses || 0;
+    const grandTotal = upperTotal + bonus + lowerTotal + yahtzeeBonus;
+
+    function row(label, val, cls) {
+      const valCls = cls || (val === 0 ? "zero" : "");
+      return `<div class="bd-row"><span>${label}</span><span class="bd-val ${valCls}">${val}</span></div>`;
+    }
+
+    let html = `<div class="bd-title">Upper Section</div>`;
+    upper.forEach((c, i) => (html += row(upperLabels[i], scores[c] || 0)));
+    const bonusLabel = bonus > 0 ? `Upper Bonus ✓` : `Upper Bonus (${upperTotal}/63)`;
+    const bonusVal = bonus > 0 ? "+35" : "—";
+    html += `<div class="bd-row bd-bonus"><span>${bonusLabel}</span><span class="bd-val bonus">${bonusVal}</span></div>`;
+
+    html += `<div class="bd-title">Lower Section</div>`;
+    lower.forEach((c, i) => (html += row(lowerLabels[i], scores[c] || 0)));
+    if (yahtzeeBonus > 0) {
+      html += row(`Yahtzee Bonus ×${yahtzeeBonusCount}`, `+${yahtzeeBonus}`, "bonus");
+    }
+
+    html += `<div class="bd-row bd-total"><span>Grand Total</span><span class="bd-val">${grandTotal}</span></div>`;
+
+    document.getElementById("score-breakdown").innerHTML = html;
+  }
+
   function endGame() {
     gameActive = false;
     const total = updateTotal();
-    if (total > best) {
+    const isNewBest = total > best;
+    if (isNewBest) {
       best = total;
       localStorage.setItem(STORAGE_KEY, best);
       document.getElementById("best-display").textContent = best;
       launchConfetti();
     }
+    document.getElementById("win-icon").textContent = isNewBest ? "🎉" : "🏆";
+    document.getElementById("win-title").textContent = isNewBest ? "New Best Score!" : "Game Complete!";
     document.getElementById("go-score").textContent = total;
     document.getElementById("go-best").textContent = best;
     const yahtzeeCount = yahtzeeBonusCount + (scores.yahtzee === 50 ? 1 : 0);
     document.getElementById("go-yahtzees").textContent = yahtzeeCount;
+    buildBreakdown();
     document.getElementById("win-overlay").style.display = "flex";
   }
 
