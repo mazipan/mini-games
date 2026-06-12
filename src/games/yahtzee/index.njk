@@ -473,7 +473,7 @@ icon: "🎲"
   ];
 
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-  let dice, held, rollsLeft, round, scores, yahtzeeBonusCount, gameActive;
+  let dice, held, rollsLeft, round, scores, yahtzeeBonusCount, gameActive, rollGen;
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -579,14 +579,19 @@ icon: "🎲"
   }
 
   function updateRollsLeft() {
+    const el = document.getElementById("rolls-left");
     if (rollsLeft === 3) {
-      document.getElementById("rolls-left").textContent = `Round ${round}/13 — Roll the dice!`;
+      el.textContent = `Round ${round}/13 — Roll the dice!`;
+      el.style.color = "";
     } else if (rollsLeft === 2) {
-      document.getElementById("rolls-left").textContent = "2 rolls left — hold dice to keep them";
+      el.textContent = "2 rolls left — hold dice to keep them";
+      el.style.color = "";
     } else if (rollsLeft === 1) {
-      document.getElementById("rolls-left").textContent = "1 roll left — choose wisely!";
+      el.textContent = "1 roll left — choose wisely!";
+      el.style.color = "#fbbf24";
     } else {
-      document.getElementById("rolls-left").textContent = "No rolls left — pick a category!";
+      el.textContent = "No rolls left — pick a category below ↓";
+      el.style.color = "#a78bfa";
     }
   }
 
@@ -622,25 +627,31 @@ icon: "🎲"
   function rollDice() {
     if (rollsLeft === 0 || !gameActive) return;
 
+    rollsLeft--;
+    document.getElementById("roll-btn").disabled = true;
+    updateRollsLeft();
+
+    const newDice = dice.map((d, i) => (held[i] ? d : Math.ceil(Math.random() * 6)));
+    const thisGen = ++rollGen;
+
     dice.forEach((_, i) => {
       if (!held[i]) document.getElementById(`die-${i}`).classList.add("rolling");
     });
 
     setTimeout(() => {
-      dice = dice.map((d, i) => (held[i] ? d : Math.ceil(Math.random() * 6)));
-      rollsLeft--;
+      if (thisGen !== rollGen) return;
 
+      dice = newDice;
       dice.forEach((v, i) => {
         const el = document.getElementById(`die-${i}`);
         el.classList.remove("rolling");
         el.textContent = DICE_FACES[v];
       });
 
-      updateRollsLeft();
       updatePotentialScores();
 
-      if (rollsLeft === 0) {
-        document.getElementById("roll-btn").disabled = true;
+      if (rollsLeft > 0) {
+        document.getElementById("roll-btn").disabled = false;
       }
     }, 300);
   }
@@ -649,6 +660,8 @@ icon: "🎲"
 
   function scoreCategory(cat) {
     if (!gameActive || scores[cat] !== null || rollsLeft === 3) return;
+
+    rollGen++; // cancel any in-flight roll animation from this round
 
     let points;
     const isYahtzeeRoll = calcScore("yahtzee", dice) === 50;
@@ -690,7 +703,7 @@ icon: "🎲"
       endGame();
     } else {
       document.getElementById("roll-btn").disabled = false;
-      document.getElementById("rolls-left").textContent = `Round ${round}/13 — Roll the dice!`;
+      updateRollsLeft();
     }
   }
 
@@ -703,6 +716,7 @@ icon: "🎲"
     round = 1;
     yahtzeeBonusCount = 0;
     gameActive = true;
+    rollGen = 0;
     scores = {};
     CATEGORIES.forEach((cat) => (scores[cat] = null));
     scores._yahtzeeBonuses = 0;
