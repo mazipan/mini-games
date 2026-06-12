@@ -319,6 +319,26 @@ icon: "🪢"
     letter-spacing: 0.08em;
     margin-bottom: 0.1rem;
   }
+  .hint-btn {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #b45309;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .hint-btn:hover:not(:disabled) {
+    background: #292524;
+  }
+  .hint-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
   .info-section {
     width: 100%;
     max-width: 480px;
@@ -404,6 +424,7 @@ icon: "🪢"
 
     <div id="category-hint"></div>
     <div id="word-display"></div>
+    <button id="hint-btn" class="hint-btn" onclick="useHint()">💡 Hint (<span id="hint-count">3</span>)</button>
 
     <div id="wrong-section">
       <div id="wrong-label">Wrong guesses</div>
@@ -842,6 +863,7 @@ icon: "🪢"
   let streak = 0;
   let best = parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
   let gameActive = false;
+  let hints = 3;
 
   document.getElementById("streak-display").textContent = streak;
   document.getElementById("best-display").textContent = best;
@@ -870,6 +892,23 @@ icon: "🪢"
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
+  function updateHintDisplay() {
+    const btn = document.getElementById("hint-btn");
+    const count = document.getElementById("hint-count");
+    if (!btn) return;
+    count.textContent = hints;
+    btn.disabled = hints <= 0 || !gameActive;
+  }
+
+  function useHint() {
+    if (hints <= 0 || !gameActive) return;
+    const hidden = word.split("").filter((ch) => ch !== " " && !guessed.has(ch));
+    if (!hidden.length) return;
+    const ch = hidden[Math.floor(Math.random() * hidden.length)];
+    hints--;
+    guess(ch);
+  }
+
   function startGame() {
     word = pickWord();
     guessed = new Set();
@@ -883,6 +922,7 @@ icon: "🪢"
 
     renderWord();
     renderKeyboard();
+    updateHintDisplay();
 
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
@@ -954,6 +994,7 @@ icon: "🪢"
 
   function showEnd(won) {
     gameActive = false;
+    updateHintDisplay();
 
     if (won) {
       streak++;

@@ -264,6 +264,30 @@ icon: "🟩"
   .play-btn:hover {
     background: #6d28d9;
   }
+  .hint-btn {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #b45309;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .hint-btn:hover:not(:disabled) {
+    background: #292524;
+  }
+  .hint-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .tile.hint-tile {
+    border-color: #fbbf24;
+    color: #fbbf24;
+  }
   .info-section {
     width: 100%;
     max-width: 480px;
@@ -336,6 +360,10 @@ icon: "🟩"
   <div id="message-bar"></div>
 
   <div class="grid" id="grid"></div>
+
+  <div style="text-align: center">
+    <button id="hint-btn" class="hint-btn" onclick="useHint()">💡 Hint (<span id="hint-count">3</span>)</button>
+  </div>
 
   <div class="keyboard" id="keyboard"></div>
 
@@ -446,6 +474,7 @@ icon: "🟩"
   let best = parseInt(localStorage.getItem(STORAGE_BEST_KEY) || "0", 10);
   let gameActive = false;
   let revealing = false;
+  let hints = 3;
 
   // Initialize display values on load
   document.getElementById("wins-display").textContent = wins;
@@ -502,6 +531,44 @@ icon: "🟩"
     addRow(["ENTER", ...KB_ROWS[2].split(""), "⌫"]);
   }
 
+  function updateHintDisplay() {
+    const btn = document.getElementById("hint-btn");
+    const count = document.getElementById("hint-count");
+    if (!btn) return;
+    count.textContent = hints;
+    btn.disabled = hints <= 0 || !gameActive || revealing;
+  }
+
+  function useHint() {
+    if (hints <= 0 || !gameActive || revealing) return;
+    // Find the leftmost position not yet solved in a previous row
+    const solvedPos = new Set();
+    for (let r = 0; r < currentRow; r++) {
+      board[r].forEach((tile, c) => {
+        if (tile.state === "correct") solvedPos.add(c);
+      });
+    }
+    let targetPos = -1;
+    for (let c = 0; c < WORD_LENGTH; c++) {
+      if (!solvedPos.has(c)) {
+        targetPos = c;
+        break;
+      }
+    }
+    if (targetPos === -1) return;
+    hints--;
+    updateHintDisplay();
+
+    const letter = answer[targetPos];
+    board[currentRow][targetPos].letter = letter;
+    const tile = document.getElementById("tile-" + currentRow + "-" + targetPos);
+    tile.textContent = letter;
+    tile.classList.remove("hint-tile");
+    tile.classList.add("filled", "hint-tile");
+    if (currentCol <= targetPos) currentCol = targetPos + 1;
+    showMessage("💡 Position " + (targetPos + 1) + " is " + letter, 2000);
+  }
+
   function startGame() {
     answer = pickWord();
     currentRow = 0;
@@ -517,6 +584,7 @@ icon: "🟩"
     document.getElementById("gameover-overlay").style.display = "none";
 
     gameActive = true;
+    updateHintDisplay();
   }
 
   function showMessage(msg, duration) {
@@ -648,7 +716,7 @@ icon: "🟩"
         tile.classList.add("flip");
 
         setTimeout(() => {
-          tile.classList.remove("filled");
+          tile.classList.remove("filled", "hint-tile");
           tile.classList.add(state);
           board[rowIdx][col].state = state;
 
@@ -669,6 +737,7 @@ icon: "🟩"
           if (col === WORD_LENGTH - 1) {
             setTimeout(() => {
               revealing = false;
+              updateHintDisplay();
               if (onDone) onDone();
             }, 100);
           }
@@ -684,6 +753,7 @@ icon: "🟩"
   }
 
   function showEnd(won) {
+    updateHintDisplay();
     document.getElementById("go-icon").textContent = won ? "🏆" : "💀";
     document.getElementById("go-title").textContent = won ? "You Win!" : "Game Over";
     document.getElementById("go-word-reveal").innerHTML = won

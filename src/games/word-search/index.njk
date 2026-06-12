@@ -200,6 +200,42 @@ icon: "🔤"
     color: white;
     border-color: #7c3aed;
   }
+  .cell.hinted {
+    animation: hint-blink 0.65s ease-in-out infinite;
+  }
+  @keyframes hint-blink {
+    0%,
+    100% {
+      background: #1e293b;
+      border-color: #2d3f55;
+      color: #cbd5e1;
+    }
+    50% {
+      background: #92400e;
+      border-color: #fbbf24;
+      color: white;
+    }
+  }
+  .hint-btn {
+    padding: 0.3rem 0.85rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: #1e293b;
+    color: #fbbf24;
+    border: 1px solid #b45309;
+    border-radius: 6px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .hint-btn:hover:not(:disabled) {
+    background: #292524;
+  }
+  .hint-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
   #word-list {
     display: flex;
     flex-wrap: wrap;
@@ -294,6 +330,7 @@ icon: "🔤"
     <div id="timer-display">3:00</div>
     <div id="grid-container"></div>
     <div id="word-list"></div>
+    <button id="hint-btn" class="hint-btn" onclick="useHint()">💡 Hint (<span id="hint-count">3</span>)</button>
   </div>
 
   <div id="win-overlay">
@@ -500,6 +537,8 @@ icon: "🔤"
   let isDragging = false;
   let dragCells = [];
   let dragStart = null;
+  let hints = 3;
+  let resetHintsOnLose = false;
 
   const bests = { easy: 0, medium: 0, hard: 0 };
   Object.keys(bests).forEach((d) => {
@@ -598,12 +637,38 @@ icon: "🔤"
     cells.forEach(({ r, c }) => {
       const el = getCellEl(r, c);
       if (el) {
-        // Remove any existing found-* class so the new color wins
         el.className = el.className.replace(/\bfound-\d+\b/, "");
-        el.classList.remove("selecting");
+        el.classList.remove("selecting", "hinted");
+        el.style.animationDelay = "";
         el.classList.add("found-" + colorIdx);
       }
     });
+  }
+
+  function updateHintDisplay() {
+    const btn = document.getElementById("hint-btn");
+    const count = document.getElementById("hint-count");
+    if (!btn) return;
+    count.textContent = hints;
+    btn.disabled = hints <= 0;
+  }
+
+  function useHint() {
+    if (hints <= 0) return;
+    const unfound = wordPlacements.filter((p) => !foundWords.has(p.word));
+    if (!unfound.length) return;
+    const pick = unfound[Math.floor(Math.random() * unfound.length)];
+    hints--;
+    updateHintDisplay();
+    for (let i = 0; i < pick.word.length; i++) {
+      const r = pick.r + pick.dr * i;
+      const c = pick.c + pick.dc * i;
+      const el = getCellEl(r, c);
+      if (el && !el.className.match(/\bfound-\d+\b/)) {
+        el.classList.add("hinted");
+        el.style.animationDelay = i * 0.08 + "s";
+      }
+    }
   }
 
   function clearSelecting() {
@@ -749,6 +814,10 @@ icon: "🔤"
   // --- Game lifecycle ---
 
   function startGame() {
+    if (resetHintsOnLose) {
+      hints = 3;
+      resetHintsOnLose = false;
+    }
     const cfg = DIFFICULTIES[difficulty];
     gridSize = cfg.size;
 
@@ -778,6 +847,7 @@ icon: "🔤"
     renderWordList();
     attachGridEvents();
     startTimer(cfg.timeMs);
+    updateHintDisplay();
   }
 
   function winGame() {
@@ -806,6 +876,7 @@ icon: "🔤"
   }
 
   function loseGame() {
+    resetHintsOnLose = true;
     if (score > bests[difficulty]) {
       bests[difficulty] = score;
       localStorage.setItem(STORAGE_KEYS[difficulty], score);
