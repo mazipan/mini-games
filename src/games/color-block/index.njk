@@ -85,11 +85,21 @@ icon: "🟦"
     outline-offset: -2px;
   }
   @keyframes cell-clear {
-    0%   { opacity: 1; }
-    25%  { opacity: 0.1; }
-    50%  { opacity: 0.85; }
-    75%  { opacity: 0.05; }
-    100% { opacity: 0; }
+    0% {
+      opacity: 1;
+    }
+    25% {
+      opacity: 0.1;
+    }
+    50% {
+      opacity: 0.85;
+    }
+    75% {
+      opacity: 0.05;
+    }
+    100% {
+      opacity: 0;
+    }
   }
   .grid-cell.clearing {
     animation: cell-clear 0.45s ease-in-out forwards;
@@ -635,7 +645,8 @@ icon: "🟦"
   }
 
   function findLinesToClear() {
-    const rowsToClear = [], colsToClear = [];
+    const rowsToClear = [],
+      colsToClear = [];
     for (let r = 0; r < GRID_SIZE; r++) if (grid[r].every((cell) => cell !== 0)) rowsToClear.push(r);
     for (let c = 0; c < GRID_SIZE; c++) if (grid.every((row) => row[c] !== 0)) colsToClear.push(c);
     return { rowsToClear, colsToClear };
@@ -691,10 +702,7 @@ icon: "🟦"
       for (let row = 0; row < GRID_SIZE; row++) {
         for (let col = 0; col < GRID_SIZE; col++) {
           const key = `${row},${col}`;
-          if (
-            rowsToClear.includes(row) ||
-            colsToClear.includes(col)
-          ) {
+          if (rowsToClear.includes(row) || colsToClear.includes(col)) {
             gridEl.children[idx].classList.add("clearing");
             clearingCells.add(key);
           }
@@ -790,8 +798,8 @@ icon: "🟦"
     // Offset so the touched anchor cell's center sits under the pointer
     const anchorCellCenterX = dragAnchorDc * 14 + 14;
     const anchorCellCenterY = dragAnchorDr * 14 + 14;
-    dragGhostEl.style.left = (clientX - anchorCellCenterX) + "px";
-    dragGhostEl.style.top = (clientY - anchorCellCenterY) + "px";
+    dragGhostEl.style.left = clientX - anchorCellCenterX + "px";
+    dragGhostEl.style.top = clientY - anchorCellCenterY + "px";
   }
 
   function hideDragGhost() {
@@ -1003,11 +1011,15 @@ icon: "🟦"
   // Document-level pointer handlers drive the drag after it leaves the shelf element.
   // Per-element capture is unreliable across Android versions; listening at document
   // level with an isPrimary + isDragging guard is simpler and works everywhere.
-  document.addEventListener("pointermove", (e) => {
-    if (!e.isPrimary || !isDragging) return;
-    e.preventDefault();
-    onDragMove(e.clientX, e.clientY);
-  }, { passive: false });
+  document.addEventListener(
+    "pointermove",
+    (e) => {
+      if (!e.isPrimary || !isDragging) return;
+      e.preventDefault();
+      onDragMove(e.clientX, e.clientY);
+    },
+    { passive: false }
+  );
 
   document.addEventListener("pointerup", (e) => {
     if (!e.isPrimary || !isDragging) return;

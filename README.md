@@ -13,8 +13,10 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game              | Difficulty |
 | ----------------- | ---------- |
 | 🐦 Flappy Bird    | Easy       |
+| 🎹 Piano Tiles    | Easy       |
 | 🏓 Pong           | Easy       |
 | 🐍 Snake          | Easy       |
+| 📦 Stack          | Easy       |
 | 🦔 Whack-a-Mole   | Easy       |
 | 🧱 Breakout       | Medium     |
 | 🟦 Tetris         | Medium     |
@@ -37,8 +39,9 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 
 | Game            | Difficulty |
 | --------------- | ---------- |
-| ⭕ Tic-Tac-Toe  | Easy       |
 | 🃏 Memory Match | Easy       |
+| ⭕ Tic-Tac-Toe  | Easy       |
+| 🎲 Yahtzee      | Easy       |
 | 🃏 Blackjack    | Medium     |
 | 🔴 Connect Four | Medium     |
 | 🎲 Domino       | Medium     |
@@ -46,9 +49,11 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 
 ### 🔤 Word
 
-| Game       | Difficulty |
-| ---------- | ---------- |
-| 🪢 Hangman | Easy       |
+| Game           | Difficulty |
+| -------------- | ---------- |
+| 🪢 Hangman     | Easy       |
+| 🔤 Word Search | Easy       |
+| 🟩 Wordle      | Easy       |
 
 ## Tech Stack
 

@@ -2,9 +2,9 @@
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
     <h2 class="text-3xl font-bold text-white mb-12 text-center">All Games</h2>
 
-    {% set categories = ["arcade", "puzzle", "board"] %} {% for cat in categories %} {% set catGames = [] %} {% for g in
-    games %} {% if g.category == cat %} {% set catGames = (catGames.push(g), catGames) %} {% endif %} {% endfor %} {% if
-    catGames.length > 0 %}
+    {% set categories = ["arcade", "puzzle", "board", "word"] %} {% for cat in categories %} {% set catGames = [] %} {%
+    for g in games %} {% if g.category == cat %} {% set catGames = (catGames.push(g), catGames) %} {% endif %} {% endfor
+    %} {% if catGames.length > 0 %}
     <div class="mb-14" id="{{ cat }}">
       <div class="flex items-center gap-3 mb-6">
         <span class="badge {{ cat | categoryColor }}">{{ cat | categoryLabel }}</span>
