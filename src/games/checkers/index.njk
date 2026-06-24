@@ -888,7 +888,7 @@ icon: "🔴"
           if (p !== 0) {
             const pieceEl = document.createElement("div");
             pieceEl.className = "piece " + (isRed(p) ? "red" : "blk");
-            if (isKing(p)) pieceEl.textContent = "♛";
+            if (isKing(p)) pieceEl.textContent = "★";
             sq.appendChild(pieceEl);
           } else if (targets.has(key)) {
             const dot = document.createElement("div");
