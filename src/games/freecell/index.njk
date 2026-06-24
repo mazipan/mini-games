@@ -132,6 +132,26 @@ icon: "🃏"
     box-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
   }
 
+  @keyframes hint-pulse {
+    0%,
+    100% {
+      border-color: #fbbf24;
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+    }
+    50% {
+      border-color: #f59e0b;
+      box-shadow:
+        0 0 16px rgba(251, 191, 36, 0.9),
+        0 0 28px rgba(251, 191, 36, 0.35);
+    }
+  }
+
+  .playing-card.hinted {
+    border-color: #fbbf24 !important;
+    animation: hint-pulse 0.9s ease-in-out infinite;
+    z-index: 200 !important;
+  }
+
   .tableau-col {
     position: relative;
     flex-shrink: 0;
@@ -337,6 +357,7 @@ icon: "🃏"
 
   <div class="control-row">
     <button class="ctrl-btn" id="undo-btn" onclick="undoMove()" disabled>↩ Undo</button>
+    <button class="ctrl-btn" id="hint-btn" onclick="showHint()">💡 Hint</button>
     <button class="ctrl-btn" onclick="newGame()">New Game</button>
   </div>
 
@@ -421,6 +442,7 @@ icon: "🃏"
   const RANK_LABEL = ["", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
 
   let tableau, freeCells, foundations, history, selected, moveCount, best;
+  let hintMode = false;
   let CW, CH, CO;
 
   function isRed(c) {
@@ -464,6 +486,7 @@ icon: "🃏"
     foundations = [0, 0, 0, 0];
     history = [];
     selected = null;
+    hintMode = false;
     moveCount = 0;
     document.getElementById("move-count").textContent = "0";
     document.getElementById("overlay").style.display = "none";
@@ -497,6 +520,7 @@ icon: "🃏"
     foundations = s.fn;
     moveCount = s.m;
     selected = null;
+    hintMode = false;
     document.getElementById("move-count").textContent = moveCount;
     document.getElementById("undo-btn").disabled = history.length === 0;
     renderBoard();
@@ -521,6 +545,92 @@ icon: "🃏"
       if (cards[i].rank !== cards[i + 1].rank + 1 || isRed(cards[i]) === isRed(cards[i + 1])) return false;
     }
     return true;
+  }
+
+  function topSeqStart(col) {
+    const cards = tableau[col];
+    if (!cards.length) return 0;
+    let i = cards.length - 1;
+    while (i > 0 && cards[i - 1].rank === cards[i].rank + 1 && isRed(cards[i - 1]) !== isRed(cards[i])) i--;
+    return i;
+  }
+
+  function findHint() {
+    // 1. Any card that can go straight to foundation
+    for (let col = 0; col < 8; col++) {
+      if (!tableau[col].length) continue;
+      if (canToFoundation(tableau[col][tableau[col].length - 1]))
+        return { area: "tableau", col, row: tableau[col].length - 1 };
+    }
+    for (let i = 0; i < 4; i++) {
+      if (freeCells[i] && canToFoundation(freeCells[i])) return { area: "freecell", col: i, row: 0 };
+    }
+
+    // 2. Tableau sequence onto a non-empty tableau column
+    for (let fc = 0; fc < 8; fc++) {
+      if (!tableau[fc].length) continue;
+      const seqRow = topSeqStart(fc);
+      const seq = tableau[fc].slice(seqRow);
+      for (let tc = 0; tc < 8; tc++) {
+        if (tc === fc || !tableau[tc].length) continue;
+        if (canToTableauTop(seq[0], tc) && seq.length <= maxMovable(false))
+          return { area: "tableau", col: fc, row: seqRow };
+      }
+    }
+
+    // 3. Free cell card onto a non-empty tableau column
+    for (let i = 0; i < 4; i++) {
+      if (!freeCells[i]) continue;
+      for (let col = 0; col < 8; col++) {
+        if (tableau[col].length && canToTableauTop(freeCells[i], col)) return { area: "freecell", col: i, row: 0 };
+      }
+    }
+
+    // 4. Move a sequence into an empty column (to unblock buried cards)
+    const eCol = tableau.findIndex((c) => !c.length);
+    if (eCol >= 0) {
+      for (let fc = 0; fc < 8; fc++) {
+        if (!tableau[fc].length || fc === eCol) continue;
+        const seqRow = topSeqStart(fc);
+        if (tableau[fc].slice(seqRow).length <= maxMovable(true)) return { area: "tableau", col: fc, row: seqRow };
+      }
+      for (let i = 0; i < 4; i++) {
+        if (freeCells[i]) return { area: "freecell", col: i, row: 0 };
+      }
+    }
+
+    // 5. Move any top tableau card to a free cell (last resort)
+    if (emptyFC() > 0) {
+      for (let col = 0; col < 8; col++) {
+        if (tableau[col].length) return { area: "tableau", col, row: tableau[col].length - 1 };
+      }
+    }
+
+    return null;
+  }
+
+  function showHint() {
+    hintMode = false;
+    selected = null;
+    const hint = findHint();
+    if (!hint) {
+      const btn = document.getElementById("hint-btn");
+      const orig = btn.textContent;
+      btn.textContent = "😕 Stuck!";
+      btn.disabled = true;
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.disabled = false;
+      }, 1500);
+      renderBoard();
+      return;
+    }
+    const s = getSelection(hint.area, hint.col, hint.row);
+    if (s) {
+      selected = { area: hint.area, col: hint.col, ...s };
+      hintMode = true;
+    }
+    renderBoard();
   }
 
   function canToFoundation(card) {
@@ -611,6 +721,7 @@ icon: "🃏"
   }
 
   function handleClick(area, col, row) {
+    hintMode = false;
     if (selected) {
       const sameOrigin =
         selected.area === area &&
@@ -687,7 +798,8 @@ icon: "🃏"
       });
       if (card) {
         const sel = isSelectedCard("freecell", i, 0);
-        const cardEl = makeCardEl(card, sel ? "selected" : "", "position:absolute;top:0;left:0;cursor:pointer;");
+        const cls = hintMode && sel ? "hinted" : sel ? "selected" : "";
+        const cardEl = makeCardEl(card, cls, "position:absolute;top:0;left:0;cursor:pointer;");
         cardEl.addEventListener("click", (e) => {
           e.stopPropagation();
           handleClick("freecell", i, 0);
@@ -749,9 +861,10 @@ icon: "🃏"
 
       cards.forEach((card, row) => {
         const sel = isSelectedCard("tableau", col, row);
+        const cls = hintMode && sel ? "hinted" : sel ? "selected" : "";
         const cardEl = makeCardEl(
           card,
-          sel ? "selected" : "",
+          cls,
           `position:absolute;top:${row * CO}px;left:0;z-index:${row + 1};cursor:pointer;`
         );
         cardEl.addEventListener(
