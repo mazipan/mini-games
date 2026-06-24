@@ -1,0 +1,867 @@
+---
+layout: layouts/game.njk
+title: Checkers
+description: Jump over your opponent's pieces to capture them — crown your Kings and dominate the board!
+category: board
+icon: "🔴"
+---
+
+{% from "macros/game-components.njk" import statCard, infoDetails %}
+
+<style>
+  :root {
+    --cell: min(56px, calc((100vw - 2rem) / 8));
+  }
+  #game-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: calc(100vh - 60px);
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .score-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 64px;
+  }
+  .stat-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #status {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    min-height: 1.5rem;
+    text-align: center;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, var(--cell));
+    grid-template-rows: repeat(8, var(--cell));
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+    user-select: none;
+  }
+  .sq {
+    width: var(--cell);
+    height: var(--cell);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .sq.light {
+    background: #f0d9b5;
+  }
+  .sq.dark {
+    background: #b58863;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sq.selected {
+    background: #cdd26a;
+  }
+  .sq.valid-target {
+    background: #aec75f;
+  }
+  .sq.movable {
+    outline: 2px solid rgba(255, 255, 255, 0.35);
+    outline-offset: -3px;
+  }
+  .piece {
+    width: 78%;
+    height: 78%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--cell) * 0.33);
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .piece.red {
+    background: radial-gradient(circle at 35% 35%, #f87171, #dc2626);
+    box-shadow:
+      inset 0 -3px 6px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.5);
+    color: rgba(255, 215, 0, 0.95);
+  }
+  .piece.blk {
+    background: radial-gradient(circle at 35% 35%, #475569, #0f172a);
+    box-shadow:
+      inset 0 -3px 6px rgba(0, 0, 0, 0.3),
+      0 2px 4px rgba(0, 0, 0, 0.5);
+    color: rgba(255, 215, 0, 0.95);
+  }
+  .move-dot {
+    width: 32%;
+    height: 32%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.28);
+    pointer-events: none;
+  }
+  .play-btn {
+    padding: 0.5rem 1.5rem;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .play-btn:hover {
+    background: #1e40af;
+  }
+  .btn-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+  }
+  .mode-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .mode-btn {
+    padding: 0.35rem 1rem;
+    background: #1e293b;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mode-btn.active,
+  .mode-btn:hover {
+    background: #334155;
+    color: white;
+    border-color: #1d4ed8;
+  }
+  #gameover-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.95);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    z-index: 100;
+    padding: 1rem;
+  }
+  #gameover-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #go-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+  .summary-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .summary-stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.5rem 1.2rem;
+    min-width: 70px;
+  }
+  .summary-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .summary-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
+  #go-context {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    text-align: center;
+    margin: 0;
+  }
+  #lobby-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.97);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    z-index: 200;
+    padding: 1rem;
+  }
+  #lobby-overlay h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-overlay p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin: 0;
+    text-align: center;
+  }
+  #lobby-diff-row {
+    display: flex;
+    gap: 0.5rem;
+    transition: opacity 0.2s;
+  }
+  .info-section {
+    width: 100%;
+    max-width: 480px;
+    padding: 0 1rem 2rem;
+    margin: 0 auto;
+  }
+  .info-details {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+  }
+  .info-details summary {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+  }
+  .info-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .info-details summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: #64748b;
+  }
+  .info-details[open] summary::after {
+    content: "−";
+  }
+  .info-body {
+    padding: 0.75rem 1rem 1rem;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    border-top: 1px solid #334155;
+  }
+  .info-body h4 {
+    color: #e2e8f0;
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    font-size: 0.875rem;
+  }
+  .info-body h4:first-child {
+    margin-top: 0;
+  }
+  .info-body ul {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0;
+  }
+  .info-body li {
+    margin-bottom: 0.25rem;
+  }
+  .info-body p {
+    margin: 0.25rem 0;
+  }
+</style>
+
+<div id="game-wrapper">
+  <div class="score-row">
+    {{ statCard("🔴 You", "p1-score", "0", "", "p1-label") }} {{ statCard("⚫ AI", "p2-score", "0", "", "p2-label") }}
+  </div>
+
+  <div id="status">Loading…</div>
+
+  <div id="board"></div>
+
+  <div class="btn-row" id="btn-row" style="display: none">
+    <button class="play-btn" onclick="showLobby()">New Game</button>
+  </div>
+</div>
+
+<div id="gameover-overlay" style="display: none">
+  <span id="go-icon">🏆</span>
+  <h2 id="go-title">You Win!</h2>
+  <div class="summary-row">
+    <div class="summary-stat">
+      <div class="summary-label" id="go-p1-label">🔴 You</div>
+      <div class="summary-value" id="go-p1">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label" id="go-p2-label">⚫ AI</div>
+      <div class="summary-value" id="go-p2">0</div>
+    </div>
+  </div>
+  <p id="go-context"></p>
+  <button class="play-btn" onclick="showLobby()">New Game</button>
+</div>
+
+<div id="lobby-overlay">
+  <span style="font-size: 3rem">🔴</span>
+  <h2>Checkers</h2>
+  <p>Capture all opponent pieces or leave them with no legal moves to win!</p>
+  <div class="mode-row">
+    <button class="mode-btn active" id="lobby-ai" onclick="selectLobbyMode('machine')">VS AI</button>
+    <button class="mode-btn" id="lobby-player" onclick="selectLobbyMode('player')">VS Friend</button>
+  </div>
+  <div id="lobby-diff-row">
+    <button class="mode-btn" id="lobby-easy" onclick="selectLobbyDiff('easy')">Easy</button>
+    <button class="mode-btn active" id="lobby-medium" onclick="selectLobbyDiff('medium')">Medium</button>
+    <button class="mode-btn" id="lobby-hard" onclick="selectLobbyDiff('hard')">Hard</button>
+  </div>
+  <button class="play-btn" onclick="startGame()">Play Game</button>
+</div>
+
+<div class="info-section">
+  {% call infoDetails("How to Play") %}
+  <h4>Goal</h4>
+  <p>Capture all of your opponent's pieces, or block them so they have no legal moves.</p>
+  <h4>Basic Moves</h4>
+  <ul>
+    <li>🔴 Red pieces move diagonally <strong>up</strong> the board (one square at a time)</li>
+    <li>⚫ Black pieces move diagonally <strong>down</strong> the board</li>
+    <li>Click a glowing piece to select it, then click a highlighted square to move</li>
+  </ul>
+  <h4>Captures</h4>
+  <ul>
+    <li>Jump diagonally over an adjacent opponent piece to capture it — the piece is removed</li>
+    <li>If a capture is available, you <strong>must</strong> take it (forced capture)</li>
+    <li>After capturing, if another jump is available with the same piece, you must continue (multi-jump)</li>
+  </ul>
+  <h4>Kings ♛</h4>
+  <p>
+    When a piece reaches the opponent's back row it becomes a <strong>King</strong> and can move diagonally in all four
+    directions.
+  </p>
+  <h4>Controls</h4>
+  <ul>
+    <li><strong>Click or tap</strong> a highlighted piece to select it</li>
+    <li><strong>Click or tap</strong> a green square to move or jump there</li>
+  </ul>
+  {% endcall %} {% call infoDetails("FAQ") %}
+  <h4>What does "forced capture" mean?</h4>
+  <p>
+    If any of your pieces can jump over an opponent, you must make a capture that turn — you cannot choose a regular
+    move instead.
+  </p>
+  <h4>Can I choose which piece to capture with?</h4>
+  <p>
+    Yes — when multiple pieces can capture, you choose which one to use. Click the piece you want to jump with to select
+    it.
+  </p>
+  <h4>Can a King be captured?</h4>
+  <p>Yes — Kings are captured just like regular pieces. Their advantage is movement in all four diagonal directions.</p>
+  <h4>Are my wins saved?</h4>
+  <p>Yes — wins for each side are saved in your browser's local storage and persist between sessions.</p>
+  <h4>How strong is the Hard AI?</h4>
+  <p>
+    Hard uses deep minimax search with alpha-beta pruning, making it quite challenging. Try Easy or Medium first to get
+    comfortable with the rules.
+  </p>
+  {% endcall %}
+</div>
+
+<script>
+  function launchConfetti() {
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ["#ef4444", "#fbbf24", "#10b981", "#3b82f6", "#a78bfa", "#f97316", "#ec4899"];
+    const pieces = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: -10 - Math.random() * 40,
+      r: Math.random() * 6 + 3,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      vx: (Math.random() - 0.5) * 5,
+      vy: Math.random() * 4 + 2,
+      angle: Math.random() * Math.PI * 2,
+      va: (Math.random() - 0.5) * 0.15,
+    }));
+    const start = performance.now();
+    function draw(now) {
+      if (now - start > 3000) {
+        canvas.remove();
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.angle += p.va;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+        ctx.restore();
+      });
+      requestAnimationFrame(draw);
+    }
+    requestAnimationFrame(draw);
+  }
+
+  const RED = 1,
+    BLACK = 2,
+    RED_KING = 3,
+    BLACK_KING = 4;
+  const STORAGE_KEY = "mini-checkers-scores";
+  const DEPTHS = { easy: 2, medium: 4, hard: 6 };
+
+  let board, currentPlayer, selectedPiece, gameRunning, mode, aiDepth;
+  let lobbyMode = "machine",
+    lobbyDiff = "medium";
+  let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"P1":0,"P2":0}');
+
+  function saveScores() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
+  }
+
+  // --- Board helpers ---
+  function inBounds(r, c) {
+    return r >= 0 && r < 8 && c >= 0 && c < 8;
+  }
+  function isRed(p) {
+    return p === RED || p === RED_KING;
+  }
+  function isBlk(p) {
+    return p === BLACK || p === BLACK_KING;
+  }
+  function isKing(p) {
+    return p === RED_KING || p === BLACK_KING;
+  }
+  function isOwn(p, player) {
+    return player === 1 ? isRed(p) : isBlk(p);
+  }
+  function isOpp(p, player) {
+    return player === 1 ? isBlk(p) : isRed(p);
+  }
+  function getDirs(piece) {
+    if (piece === RED)
+      return [
+        [-1, -1],
+        [-1, 1],
+      ];
+    if (piece === BLACK)
+      return [
+        [1, -1],
+        [1, 1],
+      ];
+    return [
+      [-1, -1],
+      [-1, 1],
+      [1, -1],
+      [1, 1],
+    ];
+  }
+
+  function initBoard() {
+    const b = Array.from({ length: 8 }, () => Array(8).fill(0));
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) if ((r + c) % 2 === 1) b[r][c] = BLACK;
+    for (let r = 5; r < 8; r++) for (let c = 0; c < 8; c++) if ((r + c) % 2 === 1) b[r][c] = RED;
+    return b;
+  }
+
+  // --- Move generation ---
+  function getJumps(bd, r, c, caps, path) {
+    const piece = bd[r][c];
+    const player = isRed(piece) ? 1 : 2;
+    const dirs = getDirs(piece);
+    const capSet = new Set(caps.map(([mr, mc]) => mr * 8 + mc));
+    const result = [];
+
+    for (const [dr, dc] of dirs) {
+      const mr = r + dr,
+        mc = c + dc;
+      const lr = r + dr * 2,
+        lc = c + dc * 2;
+      if (!inBounds(mr, mc) || !inBounds(lr, lc)) continue;
+      if (capSet.has(mr * 8 + mc)) continue;
+      if (!isOpp(bd[mr][mc], player)) continue;
+      if (bd[lr][lc] !== 0) continue;
+
+      const newCaps = [...caps, [mr, mc]];
+      const newPath = [...path, [lr, lc]];
+      // Piece becomes king upon landing — stop the chain there
+      const promoted = (player === 1 && lr === 0 && piece === RED) || (player === 2 && lr === 7 && piece === BLACK);
+
+      if (promoted) {
+        result.push({ from: path[0], to: [lr, lc], path: newPath, caps: newCaps });
+      } else {
+        const tb = bd.map((row) => [...row]);
+        tb[lr][lc] = piece;
+        tb[r][c] = 0;
+        tb[mr][mc] = 0;
+        const chains = getJumps(tb, lr, lc, newCaps, newPath);
+        if (chains.length > 0) result.push(...chains);
+        else result.push({ from: path[0], to: [lr, lc], path: newPath, caps: newCaps });
+      }
+    }
+    return result;
+  }
+
+  function getSlides(bd, r, c) {
+    const piece = bd[r][c];
+    const result = [];
+    for (const [dr, dc] of getDirs(piece)) {
+      const nr = r + dr,
+        nc = c + dc;
+      if (inBounds(nr, nc) && bd[nr][nc] === 0)
+        result.push({
+          from: [r, c],
+          to: [nr, nc],
+          path: [
+            [r, c],
+            [nr, nc],
+          ],
+          caps: [],
+        });
+    }
+    return result;
+  }
+
+  function getMoves(bd, player) {
+    const jumps = [],
+      slides = [];
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++) {
+        if ((r + c) % 2 !== 1 || !isOwn(bd[r][c], player)) continue;
+        const j = getJumps(bd, r, c, [], [[r, c]]);
+        if (j.length) jumps.push(...j);
+        else slides.push(...getSlides(bd, r, c));
+      }
+    return jumps.length > 0 ? jumps : slides;
+  }
+
+  function applyMove(bd, move) {
+    const nb = bd.map((row) => [...row]);
+    const piece = nb[move.from[0]][move.from[1]];
+    nb[move.from[0]][move.from[1]] = 0;
+    nb[move.to[0]][move.to[1]] = piece;
+    for (const [cr, cc] of move.caps) nb[cr][cc] = 0;
+    const [tr, tc] = move.to;
+    if (piece === RED && tr === 0) nb[tr][tc] = RED_KING;
+    if (piece === BLACK && tr === 7) nb[tr][tc] = BLACK_KING;
+    return nb;
+  }
+
+  // --- AI (minimax with alpha-beta) ---
+  function evaluate(bd) {
+    let s = 0;
+    for (let r = 0; r < 8; r++)
+      for (let c = 0; c < 8; c++) {
+        const p = bd[r][c];
+        if (p === RED) s -= 1;
+        else if (p === RED_KING) s -= 2;
+        else if (p === BLACK) s += 1;
+        else if (p === BLACK_KING) s += 2;
+      }
+    return s;
+  }
+
+  function minimax(bd, depth, alpha, beta, maximizing) {
+    const player = maximizing ? 2 : 1;
+    const moves = getMoves(bd, player);
+    if (depth === 0 || moves.length === 0) return evaluate(bd);
+    if (maximizing) {
+      let best = -Infinity;
+      for (const m of moves) {
+        best = Math.max(best, minimax(applyMove(bd, m), depth - 1, alpha, beta, false));
+        alpha = Math.max(alpha, best);
+        if (beta <= alpha) break;
+      }
+      return best;
+    } else {
+      let best = Infinity;
+      for (const m of moves) {
+        best = Math.min(best, minimax(applyMove(bd, m), depth - 1, alpha, beta, true));
+        beta = Math.min(beta, best);
+        if (beta <= alpha) break;
+      }
+      return best;
+    }
+  }
+
+  function getBestMove() {
+    const moves = getMoves(board, 2);
+    if (!moves.length) return null;
+    let best = -Infinity,
+      bestMove = moves[0];
+    for (const m of moves) {
+      const s = minimax(applyMove(board, m), aiDepth - 1, -Infinity, Infinity, false);
+      if (s > best) {
+        best = s;
+        bestMove = m;
+      }
+    }
+    return bestMove;
+  }
+
+  // --- UI helpers ---
+  function updateScoreDisplay() {
+    document.getElementById("p1-score").textContent = scores.P1;
+    document.getElementById("p2-score").textContent = scores.P2;
+  }
+
+  function updateStatus() {
+    if (!gameRunning) return;
+    if (mode === "machine") {
+      document.getElementById("status").textContent = currentPlayer === 1 ? "Your turn (🔴)" : "AI thinking… (⚫)";
+    } else {
+      document.getElementById("status").textContent = currentPlayer === 1 ? "🔴 Player 1's turn" : "⚫ Player 2's turn";
+    }
+  }
+
+  // --- Lobby ---
+  function selectLobbyMode(m) {
+    lobbyMode = m;
+    document.getElementById("lobby-ai").classList.toggle("active", m === "machine");
+    document.getElementById("lobby-player").classList.toggle("active", m === "player");
+    const diffRow = document.getElementById("lobby-diff-row");
+    diffRow.style.opacity = m === "machine" ? "1" : "0.3";
+    diffRow.style.pointerEvents = m === "machine" ? "auto" : "none";
+  }
+
+  function selectLobbyDiff(d) {
+    lobbyDiff = d;
+    ["easy", "medium", "hard"].forEach((x) => {
+      document.getElementById("lobby-" + x).classList.toggle("active", x === d);
+    });
+  }
+
+  function showLobby() {
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("lobby-overlay").style.display = "flex";
+    selectLobbyMode(mode || "machine");
+    selectLobbyDiff(lobbyDiff);
+  }
+
+  function startGame() {
+    mode = lobbyMode;
+    aiDepth = DEPTHS[lobbyDiff];
+    document.getElementById("lobby-overlay").style.display = "none";
+    document.getElementById("gameover-overlay").style.display = "none";
+    document.getElementById("btn-row").style.display = "flex";
+
+    const p1Name = mode === "machine" ? "🔴 You" : "🔴 P1";
+    const p2Name = mode === "machine" ? "⚫ AI" : "⚫ P2";
+    document.getElementById("p1-label").textContent = p1Name;
+    document.getElementById("p2-label").textContent = p2Name;
+
+    board = initBoard();
+    currentPlayer = 1;
+    selectedPiece = null;
+    gameRunning = true;
+    updateStatus();
+    renderBoard();
+  }
+
+  // --- Game flow ---
+  function executeMove(move) {
+    board = applyMove(board, move);
+    selectedPiece = null;
+    renderBoard();
+
+    const opp = currentPlayer === 1 ? 2 : 1;
+    if (!getMoves(board, opp).length) {
+      endGame(currentPlayer);
+      return;
+    }
+
+    currentPlayer = opp;
+    updateStatus();
+    renderBoard();
+
+    if (mode === "machine" && currentPlayer === 2) {
+      setTimeout(doAiMove, 400);
+    }
+  }
+
+  function doAiMove() {
+    if (!gameRunning || currentPlayer !== 2) return;
+    const move = getBestMove();
+    if (!move) {
+      endGame(1);
+      return;
+    }
+    board = applyMove(board, move);
+    selectedPiece = null;
+
+    if (!getMoves(board, 1).length) {
+      endGame(2);
+      renderBoard();
+      return;
+    }
+
+    currentPlayer = 1;
+    updateStatus();
+    renderBoard();
+  }
+
+  function endGame(winner) {
+    gameRunning = false;
+    if (winner === 1) {
+      scores.P1++;
+      launchConfetti();
+    } else {
+      scores.P2++;
+      if (mode === "player") launchConfetti();
+    }
+    saveScores();
+    updateScoreDisplay();
+
+    const p1Name = mode === "machine" ? "🔴 You" : "🔴 P1";
+    const p2Name = mode === "machine" ? "⚫ AI" : "⚫ P2";
+    document.getElementById("go-p1-label").textContent = p1Name;
+    document.getElementById("go-p2-label").textContent = p2Name;
+    document.getElementById("go-p1").textContent = scores.P1;
+    document.getElementById("go-p2").textContent = scores.P2;
+
+    if (winner === 1) {
+      document.getElementById("go-icon").textContent = "🏆";
+      document.getElementById("go-title").textContent = mode === "machine" ? "You Win!" : "Player 1 Wins!";
+      document.getElementById("go-context").textContent = "🔴 Red captured all black pieces!";
+      document.getElementById("status").textContent = mode === "machine" ? "You win! 🎉" : "Player 1 wins! 🎉";
+    } else {
+      document.getElementById("go-icon").textContent = mode === "machine" ? "🤖" : "🏆";
+      document.getElementById("go-title").textContent = mode === "machine" ? "AI Wins!" : "Player 2 Wins!";
+      document.getElementById("go-context").textContent = "⚫ Black captured all red pieces!";
+      document.getElementById("status").textContent = mode === "machine" ? "AI wins! 🤖" : "Player 2 wins! 🎉";
+    }
+
+    setTimeout(() => {
+      document.getElementById("gameover-overlay").style.display = "flex";
+    }, 800);
+  }
+
+  // --- Rendering ---
+  function handleClick(r, c) {
+    if (!gameRunning) return;
+    if (mode === "machine" && currentPlayer === 2) return;
+
+    const piece = board[r][c];
+    const moves = getMoves(board, currentPlayer);
+
+    if (!selectedPiece) {
+      if (isOwn(piece, currentPlayer) && moves.some((m) => m.from[0] === r && m.from[1] === c)) {
+        selectedPiece = [r, c];
+        renderBoard();
+      }
+      return;
+    }
+
+    const fromMoves = moves.filter((m) => m.from[0] === selectedPiece[0] && m.from[1] === selectedPiece[1]);
+    const targets = new Map(fromMoves.map((m) => [`${m.to[0]},${m.to[1]}`, m]));
+
+    if (targets.has(`${r},${c}`)) {
+      executeMove(targets.get(`${r},${c}`));
+    } else if (isOwn(piece, currentPlayer) && moves.some((m) => m.from[0] === r && m.from[1] === c)) {
+      selectedPiece = [r, c];
+      renderBoard();
+    } else {
+      selectedPiece = null;
+      renderBoard();
+    }
+  }
+
+  function renderBoard() {
+    const boardEl = document.getElementById("board");
+    boardEl.innerHTML = "";
+
+    const isHuman = gameRunning && (mode === "player" || currentPlayer === 1);
+    const moves = isHuman ? getMoves(board, currentPlayer) : [];
+    const movable = new Set(moves.map((m) => `${m.from[0]},${m.from[1]}`));
+    const fromMoves = selectedPiece
+      ? moves.filter((m) => m.from[0] === selectedPiece[0] && m.from[1] === selectedPiece[1])
+      : [];
+    const targets = new Set(fromMoves.map((m) => `${m.to[0]},${m.to[1]}`));
+
+    for (let r = 0; r < 8; r++) {
+      for (let c = 0; c < 8; c++) {
+        const sq = document.createElement("div");
+        const dark = (r + c) % 2 === 1;
+        sq.className = "sq " + (dark ? "dark" : "light");
+        const key = `${r},${c}`;
+
+        if (dark) {
+          if (selectedPiece && selectedPiece[0] === r && selectedPiece[1] === c) {
+            sq.classList.add("selected");
+          } else if (targets.has(key)) {
+            sq.classList.add("valid-target");
+          } else if (!selectedPiece && movable.has(key)) {
+            sq.classList.add("movable");
+          }
+
+          const p = board[r][c];
+          if (p !== 0) {
+            const pieceEl = document.createElement("div");
+            pieceEl.className = "piece " + (isRed(p) ? "red" : "blk");
+            if (isKing(p)) pieceEl.textContent = "♛";
+            sq.appendChild(pieceEl);
+          } else if (targets.has(key)) {
+            const dot = document.createElement("div");
+            dot.className = "move-dot";
+            sq.appendChild(dot);
+          }
+
+          sq.addEventListener("click", () => handleClick(r, c));
+        }
+
+        boardEl.appendChild(sq);
+      }
+    }
+  }
+
+  updateScoreDisplay();
+  showLobby();
+</script>

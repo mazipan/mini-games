@@ -36,6 +36,16 @@ module.exports = [
     tags: ["ball", "classic", "canvas"],
   },
   {
+    slug: "checkers",
+    name: "Checkers",
+    description:
+      "Jump over your opponent's pieces to capture them — crown your Kings and dominate the board!",
+    category: "board",
+    difficulty: "medium",
+    icon: "🔴",
+    tags: ["strategy", "classic", "board", "two-player"],
+  },
+  {
     slug: "color-block",
     name: "Color Block",
     description: "Place colorful block shapes on the grid and clear full rows and columns.",
