@@ -152,6 +152,26 @@ icon: "🃏"
     z-index: 200 !important;
   }
 
+  @keyframes foundation-pulse {
+    0%,
+    100% {
+      border-color: #22c55e;
+      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+    }
+    50% {
+      border-color: #16a34a;
+      box-shadow:
+        0 0 16px rgba(34, 197, 94, 0.9),
+        0 0 28px rgba(34, 197, 94, 0.35);
+    }
+  }
+
+  .playing-card.foundation-ready {
+    border-color: #22c55e !important;
+    animation: foundation-pulse 0.9s ease-in-out infinite;
+    z-index: 200 !important;
+  }
+
   .tableau-col {
     position: relative;
     flex-shrink: 0;
@@ -449,6 +469,7 @@ icon: "🃏"
 
   let tableau, freeCells, foundations, history, selected, moveCount, best;
   let hintMode = false;
+  let foundationHintSet = new Set();
   let timerInterval = null,
     elapsed = 0;
   let CW, CH, CO;
@@ -518,13 +539,14 @@ icon: "🃏"
     history = [];
     selected = null;
     hintMode = false;
+    foundationHintSet = new Set();
     moveCount = 0;
     document.getElementById("move-count").textContent = "0";
     document.getElementById("overlay").style.display = "none";
     document.getElementById("gameover-overlay").style.display = "none";
     document.getElementById("undo-btn").disabled = true;
-    renderBoard();
     startTimer();
+    autoPlayStep();
   }
 
   function newGame() {
@@ -556,6 +578,7 @@ icon: "🃏"
     hintMode = false;
     document.getElementById("move-count").textContent = moveCount;
     document.getElementById("undo-btn").disabled = history.length === 0;
+    updateFoundationHints();
     renderBoard();
   }
 
@@ -567,9 +590,11 @@ icon: "🃏"
     return tableau.filter((c) => !c.length).length;
   }
 
-  function maxMovable(toEmpty) {
+  function maxMovable(toEmpty, srcBecomesEmpty = false) {
     const fc = emptyFC();
-    const tc = Math.max(0, emptyTC() - (toEmpty ? 1 : 0));
+    let tc = emptyTC();
+    if (toEmpty) tc = Math.max(0, tc - 1);
+    if (srcBecomesEmpty) tc += 1;
     return (fc + 1) * (1 << tc);
   }
 
@@ -719,8 +744,9 @@ icon: "🃏"
     if (toArea === "tableau") {
       if (area === "tableau" && col === toCol) return false;
       const toEmpty = tableau[toCol].length === 0;
+      const srcBecomesEmpty = area === "tableau" && startRow === 0;
       if (!canToTableauTop(cards[0], toCol)) return false;
-      if (cards.length > maxMovable(toEmpty)) return false;
+      if (cards.length > maxMovable(toEmpty, srcBecomesEmpty)) return false;
       saveHistory();
       removeCards(area, col, startRow);
       tableau[toCol].push(...cards);
@@ -742,7 +768,8 @@ icon: "🃏"
     if (area === "tableau") {
       if (selected.area === "tableau" && selected.col === col) return false;
       const toEmpty = tableau[col].length === 0;
-      return canToTableauTop(cards[0], col) && cards.length <= maxMovable(toEmpty);
+      const srcBecomesEmpty = selected.area === "tableau" && selected.startRow === 0;
+      return canToTableauTop(cards[0], col) && cards.length <= maxMovable(toEmpty, srcBecomesEmpty);
     }
     return false;
   }
@@ -771,8 +798,7 @@ icon: "🃏"
         moveCount++;
         document.getElementById("move-count").textContent = moveCount;
         selected = null;
-        renderBoard();
-        checkWin();
+        autoPlayStep();
         return;
       }
 
@@ -787,8 +813,66 @@ icon: "🃏"
     renderBoard();
   }
 
+  function isSafeToAutoPlay(card) {
+    if (card.rank === 1) return true;
+    const opp = isRed(card) ? [0, 3] : [1, 2];
+    return Math.min(foundations[opp[0]], foundations[opp[1]]) >= card.rank - 1;
+  }
+
+  function updateFoundationHints() {
+    foundationHintSet = new Set();
+    for (let col = 0; col < 8; col++) {
+      if (!tableau[col].length) continue;
+      const card = tableau[col][tableau[col].length - 1];
+      if (canToFoundation(card) && !isSafeToAutoPlay(card)) {
+        foundationHintSet.add("t-" + col + "-" + (tableau[col].length - 1));
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!freeCells[i]) continue;
+      if (canToFoundation(freeCells[i]) && !isSafeToAutoPlay(freeCells[i])) {
+        foundationHintSet.add("f-" + i);
+      }
+    }
+  }
+
+  function autoPlayStep() {
+    for (let col = 0; col < 8; col++) {
+      if (!tableau[col].length) continue;
+      const card = tableau[col][tableau[col].length - 1];
+      if (canToFoundation(card) && isSafeToAutoPlay(card)) {
+        saveHistory();
+        tableau[col].pop();
+        foundations[card.suit] = card.rank;
+        moveCount++;
+        document.getElementById("move-count").textContent = moveCount;
+        renderBoard();
+        if (checkWin()) return;
+        setTimeout(autoPlayStep, 160);
+        return;
+      }
+    }
+    for (let i = 0; i < 4; i++) {
+      if (!freeCells[i]) continue;
+      const card = freeCells[i];
+      if (canToFoundation(card) && isSafeToAutoPlay(card)) {
+        saveHistory();
+        freeCells[i] = null;
+        foundations[card.suit] = card.rank;
+        moveCount++;
+        document.getElementById("move-count").textContent = moveCount;
+        renderBoard();
+        if (checkWin()) return;
+        setTimeout(autoPlayStep, 160);
+        return;
+      }
+    }
+    updateFoundationHints();
+    renderBoard();
+  }
+
   function checkWin() {
-    if (!foundations.every((f) => f === 13)) return;
+    if (!foundations.every((f) => f === 13)) return false;
     stopTimer();
     if (best === null || moveCount < best) {
       best = moveCount;
@@ -800,6 +884,7 @@ icon: "🃏"
     document.getElementById("go-time").textContent = formatTime(elapsed);
     document.getElementById("go-best").textContent = best;
     document.getElementById("gameover-overlay").style.display = "flex";
+    return true;
   }
 
   // ── Rendering ──────────────────────────────────────────────────────────────
@@ -833,7 +918,8 @@ icon: "🃏"
       });
       if (card) {
         const sel = isSelectedCard("freecell", i, 0);
-        const cls = hintMode && sel ? "hinted" : sel ? "selected" : "";
+        const fr = !sel && foundationHintSet.has("f-" + i);
+        const cls = hintMode && sel ? "hinted" : sel ? "selected" : fr ? "foundation-ready" : "";
         const cardEl = makeCardEl(card, cls, "position:absolute;top:0;left:0;cursor:pointer;");
         cardEl.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -896,7 +982,8 @@ icon: "🃏"
 
       cards.forEach((card, row) => {
         const sel = isSelectedCard("tableau", col, row);
-        const cls = hintMode && sel ? "hinted" : sel ? "selected" : "";
+        const fr = !sel && foundationHintSet.has("t-" + col + "-" + row);
+        const cls = hintMode && sel ? "hinted" : sel ? "selected" : fr ? "foundation-ready" : "";
         const cardEl = makeCardEl(
           card,
           cls,
