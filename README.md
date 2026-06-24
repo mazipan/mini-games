@@ -43,6 +43,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | ⭕ Tic-Tac-Toe  | Easy       |
 | 🎲 Yahtzee      | Easy       |
 | 🃏 Blackjack    | Medium     |
+| 🔴 Checkers     | Medium     |
 | 🔴 Connect Four | Medium     |
 | 🎲 Domino       | Medium     |
 | 🪨 Mancala      | Medium     |
