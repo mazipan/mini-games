@@ -24,6 +24,25 @@ icon: "♠️"
     flex-wrap: wrap;
     justify-content: center;
   }
+  .stat {
+    text-align: center;
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
+  }
+  .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #94a3b8;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #e2e8f0;
+    font-family: monospace;
+  }
   .play-btn {
     padding: 0.5rem 1.5rem;
     background: #7c3aed;
@@ -152,6 +171,12 @@ icon: "♠️"
   }
   .card.drag-over {
     box-shadow: 0 0 0 2px #7c3aed;
+  }
+  .card.hint {
+    box-shadow:
+      0 0 0 3px #7c3aed,
+      0 0 14px rgba(124, 58, 237, 0.6);
+    z-index: 999 !important;
   }
   .card-rank {
     font-size: 0.75em;
@@ -282,8 +307,8 @@ icon: "♠️"
 
 <div id="game-wrapper">
   <div class="score-row">
-    {{ statCard("Moves", "moves-display", "0") }} {{ statCard("Score", "score-display", "0") }} {{ statCard("Best",
-    "best-display", "0") }}
+    {{ statCard("Moves", "moves-display", "0") }} {{ statCard("Score", "score-display", "0") }} {{ statCard("Time",
+    "time-display", "0:00") }} {{ statCard("Best", "best-display", "0") }}
   </div>
 
   <div class="draw-mode-row">
@@ -291,6 +316,7 @@ icon: "♠️"
     <button class="draw-mode-btn active" id="draw1-btn" onclick="setDrawMode(1)">1</button>
     <button class="draw-mode-btn" id="draw3-btn" onclick="setDrawMode(3)">3</button>
     <button class="action-btn" onclick="undoMove()">↩ Undo</button>
+    <button class="action-btn" onclick="showHint()">💡 Hint</button>
     <button class="action-btn" onclick="newGame()">New Game</button>
   </div>
 
@@ -306,8 +332,8 @@ icon: "♠️"
     <span style="font-size: 3rem">🏆</span>
     <h2>You Win!</h2>
     <div class="summary-row">
-      {{ summaryStatCard("Moves", "win-moves") }} {{ summaryStatCard("Score", "win-score") }} {{ summaryStatCard("Best",
-      "win-best") }}
+      {{ summaryStatCard("Moves", "win-moves") }} {{ summaryStatCard("Score", "win-score") }} {{ summaryStatCard("Time",
+      "win-time") }} {{ summaryStatCard("Best", "win-best") }}
     </div>
     <button class="play-btn" onclick="newGame()">New Game</button>
   </div>
@@ -384,6 +410,35 @@ icon: "♠️"
   let dragInfo = null; // drag state
   let lastTap = { el: null, time: 0 }; // double-tap detection
 
+  // Timer
+  let timerInterval = null;
+  let elapsed = 0;
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m + ":" + String(sec).padStart(2, "0");
+  }
+
+  function startTimer() {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => {
+      elapsed++;
+      document.getElementById("time-display").textContent = formatTime(elapsed);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  function resetTimer() {
+    stopTimer();
+    elapsed = 0;
+    document.getElementById("time-display").textContent = "0:00";
+  }
+
   function calcSizes() {
     const vw = window.innerWidth;
     // 7 columns with 6 gaps of 6px, total padding ~2rem = 32px
@@ -445,6 +500,7 @@ icon: "♠️"
   }
 
   function pushHistory() {
+    startTimer();
     history.push(cloneState(state));
     if (history.length > 50) history.shift();
   }
@@ -459,6 +515,7 @@ icon: "♠️"
   function newGame() {
     history = [];
     state = initState();
+    resetTimer();
     document.getElementById("win-overlay").style.display = "none";
     renderAll();
   }
@@ -952,6 +1009,7 @@ icon: "♠️"
   function checkWin() {
     const total = state.foundations.reduce((s, f) => s + f.length, 0);
     if (total < 52) return;
+    stopTimer();
     launchConfetti();
     const s = state.score;
     if (s > best) {
@@ -960,11 +1018,90 @@ icon: "♠️"
     }
     document.getElementById("win-moves").textContent = state.moves;
     document.getElementById("win-score").textContent = s;
+    document.getElementById("win-time").textContent = formatTime(elapsed);
     document.getElementById("win-best").textContent = best;
     document.getElementById("best-display").textContent = best;
     setTimeout(() => {
       document.getElementById("win-overlay").style.display = "flex";
     }, 400);
+  }
+
+  // ---- Hint ----
+
+  function clearHint() {
+    document.querySelectorAll(".card.hint").forEach((el) => el.classList.remove("hint"));
+  }
+
+  function showHint() {
+    clearHint();
+    const hintId = findHint();
+    if (hintId) {
+      const el = document.getElementById(hintId);
+      if (el) {
+        el.classList.add("hint");
+        setTimeout(clearHint, 1800);
+      }
+    } else if (state.stock.length > 0) {
+      // No tableau/foundation move — suggest drawing from stock
+      const stockEl = document.getElementById("stock-card");
+      if (stockEl) {
+        stockEl.classList.add("hint");
+        setTimeout(clearHint, 1800);
+      }
+    }
+  }
+
+  function findHint() {
+    // 1. Waste top → foundation
+    if (state.waste.length > 0) {
+      const card = state.waste[state.waste.length - 1];
+      for (let f = 0; f < 4; f++) {
+        if (canMoveToFoundation(card, f)) return `waste-${state.waste.length - 1}`;
+      }
+    }
+    // 2. Tableau top → foundation
+    for (let col = 0; col < 7; col++) {
+      const cards = state.tableau[col];
+      if (!cards.length) continue;
+      const card = cards[cards.length - 1];
+      if (!card.faceUp) continue;
+      for (let f = 0; f < 4; f++) {
+        if (canMoveToFoundation(card, f)) return `tab-${col}-${cards.length - 1}`;
+      }
+    }
+    // 3. Tableau stack → tableau (prefer moves that uncover face-down cards)
+    for (let fromCol = 0; fromCol < 7; fromCol++) {
+      const cards = state.tableau[fromCol];
+      for (let i = 0; i < cards.length; i++) {
+        if (!cards[i].faceUp) continue;
+        // Only suggest if it uncovers a face-down card or empties the column
+        const worthwhile = i === 0 || !cards[i - 1].faceUp;
+        if (!worthwhile) continue;
+        for (let toCol = 0; toCol < 7; toCol++) {
+          if (fromCol === toCol) continue;
+          if (canMoveToTableau(cards[i], toCol)) return `tab-${fromCol}-${i}`;
+        }
+      }
+    }
+    // 4. Waste top → tableau
+    if (state.waste.length > 0) {
+      const card = state.waste[state.waste.length - 1];
+      for (let col = 0; col < 7; col++) {
+        if (canMoveToTableau(card, col)) return `waste-${state.waste.length - 1}`;
+      }
+    }
+    // 5. Any tableau → tableau (non-priority moves)
+    for (let fromCol = 0; fromCol < 7; fromCol++) {
+      const cards = state.tableau[fromCol];
+      for (let i = 0; i < cards.length; i++) {
+        if (!cards[i].faceUp) continue;
+        for (let toCol = 0; toCol < 7; toCol++) {
+          if (fromCol === toCol) continue;
+          if (canMoveToTableau(cards[i], toCol)) return `tab-${fromCol}-${i}`;
+        }
+      }
+    }
+    return null;
   }
 
   // ---- Confetti ----
