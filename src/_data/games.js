@@ -196,6 +196,16 @@ module.exports = [
     tags: ["strategy", "classic", "board", "two-player"],
   },
   {
+    slug: "solitaire",
+    name: "Solitaire",
+    description:
+      "The iconic Klondike classic — move cards across tableau columns and build four foundation piles from Ace to King.",
+    category: "board",
+    difficulty: "medium",
+    icon: "♠️",
+    tags: ["cards", "classic", "solitaire", "microsoft"],
+  },
+  {
     slug: "sliding-puzzle",
     name: "Sliding Puzzle",
     description:
