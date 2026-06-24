@@ -345,7 +345,10 @@ icon: "🃏"
 </style>
 
 <div id="game-wrapper">
-  <div class="score-row">{{ statCard("Moves", "move-count", "0") }} {{ statCard("Best", "best-display", "—") }}</div>
+  <div class="score-row">
+    {{ statCard("Moves", "move-count", "0") }} {{ statCard("Time", "time-display", "00:00") }} {{ statCard("Best",
+    "best-display", "—") }}
+  </div>
 
   <div id="game-board">
     <div id="top-area">
@@ -373,7 +376,10 @@ icon: "🃏"
   <div id="gameover-overlay">
     <span style="font-size: 2.5rem">🏆</span>
     <h2 style="font-size: 1.5rem; font-weight: bold; color: white; margin: 0">You Win!</h2>
-    <div class="summary-row">{{ summaryStatCard("Moves", "go-moves") }} {{ summaryStatCard("Best", "go-best") }}</div>
+    <div class="summary-row">
+      {{ summaryStatCard("Moves", "go-moves") }} {{ summaryStatCard("Time", "go-time") }} {{ summaryStatCard("Best",
+      "go-best") }}
+    </div>
     <button class="play-btn" onclick="newGame()">New Game</button>
   </div>
 </div>
@@ -443,7 +449,32 @@ icon: "🃏"
 
   let tableau, freeCells, foundations, history, selected, moveCount, best;
   let hintMode = false;
+  let timerInterval = null,
+    elapsed = 0;
   let CW, CH, CO;
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return String(m).padStart(2, "0") + ":" + String(sec).padStart(2, "0");
+  }
+
+  function startTimer() {
+    stopTimer();
+    elapsed = 0;
+    document.getElementById("time-display").textContent = "00:00";
+    timerInterval = setInterval(() => {
+      elapsed++;
+      document.getElementById("time-display").textContent = formatTime(elapsed);
+    }, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+  }
 
   function isRed(c) {
     return c.suit === 1 || c.suit === 2;
@@ -493,9 +524,11 @@ icon: "🃏"
     document.getElementById("gameover-overlay").style.display = "none";
     document.getElementById("undo-btn").disabled = true;
     renderBoard();
+    startTimer();
   }
 
   function newGame() {
+    stopTimer();
     selected = null;
     document.getElementById("gameover-overlay").style.display = "none";
     startGame();
@@ -756,6 +789,7 @@ icon: "🃏"
 
   function checkWin() {
     if (!foundations.every((f) => f === 13)) return;
+    stopTimer();
     if (best === null || moveCount < best) {
       best = moveCount;
       localStorage.setItem(BEST_KEY, best);
@@ -763,6 +797,7 @@ icon: "🃏"
     }
     launchConfetti();
     document.getElementById("go-moves").textContent = moveCount;
+    document.getElementById("go-time").textContent = formatTime(elapsed);
     document.getElementById("go-best").textContent = best;
     document.getElementById("gameover-overlay").style.display = "flex";
   }
