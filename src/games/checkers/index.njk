@@ -315,7 +315,8 @@ icon: "🔴"
 
 <div id="game-wrapper">
   <div class="score-row">
-    {{ statCard("🔴 You", "p1-score", "0", "", "p1-label") }} {{ statCard("⚫ AI", "p2-score", "0", "", "p2-label") }}
+    {{ statCard("🔴 You", "p1-score", "0", "", "p1-label") }} {{ statCard("Time", "timer-display", "0:00") }} {{
+    statCard("⚫ AI", "p2-score", "0", "", "p2-label") }}
   </div>
 
   <div id="status">Loading…</div>
@@ -334,6 +335,14 @@ icon: "🔴"
     <div class="summary-stat">
       <div class="summary-label" id="go-p1-label">🔴 You</div>
       <div class="summary-value" id="go-p1">0</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Time</div>
+      <div class="summary-value" id="go-time">0:00</div>
+    </div>
+    <div class="summary-stat">
+      <div class="summary-label">Best</div>
+      <div class="summary-value" id="go-best">—</div>
     </div>
     <div class="summary-stat">
       <div class="summary-label" id="go-p2-label">⚫ AI</div>
@@ -456,12 +465,21 @@ icon: "🔴"
     RED_KING = 3,
     BLACK_KING = 4;
   const STORAGE_KEY = "mini-checkers-scores";
+  const STORAGE_TIME_KEY = "mini-checkers-best-time";
   const DEPTHS = { easy: 2, medium: 4, hard: 6 };
 
   let board, currentPlayer, selectedPiece, gameRunning, mode, aiDepth;
+  let timerSec = 0,
+    timerInterval = null;
   let lobbyMode = "machine",
     lobbyDiff = "medium";
   let scores = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"P1":0,"P2":0}');
+  const _bt = localStorage.getItem(STORAGE_TIME_KEY);
+  let bestTime = _bt !== null ? parseInt(_bt) : null;
+
+  function fmtTime(s) {
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
 
   function saveScores() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));
@@ -680,6 +698,10 @@ icon: "🔴"
   }
 
   function showLobby() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
     document.getElementById("gameover-overlay").style.display = "none";
     document.getElementById("lobby-overlay").style.display = "flex";
     selectLobbyMode(mode || "machine");
@@ -702,6 +724,15 @@ icon: "🔴"
     currentPlayer = 1;
     selectedPiece = null;
     gameRunning = true;
+
+    if (timerInterval) clearInterval(timerInterval);
+    timerSec = 0;
+    document.getElementById("timer-display").textContent = "0:00";
+    timerInterval = setInterval(() => {
+      timerSec++;
+      document.getElementById("timer-display").textContent = fmtTime(timerSec);
+    }, 1000);
+
     updateStatus();
     renderBoard();
   }
@@ -750,9 +781,18 @@ icon: "🔴"
 
   function endGame(winner) {
     gameRunning = false;
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+
     if (winner === 1) {
       scores.P1++;
       launchConfetti();
+      if (bestTime === null || timerSec < bestTime) {
+        bestTime = timerSec;
+        localStorage.setItem(STORAGE_TIME_KEY, bestTime);
+      }
     } else {
       scores.P2++;
       if (mode === "player") launchConfetti();
@@ -766,6 +806,8 @@ icon: "🔴"
     document.getElementById("go-p2-label").textContent = p2Name;
     document.getElementById("go-p1").textContent = scores.P1;
     document.getElementById("go-p2").textContent = scores.P2;
+    document.getElementById("go-time").textContent = fmtTime(timerSec);
+    document.getElementById("go-best").textContent = bestTime !== null ? fmtTime(bestTime) : "—";
 
     if (winner === 1) {
       document.getElementById("go-icon").textContent = "🏆";
