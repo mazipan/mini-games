@@ -93,6 +93,16 @@ module.exports = [
     tags: ["flying", "tap", "canvas"],
   },
   {
+    slug: "freecell",
+    name: "FreeCell",
+    description:
+      "Move all 52 face-up cards to the foundation piles using four free cells as temporary storage.",
+    category: "board",
+    difficulty: "hard",
+    icon: "🃏",
+    tags: ["cards", "classic", "freecell", "solitaire"],
+  },
+  {
     slug: "hangman",
     name: "Hangman",
     description: "Guess the hidden word letter by letter before the hangman is complete!",
