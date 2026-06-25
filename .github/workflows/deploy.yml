@@ -32,6 +32,9 @@ jobs:
       - name: Set short SHA
         run: echo "SHORT_SHA=${GITHUB_SHA::7}" >> $GITHUB_ENV
 
+      - name: Get commit title
+        run: echo "COMMIT_TITLE=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+
       - name: Deploy to Netlify
         id: netlify
         run: |
@@ -40,6 +43,7 @@ jobs:
               --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
           else
             RESULT=$(bunx netlify-cli deploy --dir=./_site \
+              --alias="mini-games-preview-${{ github.event.pull_request.number }}" \
               --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
           fi
           echo "deploy_url=$(echo $RESULT | jq -r '.deploy_url')" >> $GITHUB_OUTPUT
@@ -53,7 +57,24 @@ jobs:
         with:
           script: |
             const marker = '<!-- netlify-preview-comment -->';
-            const body = `${marker}\n🚀 Preview deployed: ${{ steps.netlify.outputs.deploy_url }}`;
+            const deployUrl = '${{ steps.netlify.outputs.deploy_url }}';
+            const sha = '${{ github.sha }}';
+            const shortSha = '${{ env.SHORT_SHA }}';
+            const commitTitle = '${{ env.COMMIT_TITLE }}';
+            const deployedAt = new Date().toUTCString();
+            const commitUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${sha}`;
+
+            const body = [
+              marker,
+              `## 🚀 Netlify Preview Deployment`,
+              ``,
+              `| | |`,
+              `|---|---|`,
+              `| **Preview URL** | ${deployUrl} |`,
+              `| **Commit** | [\`${shortSha}\`](${commitUrl}) ${commitTitle} |`,
+              `| **Deployed at** | ${deployedAt} |`,
+            ].join('\n');
+
             const { data: comments } = await github.rest.issues.listComments({
               issue_number: context.issue.number,
               owner: context.repo.owner,
