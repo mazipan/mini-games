@@ -1,11 +1,34 @@
 <section id="games" class="py-16">
   <div class="max-w-6xl mx-auto px-4 sm:px-6">
-    <h2 class="text-3xl font-bold text-white mb-12 text-center">All Games</h2>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-12">
+      <h2 class="text-3xl font-bold text-white text-center sm:text-left">All Games</h2>
+      <!-- Search filter -->
+      <div class="relative w-full sm:w-72">
+        <svg
+          class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+        </svg>
+        <input
+          id="game-search"
+          type="search"
+          placeholder="Search games…"
+          class="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/30 transition-colors"
+          autocomplete="off"
+        />
+      </div>
+    </div>
+
+    <!-- No results message -->
+    <p id="no-results" class="hidden text-center text-slate-500 py-16 text-lg">No games found matching your search.</p>
 
     {% set categories = ["arcade", "puzzle", "board", "word"] %} {% for cat in categories %} {% set catGames = [] %} {%
     for g in games %} {% if g.category == cat %} {% set catGames = (catGames.push(g), catGames) %} {% endif %} {% endfor
     %} {% if catGames.length > 0 %}
-    <div class="mb-14" id="{{ cat }}">
+    <div class="mb-14 category-section" id="{{ cat }}" data-category="{{ cat }}">
       <div class="flex items-center gap-3 mb-6">
         <span class="badge {{ cat | categoryColor }}">{{ cat | categoryLabel }}</span>
         <div class="flex-1 h-px bg-slate-800"></div>
@@ -14,7 +37,13 @@
 
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for game in catGames %}
-        <a href="/games/{{ game.slug }}/" class="card p-6 group flex flex-col gap-4">
+        <a
+          href="/games/{{ game.slug }}/"
+          class="card p-6 group flex flex-col gap-4 game-card"
+          data-name="{{ game.name | lower }}"
+          data-description="{{ game.description | lower }}"
+          data-tags="{{ game.tags | join(',') | lower }}"
+        >
           <div class="flex items-start justify-between">
             <span class="text-4xl">{{ game.icon }}</span>
             <span class="badge {{ game.category | categoryColor }}">{{ game.category | categoryLabel }}</span>
@@ -34,7 +63,54 @@
         </a>
         {% endfor %}
       </div>
+
+      <!-- Back to top -->
+      <div class="flex justify-center mt-8">
+        <a
+          href="#top"
+          class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm text-slate-500 border border-slate-800 hover:border-slate-600 hover:text-slate-300 transition-colors"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+          </svg>
+          Back to top
+        </a>
+      </div>
     </div>
     {% endif %} {% endfor %}
   </div>
 </section>
+
+<script>
+  (function () {
+    const input = document.getElementById('game-search');
+    const noResults = document.getElementById('no-results');
+    const sections = document.querySelectorAll('.category-section');
+
+    input.addEventListener('input', function () {
+      const query = this.value.trim().toLowerCase();
+      let totalVisible = 0;
+
+      sections.forEach(function (section) {
+        const cards = section.querySelectorAll('.game-card');
+        let visibleInSection = 0;
+
+        cards.forEach(function (card) {
+          const matches =
+            !query ||
+            card.dataset.name.includes(query) ||
+            card.dataset.description.includes(query) ||
+            card.dataset.tags.includes(query);
+
+          card.style.display = matches ? '' : 'none';
+          if (matches) visibleInSection++;
+        });
+
+        section.style.display = visibleInSection > 0 ? '' : 'none';
+        totalVisible += visibleInSection;
+      });
+
+      noResults.classList.toggle('hidden', totalVisible > 0);
+    });
+  })();
+</script>
