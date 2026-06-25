@@ -106,70 +106,91 @@ icon: "🃏"
 
   .playing-card {
     background: white;
-    border: 2px solid #d1d5db;
-    border-radius: 5px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 6px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 2px 3px;
+    padding: 3px 4px;
     font-weight: bold;
     font-family: monospace;
-    line-height: 1;
+    color: #1e293b;
     cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    position: relative;
   }
-
-  .playing-card.red-card {
+  .playing-card.red {
     color: #dc2626;
   }
-
-  .playing-card.black-card {
-    color: #1e293b;
-  }
-
   .playing-card.selected {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+    border-color: #3b82f6;
+    box-shadow:
+      0 0 0 1px #3b82f6,
+      0 0 10px rgba(59, 130, 246, 0.5);
   }
-
-  @keyframes hint-pulse {
-    0%,
-    100% {
-      border-color: #fbbf24;
-      box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
-    }
-    50% {
-      border-color: #f59e0b;
-      box-shadow:
-        0 0 16px rgba(251, 191, 36, 0.9),
-        0 0 28px rgba(251, 191, 36, 0.35);
-    }
-  }
-
   .playing-card.hinted {
-    border-color: #fbbf24 !important;
-    animation: hint-pulse 0.9s ease-in-out infinite;
+    border-color: #fbbf24;
+    animation: pc-hint-pulse 0.9s ease-in-out infinite;
     z-index: 200 !important;
   }
-
-  @keyframes foundation-pulse {
+  .playing-card.foundation-ready {
+    border-color: #22c55e;
+    animation: pc-foundation-pulse 0.9s ease-in-out infinite;
+    z-index: 200 !important;
+  }
+  @keyframes pc-hint-pulse {
     0%,
     100% {
-      border-color: #22c55e;
-      box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+      box-shadow:
+        0 0 0 1px #fbbf24,
+        0 0 8px rgba(251, 191, 36, 0.4);
     }
     50% {
-      border-color: #16a34a;
       box-shadow:
-        0 0 16px rgba(34, 197, 94, 0.9),
-        0 0 28px rgba(34, 197, 94, 0.35);
+        0 0 0 2px #fbbf24,
+        0 0 16px rgba(251, 191, 36, 0.7);
     }
   }
-
-  .playing-card.foundation-ready {
-    border-color: #22c55e !important;
-    animation: foundation-pulse 0.9s ease-in-out infinite;
-    z-index: 200 !important;
+  @keyframes pc-foundation-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 1px #22c55e,
+        0 0 8px rgba(34, 197, 94, 0.4);
+    }
+    50% {
+      box-shadow:
+        0 0 0 2px #22c55e,
+        0 0 16px rgba(34, 197, 94, 0.7);
+    }
+  }
+  .pc-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1;
+    gap: 1px;
+  }
+  .pc-corner.pc-bottom {
+    transform: rotate(180deg);
+    align-self: flex-end;
+  }
+  .pc-rank {
+    font-size: 0.75em;
+  }
+  .pc-suit {
+    font-size: 0.9em;
+  }
+  .pc-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    pointer-events: none;
   }
 
   .tableau-col {
@@ -891,15 +912,14 @@ icon: "🃏"
 
   function makeCardEl(card, extraClass, posStyle) {
     const red = isRed(card);
-    const fs = Math.max(7, Math.floor(CW * 0.24));
-    const suitFs = Math.max(9, Math.floor(CW * 0.34));
+    const fontSize = Math.max(7, Math.floor(CW * 0.24));
     const el = document.createElement("div");
-    el.className = "playing-card " + (red ? "red-card" : "black-card") + (extraClass ? " " + extraClass : "");
-    el.style.cssText = `width:${CW}px;height:${CH}px;${posStyle || ""}`;
+    el.className = "playing-card " + (red ? "red" : "") + (extraClass ? " " + extraClass : "");
+    el.style.cssText = `width:${CW}px;height:${CH}px;font-size:${fontSize}px;${posStyle || ""}`;
     el.innerHTML =
-      `<div style="font-size:${fs}px;line-height:1.1">${RANK_LABEL[card.rank]}<br>${SUIT_SYM[card.suit]}</div>` +
-      `<div style="font-size:${suitFs}px;text-align:center">${SUIT_SYM[card.suit]}</div>` +
-      `<div style="font-size:${fs}px;line-height:1.1;transform:rotate(180deg);align-self:flex-end">${RANK_LABEL[card.rank]}<br>${SUIT_SYM[card.suit]}</div>`;
+      `<div class="pc-corner pc-top"><div class="pc-rank">${RANK_LABEL[card.rank]}</div><div class="pc-suit">${SUIT_SYM[card.suit]}</div></div>` +
+      `<div class="pc-center">${SUIT_SYM[card.suit]}</div>` +
+      `<div class="pc-corner pc-bottom"><div class="pc-rank">${RANK_LABEL[card.rank]}</div><div class="pc-suit">${SUIT_SYM[card.suit]}</div></div>`;
     return el;
   }
 
