@@ -78,6 +78,8 @@ jobs:
               `| | |`,
               `|---|---|`,
               `| **Preview URL** | ${deployUrl} |`,
+              `| **Branch** | \`${{ github.head_ref }}\` |`,
+              `| **Triggered by** | @${{ github.actor }} |`,
               `| **Commit** | [\`${shortSha}\`](${commitUrl}) |`,
               `| **Commit title** | ${commitTitle} |`,
               `| **Deployed at** | ${deployedAt} |`,
