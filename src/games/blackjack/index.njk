@@ -81,30 +81,58 @@ icon: "🂾"
     opacity: 0.4;
     cursor: not-allowed;
   }
-  .card {
-    width: 52px;
-    height: 76px;
+  .playing-card {
+    width: 56px;
+    height: 82px;
     background: white;
-    border: 1px solid #334155;
+    border: 1.5px solid #d1d5db;
     border-radius: 6px;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 1rem;
+    justify-content: space-between;
+    padding: 3px 4px;
     font-weight: bold;
+    font-family: monospace;
     color: #1e293b;
-    padding: 4px;
+    cursor: pointer;
     user-select: none;
     flex-shrink: 0;
+    position: relative;
   }
-  .card.red {
+  .playing-card.red {
     color: #dc2626;
   }
-  .card.hidden {
-    background: #1e40af;
-    color: white;
+  .playing-card.face-down {
+    background: repeating-linear-gradient(135deg, #1e40af 0px, #1e40af 4px, #1d4ed8 4px, #1d4ed8 8px);
+    border-color: #1e3a8a;
+    cursor: default;
+  }
+  .pc-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1;
+    gap: 1px;
+  }
+  .pc-corner.pc-bottom {
+    transform: rotate(180deg);
+    align-self: flex-end;
+  }
+  .pc-rank {
+    font-size: 0.75rem;
+  }
+  .pc-suit {
+    font-size: 0.9rem;
+  }
+  .pc-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.5rem;
+    pointer-events: none;
   }
   .hand {
     display: flex;
@@ -423,23 +451,14 @@ icon: "🂾"
   function renderCard(card) {
     const div = document.createElement("div");
     if (card.hidden) {
-      div.className = "card hidden";
-      div.textContent = "🂠";
+      div.className = "playing-card face-down";
       return div;
     }
-    div.className = "card" + (isRedSuit(card.suit) ? " red" : "");
-    const top = document.createElement("div");
-    top.style.cssText = "font-size:0.75rem;align-self:flex-start;line-height:1";
-    top.textContent = card.rank;
-    const suit = document.createElement("div");
-    suit.style.cssText = "font-size:1.1rem;line-height:1";
-    suit.textContent = card.suit;
-    const bottom = document.createElement("div");
-    bottom.style.cssText = "font-size:0.75rem;align-self:flex-end;line-height:1;transform:rotate(180deg)";
-    bottom.textContent = card.rank;
-    div.appendChild(top);
-    div.appendChild(suit);
-    div.appendChild(bottom);
+    div.className = "playing-card" + (isRedSuit(card.suit) ? " red" : "");
+    div.innerHTML =
+      `<div class="pc-corner pc-top"><div class="pc-rank">${card.rank}</div><div class="pc-suit">${card.suit}</div></div>` +
+      `<div class="pc-center">${card.suit}</div>` +
+      `<div class="pc-corner pc-bottom"><div class="pc-rank">${card.rank}</div><div class="pc-suit">${card.suit}</div></div>`;
     return div;
   }
 
