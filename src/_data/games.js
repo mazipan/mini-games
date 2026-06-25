@@ -70,7 +70,7 @@ module.exports = [
     description: "Drop colored discs into a 7×6 grid and connect four in a row to win.",
     category: "board",
     difficulty: "medium",
-    icon: "🔴",
+    icon: "🟡",
     tags: ["strategy", "two-player", "grid"],
   },
   {
@@ -99,7 +99,7 @@ module.exports = [
       "Move all 52 face-up cards to the foundation piles using four free cells as temporary storage.",
     category: "board",
     difficulty: "hard",
-    icon: "🃏",
+    icon: "🂠",
     tags: ["cards", "classic", "freecell", "solitaire"],
   },
   {
@@ -137,7 +137,7 @@ module.exports = [
     description: "Flip cards to find matching pairs. Train your memory and beat the clock.",
     category: "board",
     difficulty: "easy",
-    icon: "🃏",
+    icon: "🧠",
     tags: ["memory", "cards", "pairs"],
   },
   {
@@ -155,7 +155,7 @@ module.exports = [
     description: "Drop tiles into columns — equal neighbors merge into their sum, chaining combos!",
     category: "puzzle",
     difficulty: "medium",
-    icon: "🔢",
+    icon: "🔀",
     tags: ["numbers", "merge", "falling", "combo"],
   },
   {
@@ -250,7 +250,7 @@ module.exports = [
     description: "Fill the 9×9 grid so every row, column, and 3×3 box contains digits 1–9.",
     category: "puzzle",
     difficulty: "hard",
-    icon: "🔢",
+    icon: "🧩",
     tags: ["numbers", "logic", "classic"],
   },
   {
@@ -259,7 +259,7 @@ module.exports = [
     description: "Stack falling tetrominoes to clear lines and rack up the highest score.",
     category: "arcade",
     difficulty: "medium",
-    icon: "🟦",
+    icon: "🟥",
     tags: ["blocks", "classic", "canvas"],
   },
   {
@@ -305,7 +305,7 @@ module.exports = [
     description: "Roll 5 dice up to 3 times and score your result in one of 13 categories!",
     category: "board",
     difficulty: "easy",
-    icon: "🎲",
+    icon: "🎯",
     tags: ["dice", "classic", "strategy", "casual"],
   },
 ];
