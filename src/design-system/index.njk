@@ -269,6 +269,101 @@ description: Shared components, tokens, and patterns used across all mini-games.
     color: #7c3aed;
   }
 
+  /* ── Playing cards ─────────────────────────────────────── */
+  .playing-card {
+    width: 56px;
+    height: 82px;
+    background: white;
+    border: 1.5px solid #d1d5db;
+    border-radius: 6px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 3px 4px;
+    font-weight: bold;
+    font-family: monospace;
+    color: #1e293b;
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .playing-card.red {
+    color: #dc2626;
+  }
+  .playing-card.face-down {
+    background: repeating-linear-gradient(135deg, #1e40af 0px, #1e40af 4px, #1d4ed8 4px, #1d4ed8 8px);
+    border-color: #1e3a8a;
+    cursor: default;
+  }
+  .playing-card.selected {
+    border-color: #3b82f6;
+    box-shadow:
+      0 0 0 2px #3b82f6,
+      0 0 10px rgba(59, 130, 246, 0.5);
+  }
+  .playing-card.hinted {
+    border-color: #fbbf24;
+    animation: pc-hint-pulse 0.9s ease-in-out infinite;
+  }
+  .playing-card.foundation-ready {
+    border-color: #22c55e;
+    animation: pc-foundation-pulse 0.9s ease-in-out infinite;
+  }
+  @keyframes pc-hint-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 2px #fbbf24,
+        0 0 8px rgba(251, 191, 36, 0.4);
+    }
+    50% {
+      box-shadow:
+        0 0 0 3px #fbbf24,
+        0 0 16px rgba(251, 191, 36, 0.7);
+    }
+  }
+  @keyframes pc-foundation-pulse {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 2px #22c55e,
+        0 0 8px rgba(34, 197, 94, 0.4);
+    }
+    50% {
+      box-shadow:
+        0 0 0 3px #22c55e,
+        0 0 16px rgba(34, 197, 94, 0.7);
+    }
+  }
+  .pc-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    gap: 1px;
+  }
+  .pc-corner.pc-bottom {
+    transform: rotate(180deg);
+    align-self: flex-end;
+  }
+  .pc-rank {
+    font-size: 0.75rem;
+  }
+  .pc-suit {
+    font-size: 0.6rem;
+  }
+  .pc-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    pointer-events: none;
+  }
+
   /* ── Info / collapsible section ─────────────────────────── */
   .info-details {
     background: #1e293b;
@@ -350,6 +445,7 @@ description: Shared components, tokens, and patterns used across all mini-games.
       <a href="#overlays" class="text-violet-400 hover:text-violet-300 transition-colors">Overlays</a>
       <a href="#info-section" class="text-violet-400 hover:text-violet-300 transition-colors">Info Section</a>
       <a href="#game-wrapper" class="text-violet-400 hover:text-violet-300 transition-colors">Game Wrapper</a>
+      <a href="#playing-cards" class="text-violet-400 hover:text-violet-300 transition-colors">Playing Cards</a>
     </div>
   </nav>
 
@@ -916,6 +1012,200 @@ description: Shared components, tokens, and patterns used across all mini-games.
     <p class="ds-note">
       Always include two <code>&lt;details&gt;</code> blocks: <strong>How to Play</strong> (Goal, Controls desktop +
       mobile, Scoring/Levels) and <strong>FAQ</strong> (min. 3 questions).
+    </p>
+  </section>
+
+  <!-- ─── PLAYING CARDS ──────────────────────────────────── -->
+  <section id="playing-cards" class="ds-section">
+    <h2 class="ds-section-title">Playing Cards</h2>
+    <p class="text-slate-400 text-sm mb-4">
+      Shared card component used across Blackjack, Solitaire, and FreeCell. Copy the CSS block into each card game's
+      <code class="text-violet-300">&lt;style&gt;</code>.
+    </p>
+
+    <p class="ds-subsection-title">
+      Base card — <code class="text-violet-300 normal-case font-mono">.playing-card</code>
+    </p>
+    <div class="ds-preview">
+      <div class="playing-card">
+        <div class="pc-corner pc-top">
+          <div class="pc-rank">A</div>
+          <div class="pc-suit">♠</div>
+        </div>
+        <div class="pc-center">♠</div>
+        <div class="pc-corner pc-bottom">
+          <div class="pc-rank">A</div>
+          <div class="pc-suit">♠</div>
+        </div>
+      </div>
+      <div class="playing-card red">
+        <div class="pc-corner pc-top">
+          <div class="pc-rank">K</div>
+          <div class="pc-suit">♥</div>
+        </div>
+        <div class="pc-center">♥</div>
+        <div class="pc-corner pc-bottom">
+          <div class="pc-rank">K</div>
+          <div class="pc-suit">♥</div>
+        </div>
+      </div>
+      <div class="playing-card red">
+        <div class="pc-corner pc-top">
+          <div class="pc-rank">Q</div>
+          <div class="pc-suit">♦</div>
+        </div>
+        <div class="pc-center">♦</div>
+        <div class="pc-corner pc-bottom">
+          <div class="pc-rank">Q</div>
+          <div class="pc-suit">♦</div>
+        </div>
+      </div>
+      <div class="playing-card">
+        <div class="pc-corner pc-top">
+          <div class="pc-rank">7</div>
+          <div class="pc-suit">♣</div>
+        </div>
+        <div class="pc-center">♣</div>
+        <div class="pc-corner pc-bottom">
+          <div class="pc-rank">7</div>
+          <div class="pc-suit">♣</div>
+        </div>
+      </div>
+      <div class="playing-card face-down"></div>
+    </div>
+    <pre class="ds-code">
+&lt;!-- Black suit --&gt;
+&lt;div class="playing-card"&gt;
+  &lt;div class="pc-corner pc-top"&gt;
+    &lt;div class="pc-rank"&gt;A&lt;/div&gt;
+    &lt;div class="pc-suit"&gt;♠&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class="pc-center"&gt;♠&lt;/div&gt;
+  &lt;div class="pc-corner pc-bottom"&gt;
+    &lt;div class="pc-rank"&gt;A&lt;/div&gt;
+    &lt;div class="pc-suit"&gt;♠&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Red suit: add .red --&gt;
+&lt;div class="playing-card red"&gt;...&lt;/div&gt;
+
+&lt;!-- Face-down: add .face-down (no inner content needed) --&gt;
+&lt;div class="playing-card face-down"&gt;&lt;/div&gt;</pre
+    >
+
+    <p class="ds-subsection-title">Interactive states</p>
+    <div class="ds-preview">
+      <div>
+        <p class="text-xs text-slate-500 mb-2 font-mono">.selected</p>
+        <div class="playing-card selected">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">J</div>
+            <div class="pc-suit">♠</div>
+          </div>
+          <div class="pc-center">♠</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">J</div>
+            <div class="pc-suit">♠</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 mb-2 font-mono">.hinted</p>
+        <div class="playing-card red hinted">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">5</div>
+            <div class="pc-suit">♥</div>
+          </div>
+          <div class="pc-center">♥</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">5</div>
+            <div class="pc-suit">♥</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p class="text-xs text-slate-500 mb-2 font-mono">.foundation-ready</p>
+        <div class="playing-card red foundation-ready">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">2</div>
+            <div class="pc-suit">♦</div>
+          </div>
+          <div class="pc-center">♦</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">2</div>
+            <div class="pc-suit">♦</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <pre class="ds-code">
+.playing-card.selected        { border-color:#3b82f6; box-shadow:0 0 0 2px #3b82f6, 0 0 10px rgba(59,130,246,0.5); }
+.playing-card.hinted          { border-color:#fbbf24; animation:pc-hint-pulse 0.9s ease-in-out infinite; }
+.playing-card.foundation-ready{ border-color:#22c55e; animation:pc-foundation-pulse 0.9s ease-in-out infinite; }
+
+@keyframes pc-hint-pulse {
+  0%,100% { box-shadow:0 0 0 2px #fbbf24, 0 0 8px rgba(251,191,36,0.4); }
+  50%      { box-shadow:0 0 0 3px #fbbf24, 0 0 16px rgba(251,191,36,0.7); }
+}
+@keyframes pc-foundation-pulse {
+  0%,100% { box-shadow:0 0 0 2px #22c55e, 0 0 8px rgba(34,197,94,0.4); }
+  50%      { box-shadow:0 0 0 3px #22c55e, 0 0 16px rgba(34,197,94,0.7); }
+}</pre
+    >
+
+    <p class="ds-subsection-title">Full CSS block (copy into game &lt;style&gt;)</p>
+    <pre class="ds-code">
+.playing-card {
+  width: 56px; height: 82px;
+  background: white;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3px 4px;
+  font-weight: bold;
+  font-family: monospace;
+  color: #1e293b;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+}
+.playing-card.red  { color: #dc2626; }
+.playing-card.face-down {
+  background: repeating-linear-gradient(
+    135deg,
+    #1e40af 0px, #1e40af 4px,
+    #1d4ed8 4px, #1d4ed8 8px
+  );
+  border-color: #1e3a8a;
+  cursor: default;
+}
+.playing-card.selected         { border-color:#3b82f6; box-shadow:0 0 0 2px #3b82f6, 0 0 10px rgba(59,130,246,0.5); }
+.playing-card.hinted           { border-color:#fbbf24; animation:pc-hint-pulse 0.9s ease-in-out infinite; }
+.playing-card.foundation-ready { border-color:#22c55e; animation:pc-foundation-pulse 0.9s ease-in-out infinite; }
+@keyframes pc-hint-pulse {
+  0%,100% { box-shadow:0 0 0 2px #fbbf24, 0 0 8px rgba(251,191,36,0.4); }
+  50%     { box-shadow:0 0 0 3px #fbbf24, 0 0 16px rgba(251,191,36,0.7); }
+}
+@keyframes pc-foundation-pulse {
+  0%,100% { box-shadow:0 0 0 2px #22c55e, 0 0 8px rgba(34,197,94,0.4); }
+  50%     { box-shadow:0 0 0 3px #22c55e, 0 0 16px rgba(34,197,94,0.7); }
+}
+.pc-corner         { display:flex; flex-direction:column; align-items:center; line-height:1; gap:1px; }
+.pc-corner.pc-bottom { transform:rotate(180deg); align-self:flex-end; }
+.pc-rank           { font-size:0.75rem; }
+.pc-suit           { font-size:0.6rem; }
+.pc-center         { position:absolute; inset:0; display:flex; align-items:center;
+                     justify-content:center; font-size:1.1rem; pointer-events:none; }</pre
+    >
+    <p class="ds-note">
+      Width / height are the base 56×82 px defaults (aspect ratio ≈ 1:1.46). Override them per-game when responsive
+      sizing is needed — e.g. Solitaire computes <code>cardW</code> from viewport width and sets inline
+      <code>style="width:…;height:…"</code> on each card element.
     </p>
   </section>
 
