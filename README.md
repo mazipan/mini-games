@@ -19,7 +19,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 📦 Stack          | Easy       |
 | 🦔 Whack-a-Mole   | Easy       |
 | 🧱 Breakout       | Medium     |
-| 🟦 Tetris         | Medium     |
+| 🟥 Tetris         | Medium     |
 | 👾 Space Invaders | Hard       |
 
 ### 🧩 Puzzle
@@ -27,27 +27,31 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | Game                    | Difficulty |
 | ----------------------- | ---------- |
 | 🔢 2048                 | Medium     |
+| 🔩 Bolt Sort            | Medium     |
 | 🟦 Color Block          | Medium     |
 | 🔗 Color Connect        | Medium     |
 | 🍬 Match Three          | Medium     |
+| 🔀 Number Merge         | Medium     |
 | 🀄 Onet Connect Classic | Medium     |
 | 🔲 Sliding Puzzle       | Medium     |
 | 💣 Minesweeper          | Hard       |
-| 🔢 Sudoku               | Hard       |
+| 🧩 Sudoku               | Hard       |
 
 ### ♟️ Board
 
 | Game            | Difficulty |
 | --------------- | ---------- |
-| 🃏 Memory Match | Easy       |
+| 🧠 Memory Match | Easy       |
 | ⭕ Tic-Tac-Toe  | Easy       |
-| 🎲 Yahtzee      | Easy       |
+| 🎯 Yahtzee      | Easy       |
 | 🃏 Blackjack    | Medium     |
 | 🔴 Checkers     | Medium     |
-| 🔴 Connect Four | Medium     |
+| 🟡 Connect Four | Medium     |
 | 🎲 Domino       | Medium     |
 | 🪨 Mancala      | Medium     |
+| ⚫ Reversi      | Medium     |
 | ♠️ Solitaire    | Medium     |
+| 🂠 FreeCell     | Hard       |
 
 ### 🔤 Word
 
