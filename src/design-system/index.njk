@@ -340,7 +340,7 @@ description: Shared components, tokens, and patterns used across all mini-games.
   .pc-corner {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     line-height: 1;
     gap: 1px;
   }
@@ -1195,7 +1195,7 @@ description: Shared components, tokens, and patterns used across all mini-games.
   0%,100% { box-shadow:0 0 0 2px #22c55e, 0 0 8px rgba(34,197,94,0.4); }
   50%     { box-shadow:0 0 0 3px #22c55e, 0 0 16px rgba(34,197,94,0.7); }
 }
-.pc-corner         { display:flex; flex-direction:column; align-items:center; line-height:1; gap:1px; }
+.pc-corner         { display:flex; flex-direction:column; align-items:flex-start; line-height:1; gap:1px; }
 .pc-corner.pc-bottom { transform:rotate(180deg); align-self:flex-end; }
 .pc-rank           { font-size:0.75rem; }
 .pc-suit           { font-size:0.6rem; }
