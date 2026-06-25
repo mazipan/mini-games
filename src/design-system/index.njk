@@ -363,6 +363,36 @@ description: Shared components, tokens, and patterns used across all mini-games.
     font-size: 1.1rem;
     pointer-events: none;
   }
+  .playing-card.sm {
+    width: 40px;
+    height: 58px;
+    border-radius: 4px;
+    padding: 2px 3px;
+  }
+  .playing-card.sm .pc-rank {
+    font-size: 0.6rem;
+  }
+  .playing-card.sm .pc-suit {
+    font-size: 0.5rem;
+  }
+  .playing-card.sm .pc-center {
+    font-size: 0.8rem;
+  }
+  .playing-card.lg {
+    width: 72px;
+    height: 105px;
+    border-radius: 8px;
+    padding: 4px 5px;
+  }
+  .playing-card.lg .pc-rank {
+    font-size: 1rem;
+  }
+  .playing-card.lg .pc-suit {
+    font-size: 0.75rem;
+  }
+  .playing-card.lg .pc-center {
+    font-size: 1.5rem;
+  }
 
   /* ── Info / collapsible section ─────────────────────────── */
   .info-details {
@@ -1200,12 +1230,73 @@ description: Shared components, tokens, and patterns used across all mini-games.
 .pc-rank           { font-size:0.75rem; }
 .pc-suit           { font-size:0.6rem; }
 .pc-center         { position:absolute; inset:0; display:flex; align-items:center;
-                     justify-content:center; font-size:1.1rem; pointer-events:none; }</pre
+                     justify-content:center; font-size:1.1rem; pointer-events:none; }
+
+/* Size variants */
+.playing-card.sm                { width:40px; height:58px; border-radius:4px; padding:2px 3px; }
+.playing-card.sm .pc-rank      { font-size:0.6rem; }
+.playing-card.sm .pc-suit      { font-size:0.5rem; }
+.playing-card.sm .pc-center    { font-size:0.8rem; }
+.playing-card.lg                { width:72px; height:105px; border-radius:8px; padding:4px 5px; }
+.playing-card.lg .pc-rank      { font-size:1rem; }
+.playing-card.lg .pc-suit      { font-size:0.75rem; }
+.playing-card.lg .pc-center    { font-size:1.5rem; }</pre
+    >
+
+    <p class="ds-subsection-title">Size variants</p>
+    <div class="ds-preview" style="align-items: flex-end">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem">
+        <p class="text-xs text-slate-500 font-mono">.sm — 40×58</p>
+        <div class="playing-card red sm">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+          <div class="pc-center">♥</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem">
+        <p class="text-xs text-slate-500 font-mono">default — 56×82</p>
+        <div class="playing-card red">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+          <div class="pc-center">♥</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem">
+        <p class="text-xs text-slate-500 font-mono">.lg — 72×105</p>
+        <div class="playing-card red lg">
+          <div class="pc-corner pc-top">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+          <div class="pc-center">♥</div>
+          <div class="pc-corner pc-bottom">
+            <div class="pc-rank">A</div>
+            <div class="pc-suit">♥</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <pre class="ds-code">
+&lt;div class="playing-card sm"&gt;...&lt;/div&gt;   &lt;!-- 40×58 px — compact hand/Blackjack --&gt;
+&lt;div class="playing-card"&gt;...&lt;/div&gt;      &lt;!-- 56×82 px — default --&gt;
+&lt;div class="playing-card lg"&gt;...&lt;/div&gt;   &lt;!-- 72×105 px — large layout --&gt;</pre
     >
     <p class="ds-note">
-      Width / height are the base 56×82 px defaults (aspect ratio ≈ 1:1.46). Override them per-game when responsive
-      sizing is needed — e.g. Solitaire computes <code>cardW</code> from viewport width and sets inline
-      <code>style="width:…;height:…"</code> on each card element.
+      All three sizes share aspect ratio ≈ 1:1.46. For fully fluid sizing (e.g. Solitaire computing
+      <code>cardW</code> from viewport width), override <code>width</code> and <code>height</code> inline and scale font
+      sizes with a CSS custom property or inline style rather than using these modifier classes.
     </p>
   </section>
 
