@@ -43,7 +43,7 @@ jobs:
               --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
           else
             RESULT=$(bunx netlify-cli deploy --dir=./_site \
-              --alias="mini-games-preview-${{ github.event.pull_request.number }}" \
+              --alias="preview-${{ github.event.pull_request.number }}" \
               --message="Deploy from GitHub Actions (${{ env.SHORT_SHA }})" --json)
           fi
           echo "deploy_url=$(echo $RESULT | jq -r '.deploy_url')" >> $GITHUB_OUTPUT
