@@ -47,6 +47,7 @@ Built with [Eleventy](https://www.11ty.dev/), [Tailwind CSS](https://tailwindcss
 | 🔴 Connect Four | Medium     |
 | 🎲 Domino       | Medium     |
 | 🪨 Mancala      | Medium     |
+| ♠️ Solitaire    | Medium     |
 
 ### 🔤 Word
 
